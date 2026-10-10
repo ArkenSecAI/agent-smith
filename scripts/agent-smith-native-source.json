@@ -16,5 +16,5 @@
     "packages/natives/scripts/gen-enums.ts",
     "packages/natives/native/version-sentinel.js"
   ],
-  "sha256": "8cc5152fcb9bd0441286f1db73ddb67adb5e86ff727d23863fb5b60a4ee478e8"
+  "sha256": "a54b7bd381a8a537bf2517978ee9d6b5b2dc28828c71df9299c034fac3f8101d"
 }
