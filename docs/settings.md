@@ -1,12 +1,12 @@
 # Settings
 
-`omp` resolves settings from built-in defaults, a persistent global config file, optional project-local config, one-shot CLI overlays, and in-memory runtime overrides. Reach for project settings when one repository needs a different provider set, model role, tool policy, memory backend, or UI behavior than your global defaults — without touching your machine-wide configuration.
+`agent-smith` resolves settings from built-in defaults, a persistent global config file, optional project-local config, one-shot CLI overlays, and in-memory runtime overrides. Reach for project settings when one repository needs a different provider set, model role, tool policy, memory backend, or UI behavior than your global defaults — without touching your machine-wide configuration.
 
-Settings are stored as plain YAML mappings. Every key, its type, default, and enum values come from its setting definition (declared with `register(...)` next to the owning feature, e.g. `packages/coding-agent/src/tools/settings.ts`, and collected by `packages/coding-agent/src/config/all-settings.ts`). `omp config` exposes the complete schema; the interactive `/settings` panel exposes entries with supported UI editors. Some entries are conditional, and numbers or arrays without UI choices remain config-file-only.
+Settings are stored as plain YAML mappings. Every key, its type, default, and enum values come from its setting definition (declared with `register(...)` next to the owning feature, e.g. `packages/coding-agent/src/tools/settings.ts`, and collected by `packages/coding-agent/src/config/all-settings.ts`). `agent-smith config` exposes the complete schema; the interactive `/settings` panel exposes entries with supported UI editors. Some entries are conditional, and numbers or arrays without UI choices remain config-file-only.
 
 - For model/provider credentials, `.env` files, and the env-var table that resolves API keys, see [Providers](./providers.md).
 - For custom model definitions in `models.yml`, see [Models](./models.md).
-- For instruction files discovered into the agent context (`AGENTS.md`, `.omp/`, etc.), see [Context files](./context-files.md).
+- For instruction files discovered into the agent context (`AGENTS.md`, `.agent-smith/`, etc.), see [Context files](./context-files.md).
 - For the full catalog of environment variables, see [Environment variables](./environment-variables.md).
 - For prompt words that activate specialized per-turn behavior, see [Magic keywords](./magic-keywords.md).
 
@@ -14,20 +14,20 @@ Settings are stored as plain YAML mappings. Every key, its type, default, and en
 
 | Scope             | Path                                                  | Read behavior                                                                                                                            | Write behavior                                                                                                                                                                   |
 | ----------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Global            | `~/.omp/agent/config.yml` (or existing `config.yaml`) | The main persistent settings file. `config.yml` is the canonical write target; an existing `config.yaml` is loaded and updated in place. | `/settings`, `omp config set`, and `omp config reset` write here.                                                                                                                |
-| Global legacy     | `~/.omp/agent/settings.json`                          | Considered for migration only when neither main YAML filename exists. | Not written; renamed to `settings.json.bak` after a non-empty migrated YAML file is successfully saved. |
-| Project           | `<cwd>/.omp/config.yml` (plus `.omp/settings.json`)   | Loaded when the process working directory has a non-empty `.omp/`.                                                                       | Settings commands do not write arbitrary project keys. With `modelRoleStorage: project`, model-selector role assignments update only `modelRoles` here; edit other keys by hand. |
-| Project legacy    | `<cwd>/.omp/settings.json`                            | Still read; project `config.yml` is merged on top of it.                                                                                 | Not written by settings commands.                                                                                                                                                |
+| Global            | `~/.agent-smith/agent/config.yml` (or existing `config.yaml`) | The main persistent settings file. `config.yml` is the canonical write target; an existing `config.yaml` is loaded and updated in place. | `/settings`, `agent-smith config set`, and `agent-smith config reset` write here.                                                                                                                |
+| Global legacy     | `~/.agent-smith/agent/settings.json`                          | Considered for migration only when neither main YAML filename exists. | Not written; renamed to `settings.json.bak` after a non-empty migrated YAML file is successfully saved. |
+| Project           | `<cwd>/.agent-smith/config.yml` (plus `.agent-smith/settings.json`)   | Loaded when the process working directory has a non-empty `.agent-smith/`.                                                                       | Settings commands do not write arbitrary project keys. With `modelRoleStorage: project`, model-selector role assignments update only `modelRoles` here; edit other keys by hand. |
+| Project legacy    | `<cwd>/.agent-smith/settings.json`                            | Still read; project `config.yml` is merged on top of it.                                                                                 | Not written by settings commands.                                                                                                                                                |
 | CLI overlay       | Any file passed with `--config <file>`                | Loaded after global and project settings, for that one process. Repeatable.                                                              | Never persisted.                                                                                                                                                                 |
 | Runtime overrides | In-memory only                                        | Set by settings overrides such as `--approval-mode`, role flags, and feature env vars. | Never persisted. |
 
-The global paths above describe the default profile. `omp --profile work` selects `~/.omp/profiles/work/agent` instead, isolating settings, auth, sessions, and caches. `OMP_PROFILE` also selects a profile; `PI_PROFILE` is its compatibility fallback only when `OMP_PROFILE` is absent. An explicit `--profile` wins over both, and `--profile default` selects the default profile.
+The global paths above describe the default profile. `agent-smith --profile work` selects `~/.agent-smith/profiles/work/agent` instead, isolating settings, auth, sessions, and profile caches. `AGENT_SMITH_PROFILE` also selects a profile; no `OMP_PROFILE` or `PI_PROFILE` fallback is read. An explicit `--profile` wins, and `--profile default` selects the default profile. Native addon extraction and native OAuth registration recovery are application-scoped, not independent OS registrations per profile.
 
-`PI_CODING_AGENT_DIR` relocates the default profile's agent directory, including `config.yml` and its agent data. Named profiles derive their own agent directory and ignore this override. Use `omp config path` (or `omp --profile work config path`) to print the active settings directory.
+`AGENT_SMITH_CODING_AGENT_DIR` relocates the default profile's agent directory, including `config.yml` and its agent data. Named profiles derive their own agent directory and ignore this override. Use `agent-smith config path` (or `agent-smith --profile work config path`) to print the active settings directory.
 
-On Linux and macOS, configured `XDG_DATA_HOME`, `XDG_STATE_HOME`, and `XDG_CACHE_HOME` can redirect data/state/cache when the corresponding `omp` directories exist. Named profiles require the corresponding `omp/profiles/<name>` directory. This does not move `config.yml`: it stays under the active agent directory, while `agent.db` and other categorized data may live elsewhere. `omp config init-xdg` creates the base directories but does not migrate files or set environment variables.
+On Linux and macOS, configured `XDG_DATA_HOME`, `XDG_STATE_HOME`, and `XDG_CACHE_HOME` can redirect data/state/cache when the corresponding `agent-smith` directories exist. Named profiles require the corresponding `agent-smith/profiles/<name>` directory. This does not move `config.yml`: it stays under the active agent directory, while `agent.db` and other categorized data may live elsewhere. `agent-smith config init-xdg` creates the base directories but does not migrate files or set environment variables.
 
-Native project settings are intentionally scoped to the process working directory's `.omp/` folder — settings discovery does **not** walk ancestor directories looking for the nearest `.omp/`. Other discovery providers (Claude, Codex, Gemini, Cursor, OpenCode) can also contribute project-level settings from their own files; those are read-only from `omp` settings commands and can be turned off by provider id (see [Provider and source disabling](#provider-and-source-disabling)).
+Native project settings are intentionally scoped to the working directory's `.agent-smith/` folder; settings discovery does not walk ancestor directories. Foreign discovery providers contribute user/project settings only after an app-owned opt-in; these sources are read-only from settings commands. See [Provider and source disabling](#provider-and-source-disabling).
 
 ## Config file formats
 
@@ -35,28 +35,28 @@ The canonical global file is YAML at `config.yml`; `config.yaml` is accepted as 
 
 - When a `.yml`/`.yaml` path is requested and only a sibling `.json` exists, it is migrated to YAML automatically (idempotent, once per process).
 - `.json` and `.jsonc` configs are read as-is, with no migration.
-- Empty YAML (or YAML `null`) is treated as an empty settings mapping. Other non-mapping top levels are invalid. On writable startup, `omp` moves a syntactically invalid or non-mapping persistent settings file to a uniquely named `.broken-*` backup and exits with the original error and backup path. A `--config` overlay with a bare array/scalar is also a hard error, but is not moved.
+- Empty YAML (or YAML `null`) is treated as an empty settings mapping. Other non-mapping top levels are invalid. On writable startup, `agent-smith` moves a syntactically invalid or non-mapping persistent settings file to a uniquely named `.broken-*` backup and exits with the original error and backup path. A `--config` overlay with a bare array/scalar is also a hard error, but is not moved.
 - Invalid values for ordinary schema entries warn and read as their schema defaults. Settings with explicit validators, such as per-agent compaction triggers or provider concurrency limits, can reject the configuration instead. Unknown keys in hand-written files are not a substitute for a registered setting.
 
 ## Reading and writing settings
 
-Use the interactive `/settings` panel inside a session, or the `omp config` command from a shell. The CLI reads effective values including setting environment variables. The panel shows and edits merged settings-layer values, not environment-supplied values; descriptions note active env overrides so env credentials are never pre-filled or persisted. Ordinary persistent writes land in the **global** file; model-selector role changes are the exception when `modelRoleStorage: project` (see [Where writes go](#where-writes-go)).
+Use the interactive `/settings` panel inside a session, or the `agent-smith config` command from a shell. The CLI reads effective values including setting environment variables. The panel shows and edits merged settings-layer values, not environment-supplied values; descriptions note active env overrides so env credentials are never pre-filled or persisted. Ordinary persistent writes land in the **global** file; model-selector role changes are the exception when `modelRoleStorage: project` (see [Where writes go](#where-writes-go)).
 
 ```bash
-omp config list                 # all settings with current effective values
-omp config list --json          # same, machine-readable
-omp config get theme.dark       # one value
-omp config get theme.dark --json
-omp config set compaction.enabled false
-omp config set defaultThinkingLevel medium
-omp config reset steeringMode   # remove a key from config.yml so its default applies
-omp config path                 # print the active agent directory
+agent-smith config list                 # all settings with current effective values
+agent-smith config list --json          # same, machine-readable
+agent-smith config get theme.dark       # one value
+agent-smith config get theme.dark --json
+agent-smith config set compaction.enabled false
+agent-smith config set defaultThinkingLevel medium
+agent-smith config reset steeringMode   # remove a key from config.yml so its default applies
+agent-smith config path                 # print the active agent directory
 ```
 
 For users who want the full first-run animation on normal launches, set `startup.showSplash`:
 
 ```bash
-omp config set startup.showSplash true
+agent-smith config set startup.showSplash true
 ```
 
 This only controls the startup splash animation. It does not rerun setup or change setup state, and `startup.quiet: true` still suppresses all startup chrome including the splash.
@@ -65,18 +65,18 @@ This only controls the startup splash animation. It does not rerun setup or chan
 
 | Command                        | Effect                                                                                                                                                                                                                                                                                            |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `omp config list`              | Print every setting grouped by tab, with its current value and type. `--json` emits an object keyed by setting path with `{ value, type, description }`. Configured credential fields are masked as `********` in human output; in JSON their `value` is omitted and `redacted: true` is emitted. |
-| `omp config get <key>`         | Print the effective value of one key. Unknown keys exit non-zero. `--json` emits `{ key, value, type, description }`. This is an explicit single-key request, so credential values are returned unmasked.                                                                                         |
-| `omp config set <key> <value>` | Parse `<value>` against the key's schema type, write it to the global main YAML file, and print the value written. When another source still supplies the effective value, it says which instead (`--json`: `overriddenBy` is the env var name, or `project`, `overlay`, or `runtime`; `fallbackEnv` names a fallback env var used while the saved value is blank). |
-| `omp config reset <key>`       | Delete the global key, allowing another configured layer or the schema default to apply. Prints the resulting effective value, masking non-empty credentials as `********`; JSON omits a credential's `value` and emits `{ key, redacted: true }`. |
-| `omp config path`              | Print the active agent directory (honors `PI_CODING_AGENT_DIR`).                                                                                                                                                                                                                                  |
-| `omp config init-xdg`          | On Linux and macOS, create the `omp` directories under the effective XDG data, state, and cache homes. It does not move existing files or set the XDG environment variables. Other platforms exit non-zero.                                                                                       |
+| `agent-smith config list`              | Print every setting grouped by tab, with its current value and type. `--json` emits an object keyed by setting path with `{ value, type, description }`. Configured credential fields are masked as `********` in human output; in JSON their `value` is omitted and `redacted: true` is emitted. |
+| `agent-smith config get <key>`         | Print the effective value of one key. Unknown keys exit non-zero. `--json` emits `{ key, value, type, description }`. This is an explicit single-key request, so credential values are returned unmasked.                                                                                         |
+| `agent-smith config set <key> <value>` | Parse `<value>` against the key's schema type, write it to the global main YAML file, and print the value written. When another source still supplies the effective value, it says which instead (`--json`: `overriddenBy` is the env var name, or `project`, `overlay`, or `runtime`; `fallbackEnv` names a fallback env var used while the saved value is blank). |
+| `agent-smith config reset <key>`       | Delete the global key, allowing another configured layer or the schema default to apply. Prints the resulting effective value, masking non-empty credentials as `********`; JSON omits a credential's `value` and emits `{ key, redacted: true }`. |
+| `agent-smith config path`              | Print the active agent directory (honors `AGENT_SMITH_CODING_AGENT_DIR`).                                                                                                                                                                                                                                  |
+| `agent-smith config init-xdg`          | On Linux and macOS, create the `agent-smith` directories under the effective XDG data, state, and cache homes. It does not move existing files or set the XDG environment variables. Other platforms exit non-zero.                                                                                       |
 
-`omp config` with no subcommand lists settings. `--help` or `-h` displays command help. The `--json` flag is accepted by `list`, `get`, `set`, and `reset`.
+`agent-smith config` with no subcommand lists settings. `--help` or `-h` displays command help. The `--json` flag is accepted by `list`, `get`, `set`, and `reset`.
 
 ### Value parsing
 
-`omp config set` parses the value string according to the target key's schema type. The string is trimmed first.
+`agent-smith config set` parses the value string according to the target key's schema type. The string is trimmed first.
 
 | Type    | Accepted input                                      | Notes                                                             |
 | ------- | --------------------------------------------------- | ----------------------------------------------------------------- |
@@ -93,7 +93,7 @@ Setting-specific normalization and validation still apply after parsing. For exa
 
 ### Where writes go
 
-`omp config set`, `omp config reset`, `/settings`, and persistent runtime settings changes write the global main YAML file under the active agent directory. Runtime-only overrides are not saved. Settings commands do not write arbitrary keys to `<cwd>/.omp/config.yml`. Model-role assignment or clearing with `modelRoleStorage: project` updates only the affected roles there; missing project roles fall back to global roles. To create another project-local override, edit the project file directly (see [Project-local config](#project-local-config)).
+`agent-smith config set`, `agent-smith config reset`, `/settings`, and persistent runtime settings changes write the global main YAML file under the active agent directory. Runtime-only overrides are not saved. Settings commands do not write arbitrary keys to `<cwd>/.agent-smith/config.yml`. Model-role assignment or clearing with `modelRoleStorage: project` updates only the affected roles there; missing project roles fall back to global roles. To create another project-local override, edit the project file directly (see [Project-local config](#project-local-config)).
 
 Saves are debounced and re-read the file under a lock. Disjoint external edits are preserved. If an external writer changed the same global setting or model role after a local change was staged, the stale local change is skipped with a warning rather than overwriting the newer file value.
 
@@ -115,10 +115,10 @@ built-in defaults  <-  global config  <-  project config  <-  CLI overlays  <-  
 
 From highest to lowest:
 
-1. **Setting env var** — an environment variable declared on the setting's definition (for example `PI_PY` for `eval.py`, `OMP_AUTH_BROKER_URL` for `auth.broker.url`). Parsed by the setting's type unless it declares a custom parser; unparseable text (such as `PI_EDIT_VARIANT=auto`) counts as unset. Booleans follow the `parseFlag` convention: empty counts as unset, `1`/`y`/`true`/`yes`/`on` (all-lowercase or all-uppercase) mean true, and any other value means false. A few are declared as fallbacks instead (`SEARXNG_*`, `MNEMOPI_EMBEDDING_MODEL`): they only replace the built-in default, so any configured layer wins over them — except a configured `null`, which counts as unset. `SEARXNG_ENDPOINT`, `SEARXNG_TOKEN`, and `MNEMOPI_EMBEDDING_MODEL` also apply when the setting is a blank string.
+1. **Setting env var** — an environment variable declared on the setting's definition (for example `PI_PY` for `eval.py`, `AGENT_SMITH_AUTH_BROKER_URL` for `auth.broker.url`). Parsed by the setting's type unless it declares a custom parser; unparseable text (such as `PI_EDIT_VARIANT=auto`) counts as unset. Booleans follow the `parseFlag` convention: empty counts as unset, `1`/`y`/`true`/`yes`/`on` (all-lowercase or all-uppercase) mean true, and any other value means false. A few are declared as fallbacks instead (`SEARXNG_*`, `AGENT_SMITH_MEMORY_EMBEDDING_MODEL`): they only replace the built-in default, so any configured layer wins over them — except a configured `null`, which counts as unset. `SEARXNG_ENDPOINT`, `SEARXNG_TOKEN`, and `AGENT_SMITH_MEMORY_EMBEDDING_MODEL` also apply when the setting is a blank string.
 2. **Runtime overrides** — settings applied in memory for the current process, including `--smol`, `--slow`, `--plan`, `--approval-mode`, `--auto-approve`/`--yolo`, `--hide-thinking`, `--advisor`, `--external-thinking`, and protocol-mode defaults. Never persisted. Other one-shot options such as `--model`, `--thinking`, `--service-tier`, `--no-lsp`, `--no-pty`, and `--api-key` affect session/model/transport options rather than all being registry settings. Protocol-mode defaults (RPC/ACP) hold only while nothing else configures the setting: a settings write or reset of it, a `config.yml` or project edit picked up by a reload, or an ACP session's own project config replaces them.
 3. **CLI config overlays** — each `--config <file>`; later overlay files override earlier ones.
-4. **Project settings** — `<cwd>/.omp/settings.json` then `<cwd>/.omp/config.yml` (and contributions from other discovery providers at project level).
+4. **Project settings** — `<cwd>/.agent-smith/settings.json` then `<cwd>/.agent-smith/config.yml` (and contributions from other discovery providers at project level).
 5. **Global settings** — the active agent/profile directory's `config.yml` (or existing `config.yaml`).
 6. **Built-in defaults** — from the setting definition.
 
@@ -126,32 +126,32 @@ A key that is unset at every layer resolves to its default at read time.
 
 ### Environment overrides
 
-Environment variables are never written back to `config.yml`. Variables declared on a setting definition form the top layer described above; others are read directly by the feature that owns the value (`PI_NO_PTY`) or applied as runtime overrides (`PI_SMOL_MODEL` sets the `smol` model role for the process). Relevant setting overrides and configuration selectors:
+Environment variables are never written back to `config.yml`. Variables declared on a setting definition form the top layer described above; others are read directly by the feature that owns the value (`PI_NO_PTY`) or applied as runtime overrides (`AGENT_SMITH_SMOL_MODEL` sets the `smol` model role for the process). Relevant setting overrides and configuration selectors:
 
 | Env var                 | Overrides setting           | Notes                                                                                             |
 | ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------------- |
-| `PI_SMOL_MODEL`         | `modelRoles.smol`           | Also exposed as `--smol`.                                                                         |
-| `PI_SLOW_MODEL`         | `modelRoles.slow`           | Also exposed as `--slow`.                                                                         |
-| `PI_PLAN_MODEL`         | `modelRoles.plan`           | Also exposed as `--plan`.                                                                         |
+| `AGENT_SMITH_SMOL_MODEL`         | `modelRoles.smol`           | Also exposed as `--smol`.                                                                         |
+| `AGENT_SMITH_SLOW_MODEL`         | `modelRoles.slow`           | Also exposed as `--slow`.                                                                         |
+| `AGENT_SMITH_PLAN_MODEL`         | `modelRoles.plan`           | Also exposed as `--plan`.                                                                         |
 | `PI_NO_PTY=1`           | (disables PTY bash)         | Equivalent to `--no-pty` for the process.                                                         |
 | `PI_PY`                 | `eval.py`                   | `PI_PY=0` disables the Python eval backend.                                                       |
 | `PI_JS`                 | `eval.js`                   | `PI_JS=0` disables the JavaScript eval backend.                                                   |
 | `PI_TINY_DEVICE`        | `providers.tinyModelDevice` | ONNX execution provider or `mlx` backend for local tiny models.                                   |
 | `PI_TINY_DTYPE`         | `providers.tinyModelDtype`  | ONNX precision for local tiny models.                                                             |
-| `OMP_AUTH_BROKER_URL`   | `auth.broker.url`           | Env value takes precedence over config.                                                           |
-| `OMP_AUTH_BROKER_TOKEN` | `auth.broker.token`         | Env value takes precedence over config.                                                           |
-| `PI_CODING_AGENT_DIR`   | (relocates default-profile agent dir) | Named profiles ignore this override. |
-| `OMP_PROFILE` / `PI_PROFILE` | (selects profile) | `OMP_PROFILE` wins when present; `--profile` wins over env. |
+| `AGENT_SMITH_AUTH_BROKER_URL`   | `auth.broker.url`           | Env value takes precedence over config.                                                           |
+| `AGENT_SMITH_AUTH_BROKER_TOKEN` | `auth.broker.token`         | Env value takes precedence over config.                                                           |
+| `AGENT_SMITH_CODING_AGENT_DIR`   | (relocates default-profile agent dir) | Named profiles ignore this override. |
+| `AGENT_SMITH_PROFILE` / `AGENT_SMITH_PROFILE` | (selects profile) | `AGENT_SMITH_PROFILE` wins when present; `--profile` wins over env. |
 | `PI_EDIT_VARIANT` | `edit.mode` | `apply_patch`, `hashline`, `patch`, `replace`, or `sloppy`; `auto` is unset. |
 | `PI_EDIT_FUZZY` | `edit.fuzzyMatch` | Exact lowercase `1`/`true` enables; `0`/`false` disables; other text defers to config. |
 | `PI_EDIT_FUZZY_THRESHOLD` | `edit.fuzzyThreshold` | Parsed floating-point threshold from 0–1; invalid/out-of-range values are unset. |
 | `PI_INTENT_TRACING` | `tools.intentTracing` | Uses the boolean env parser. |
-| `PI_AUTO_QA` | `dev.autoqa` | Enables/disables automated tool issue reporting, subject to saved consent. |
+| `AGENT_SMITH_AUTO_QA` | `dev.autoqa` | Enables/disables automated tool issue reporting, subject to saved consent. |
 | `PI_NO_THINKING_LOOP_GUARD` | `model.loopGuard.enabled` | Only `1` disables; other values do not override the setting. |
 | `SEARXNG_ENDPOINT` / `SEARXNG_TOKEN` | `searxng.endpoint` / `searxng.token` | Fallbacks when the setting is absent, null, or blank. |
 | `SEARXNG_BASIC_USERNAME` / `SEARXNG_BASIC_PASSWORD` | `searxng.basicUsername` / `searxng.basicPassword` | Fallbacks only when absent or null; configured empty strings remain valid credentials. |
-| `MNEMOPI_EMBEDDING_MODEL` | `mnemopi.embeddingModel` | Fallback when absent, null, or blank. |
-| `PI_CONFIG_FILES`       | CLI config overlays         | Platform path-list (`:` on Unix, `;` on Windows); files load in order before `--config` overlays. |
+| `AGENT_SMITH_MEMORY_EMBEDDING_MODEL` | `mnemopi.embeddingModel` | Fallback when absent, null, or blank. |
+| `AGENT_SMITH_CONFIG_FILES`       | CLI config overlays         | Platform path-list (`:` on Unix, `;` on Windows); files load in order before `--config` overlays. |
 
 Provider API keys are resolved separately (stored auth, OAuth, `models.yml`, environment, and `.env` files); see [Providers](./providers.md) and the full [Environment variables](./environment-variables.md) reference.
 
@@ -197,7 +197,7 @@ bash:
       approval: allow
 ```
 
-With this configuration, `cmp tmp/result.json artifacts/result.json && rm -f tmp/result.json` can run without a prompt. OMP resolves the ordered rules independently for each original segment: `rm` is explicitly allowed, while the unmatched `cmp` segment inherits the normal standalone bash policy. When any segment is unmatched, the command retains the `exec` tier with no explicit policy, so the generic resolver applies `tools.approval.bash` and then the active approval mode. An unmatched segment therefore prompts only if that tool-wide policy or mode requires it.
+With this configuration, `cmp tmp/result.json artifacts/result.json && rm -f tmp/result.json` can run without a prompt. Agent Smith resolves the ordered rules independently for each original segment: `rm` is explicitly allowed, while the unmatched `cmp` segment inherits the normal standalone bash policy. When any segment is unmatched, the command retains the `exec` tier with no explicit policy, so the generic resolver applies `tools.approval.bash` and then the active approval mode. An unmatched segment therefore prompts only if that tool-wide policy or mode requires it.
 
 Explicit restrictions are combined conservatively across the chain: a resolved `deny` wins, otherwise a resolved `prompt` wins. A `deny` or `prompt` rule that matches the complete chain but no individual segment remains a whole-chain restriction (for example, `cmp * && rm *`). All matching whole-chain restrictions are considered: a later whole-chain `deny` overrides an earlier whole-chain `prompt`. Otherwise, segment rules retain first-match ordering: an earlier `git status` allow is not overridden by a later `git *` deny when evaluating `git status && git status`.
 
@@ -229,7 +229,7 @@ The named replacement tool must be available in the current session or the inter
 ### Worked example: global vs. project
 
 ```yaml
-# ~/.omp/agent/config.yml
+# ~/.agent-smith/agent/config.yml
 tools:
   approvalMode: write
   approval:
@@ -240,7 +240,7 @@ disabledProviders:
   - openai
   - google
 
-# <repo>/.omp/config.yml
+# <repo>/.agent-smith/config.yml
 tools:
   approval:
     bash: allow
@@ -264,10 +264,10 @@ Array replacement is the most common surprise: the project's `disabledProviders`
 
 ## Project-local config
 
-Create `<repo>/.omp/config.yml` when a repository needs its own settings:
+Create `<repo>/.agent-smith/config.yml` when a repository needs its own settings:
 
 ```yaml
-# <repo>/.omp/config.yml
+# <repo>/.agent-smith/config.yml
 modelRoles:
   default: anthropic/claude-sonnet-4-5
   smol: openai/gpt-4.1-mini
@@ -293,13 +293,13 @@ Keep secrets out of committed project config unless your repository policy allow
 Use `--config` for a temporary layer that should not persist:
 
 ```bash
-omp --config ./local/ci-settings.yml "check this failure"
-omp --config ./base.yml --config ./experiment.yml "try this model"
+agent-smith --config ./local/ci-settings.yml "check this failure"
+agent-smith --config ./base.yml --config ./experiment.yml "try this model"
 ```
 
 `--config` is accepted by the default launch command, `acp`, and `models`.
 
-Wrappers may instead set `PI_CONFIG_FILES` to a platform-delimited path list (`:` on Unix, `;` on Windows). Environment overlays load in listed order before explicit `--config` overlays.
+Wrappers may instead set `AGENT_SMITH_CONFIG_FILES` to a platform-delimited path list (`:` on Unix, `;` on Windows). Environment overlays load in listed order before explicit `--config` overlays.
 
 Overlay paths are resolved relative to the process working directory (and `~` is expanded). Each overlay must parse as a YAML mapping; a missing file, invalid YAML, or a top-level array/scalar is a hard error — it does **not** silently fall back to lower-precedence settings.
 
@@ -337,9 +337,9 @@ Only string values are kept; malformed scoped entries are ignored. Path scoping 
 
 ## Provider and source disabling
 
-`enabledProviders` opts foreign user-level configuration sources into discovery. Its default is empty, so user roots from Cursor, Codex, Claude, Claude marketplace plugins, Gemini, OpenCode, Windsurf, and GitHub are normally excluded until their provider id is listed (or `*`/`all` is listed). Enabling `claude` also enables `claude-plugins`; an explicit `CLAUDE_CONFIG_DIR` opts Claude's user root in without a list entry. Explicitly selected discovery roots can also opt in. `disabledProviders` still wins.
+`enabledProviders` opts foreign **user and project** configuration sources into discovery. Its default is empty. The foreign IDs are `agents`, `claude-md`, `cline`, `vscode`, `mcp-json`, `cursor`, `codex`, `claude`, `claude-plugins`, `gemini`, `opencode`, `windsurf`, and `github`. List a selected ID explicitly; `*`/`all` enables all foreign sources. Enabling `claude` also enables `claude-plugins`. `CLAUDE_CONFIG_DIR` alone is not an opt-in. Explicit API provider selection can opt a source in; `disabledProviders` still wins.
 
-Project roots remain enabled. Native OMP and `.agents` roots—including native marketplace plugins—are not foreign and do not require an entry.
+Native `.agent-smith` configuration and app-installed marketplace plugins are enabled without a foreign-source opt-in. Portable root `mcp.json` / `.mcp.json` and `.agents` sources require their respective opt-in. Reading disabled items for a UI listing does not grant access to foreign roots.
 
 `disabledProviders` is a single shared id namespace that gates two different subsystems, before any credential check:
 
@@ -353,23 +353,23 @@ Most provider-control use cases list model provider ids. Disabling the `claude` 
 Because arrays replace rather than append, a project that sets `disabledProviders` must list the complete desired set:
 
 ```yaml
-# ~/.omp/agent/config.yml
+# ~/.agent-smith/agent/config.yml
 disabledProviders:
   - anthropic
   - openai
 
-# <repo>/.omp/config.yml — inside this repo ONLY groq is disabled
+# <repo>/.agent-smith/config.yml — inside this repo ONLY groq is disabled
 disabledProviders:
   - groq
 ```
 
 The default is an empty array (nothing disabled). For the two subsystems' provider ids and ordering, see [Providers](./providers.md) and [Context files](./context-files.md).
 
-Native project `modelRoles` are also read directly from `.omp/config.yml`; disabling the `native` discovery provider does not suppress that model-role layer.
+Native project `modelRoles` are also read directly from `.agent-smith/config.yml`; disabling the `native` discovery provider does not suppress that model-role layer.
 
 ## Settings catalog
 
-The catalog below highlights common settings; it is not the complete schema. `omp config list` is the authoritative reference for every key, current value, type, and description. Defaults and enum values shown here come from the schema. Settings that accept an env or flag override are noted; those overrides are process-local and not persisted.
+The catalog below highlights common settings; it is not the complete schema. `agent-smith config list` is the authoritative reference for every key, current value, type, and description. Defaults and enum values shown here come from the schema. Settings that accept an env or flag override are noted; those overrides are process-local and not persisted.
 
 ### Models
 
@@ -428,11 +428,11 @@ enabledModels:
 
 Built-in chat roles are `default`, `smol`, `slow`, `vision`, `plan`, `commit`, `tiny`, `memory`, `task`, and `advisor`. The `tiny` and `memory` roles accept both `tiny` catalog models and ordinary chat models. Built-in model-kind roles are `image`, `web`, `speech`, `dictation`, and `judge`; they select image, search/grounded-chat, TTS, STT, and judgment runners respectively. `judge` also accepts tiny and chat models, which is why aliases such as `@tiny` are valid fallbacks. Catalog kinds are `chat`, `tiny`, `image`, `tts`, `stt`, `search`, and `judge`; a custom model with no `kind` remains a chat model.
 
-Open `/model` and enter the **Roles** view to assign roles and edit their fallback rows. Chat roles and model-kind roles appear in separate capability sections, and the picker filters assignments to models accepted by the selected role. List the same catalog directly with `omp models --kind chat`, `omp models --kind tiny`, `omp models --kind image`, `omp models --kind tts`, `omp models --kind stt`, `omp models --kind search`, or `omp models --kind judge`; use `--kind all` for everything.
+Open `/model` and enter the **Roles** view to assign roles and edit their fallback rows. Chat roles and model-kind roles appear in separate capability sections, and the picker filters assignments to models accepted by the selected role. List the same catalog directly with `agent-smith models --kind chat`, `agent-smith models --kind tiny`, `agent-smith models --kind image`, `agent-smith models --kind tts`, `agent-smith models --kind stt`, `agent-smith models --kind search`, or `agent-smith models --kind judge`; use `--kind all` for everything.
 
 For a role, `modelRoles.<role>` is the primary and `retry.fallbackChains.<role>` is the fallback list. For model-kind roles, an unset chain uses that role's built-in priority list; `[]` explicitly means **no fallbacks**. The `retry.fallbackChains.default` chain is for chat-role/session fallback and never replaces a model-kind role's own chain. Explicit search entries such as `web/parallel`, `web/perplexity`, `web/exa`, and `web/firecrawl` are attempted as configured candidates, including their supported anonymous modes; missing required credentials still produce an availability error for that explicit entry.
 
-For one-shot searches, `omp search`, `omp q`, and `omp web-search` accept a catalog selector through `--model`, for example `omp web-search --model web/duckduckgo "current Bun release"`. The in-session `web_search` tool has no per-call model override: it follows `modelRoles.web` and `retry.fallbackChains.web`.
+For one-shot searches, `agent-smith search`, `agent-smith q`, and `agent-smith web-search` accept a catalog selector through `--model`, for example `agent-smith web-search --model web/duckduckgo "current Bun release"`. The in-session `web_search` tool has no per-call model override: it follows `modelRoles.web` and `retry.fallbackChains.web`.
 
 Image selection likewise uses full catalog model selectors, not provider names: set `modelRoles.image`, its fallback chain, or the `generate_image` request's optional `model`. OpenRouter image models run through OpenRouter's native images API.
 
@@ -441,13 +441,13 @@ Existing configs are migrated automatically when loaded. Retired backend selecto
 | Key                    | Type    | Default                     | Notes                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ---------------------- | ------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `modelRoles`           | record  | `{}`                        | Map of role name to primary selector or ordered primary candidates. Custom chat roles can be introduced through assignments, `modelTags`, or `cycleOrder`. `--smol`/`--slow`/`--plan` and their `PI_*_MODEL` vars override those roles for a run; `--model` selects the active chat model.                                                                                                                                                                                       |
-| `modelRoleStorage`     | enum    | `global`                    | `global` saves model-selector role assignments in the active global/profile config; `project` saves only those role assignments in `<cwd>/.omp/config.yml`. Missing project roles fall back to global roles.                                                                                                                                                                                                     |
+| `modelRoleStorage`     | enum    | `global`                    | `global` saves model-selector role assignments in the active global/profile config; `project` saves only those role assignments in `<cwd>/.agent-smith/config.yml`. Missing project roles fall back to global roles.                                                                                                                                                                                                     |
 | `modelPresets`         | record  | `{}`                        | Named model presets, each `{ modelRoles, defaultThinkingLevel }`. Written by `/modelpreset save` and the `/models` Roles view (`s`); applied by `/modelpreset switch`. Saves write only the named entry to the global config; project-defined presets are listed and applied but never copied globally. See [Model presets](./models.md#model-presets). |
 | `modelTags`            | record  | `{}`                        | Custom role/tag metadata; can introduce additional chat roles.                                                                                                                                                                                                                                                                                                                                                   |
 | `modelProviderOrder`   | array   | `[]`                        | Preferred provider order when a model id is ambiguous.                                                                                                                                                                                                                                                                                                                                                           |
 | `cycleOrder`           | array   | `["smol","default","slow"]` | Chat roles cycled by the model switcher.                                                                                                                                                                                                                                                                                                                                                                         |
 | `enabledModels`        | array   | `[]`                        | Allow-list of models; supports [path-scoped entries](#path-scoped-arrays). Empty means all available models.                                                                                                                                                                                                                                                                                                     |
-| `enabledProviders`     | array   | `[]`                        | Foreign user-level discovery sources to load; supports path-scoped entries. See [above](#provider-and-source-disabling).                                                                                                                                                                                                                                                                                          |
+| `enabledProviders` | array | `[]` | Foreign user/project discovery sources to load; supports path-scoped entries. See [above](#provider-and-source-disabling). |
 | `disabledProviders`    | array   | `[]`                        | Disabled model/discovery providers; supports [path-scoped entries](#path-scoped-arrays). See [above](#provider-and-source-disabling).                                                                                                                                                                                                                                                                             |
 | `includeModelInPrompt` | boolean | `true`                      | Include the active model name in the system prompt.                                                                                                                                                                                                                                                                                                                                                              |
 
@@ -498,7 +498,7 @@ thinkingBudgets:
 
 ### Sampling
 
-For the numeric sampling settings, a negative value (normally `-1`) means "use the provider/model default" — `omp` does not send that parameter.
+For the numeric sampling settings, a negative value (normally `-1`) means "use the provider/model default" — `agent-smith` does not send that parameter.
 
 | Key                 | Type   | Default   | Notes                                                                                                                                                                                                                                                                          |
 | ------------------- | ------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -598,7 +598,7 @@ tools:
 | ------------------------------ | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `tools.format`                 | enum    | `auto`  | Tool wire format: `auto`, `native`, `glm`, `hermes`, `kimi`, `xml`, `anthropic`, `deepseek`, `harmony`, `qwen3`, `gemini`, `gemma`, or `minimax`. `native` always uses provider-native tool calls. `auto` also uses native calls unless the selected model explicitly has `supportsTools: false`; then it selects the model-family owned dialect, falling back to GLM when no specific family dialect is known. Other values force that owned in-band dialect. `xml` is the [generic XML format](./toolconv/xml.md); `minimax` is the [MiniMax format](./toolconv/minimax.md). See [GLM](./toolconv/glm-4.5.md), [Qwen3/Hermes](./toolconv/qwen3.md), [Kimi](./toolconv/kimi-k2.md), [Anthropic](./toolconv/anthropic.md), [DeepSeek](./toolconv/deepseek.md), [Harmony](./toolconv/harmony.md), [Gemini](./toolconv/gemini.md), and [Gemma](./toolconv/gemma.md). |
 | `tools.approvalMode`           | enum    | `yolo`  | `always-ask` (auto-approve read-only), `write` (auto-approve read + workspace-write), `yolo` (auto-approve all tiers). `--approval-mode` and `--auto-approve`/`--yolo` override per run.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `tools.approval`               | record  | `{}`    | Per-tool policy keyed by tool name; each value is `allow`, `deny`, or `prompt`. e.g. `omp config set tools.approval '{"bash":"prompt"}'`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `tools.approval`               | record  | `{}`    | Per-tool policy keyed by tool name; each value is `allow`, `deny`, or `prompt`. e.g. `agent-smith config set tools.approval '{"bash":"prompt"}'`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `tools.maxTimeout`             | number  | `0`     | Maximum timeout the agent may request, in seconds; `0` = no settings cap.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `tools.intentTracing`          | boolean | `true`  | Ask the agent to describe each tool call's intent. `PI_INTENT_TRACING` overrides it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `tools.outputMaxColumns`       | number  | `768`   | Per-line byte cap for streaming output; `0` disables.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -681,7 +681,7 @@ lsp:
 | `python.interpreter`              | string  | `""`      | Path to a Python interpreter; empty = auto-detect.                                                                                                          |
 | `lsp.enabled`                     | boolean | `true`    | Language-server integration. `--no-lsp` disables for the run.                                                                                               |
 | `lsp.lazy`                        | boolean | `true`    | Start servers on demand.                                                                                                                                    |
-| `lsp.shared`                      | boolean | `true`    | Share one language server per project across local `omp` processes through the daemon broker; falls back to private servers when the broker is unavailable. |
+| `lsp.shared`                      | boolean | `true`    | Share one language server per project across local `agent-smith` processes through the daemon broker; falls back to private servers when the broker is unavailable. |
 | `lsp.diagnosticsOnWrite`          | boolean | `true`    | Run diagnostics after a write.                                                                                                                              |
 | `lsp.diagnosticsOnEdit`           | boolean | `false`   | Run diagnostics after an edit.                                                                                                                              |
 | `lsp.formatOnWrite`               | boolean | `false`   | Format files on write.                                                                                                                                      |
@@ -776,7 +776,7 @@ memory:
 
 A positive `compaction.thresholdTokens` wins over `thresholdPercent` and is clamped below the context window. Otherwise, a positive percentage is clamped to 1–99%; non-positive percentages use the reserve-based threshold.
 
-`compaction` has additional tuning keys (idle compaction, supersede/drop heuristics) visible in `omp config list`. See [Compaction](./compaction.md) for the full strategy reference.
+`compaction` has additional tuning keys (idle compaction, supersede/drop heuristics) visible in `agent-smith config list`. See [Compaction](./compaction.md) for the full strategy reference.
 
 Per-agent compaction triggers for task/eval subagents. This keeps the main session at 40,000 tokens while `scout` compacts at 80% of its window and `task` at 90,000 tokens:
 
@@ -915,7 +915,7 @@ searxng:
 | `providers.webSearchTimeoutSeconds` | number  | `60`      | Per-candidate web-search transport timeout. Values above `300` are capped at five minutes. This is not a whole-chain deadline; the `web` role advances to its next candidate after a timeout.                                                                                                                                                                                                                                                                                                         |
 | `providers.fetch`                   | enum    | `auto`    | `auto`, `native`, `trafilatura`, `lynx`, `parallel`, `firecrawl`, `jina`.                                                                                                                                                                                                                                                                                                                                                              |
 | `providers.tinyModelDevice`         | enum    | `default` | ONNX execution provider, or `mlx` (Apple silicon, via mlx-lm), for local tiny models. Overridden by `PI_TINY_DEVICE`.                                                                                                                                                                                                                                                                                                                                                         |
-| `providers.maxInFlightRequests`     | record  | `{}`      | Positive per-provider concurrency limits for LLM HTTP requests, shared across local `omp` processes using the same config root. Omitted providers are unlimited. `omp config set` rejects non-positive or non-numeric values.                                                                                                                                                                                                          |
+| `providers.maxInFlightRequests`     | record  | `{}`      | Positive per-provider concurrency limits for LLM HTTP requests, shared across local `agent-smith` processes using the same config root. Omitted providers are unlimited. `agent-smith config set` rejects non-positive or non-numeric values.                                                                                                                                                                                                          |
 | `providers.tinyModelDtype`          | enum    | `default` | ONNX precision for local tiny models. Overridden by `PI_TINY_DTYPE`.                                                                                                                                                                                                                                                                                                                                                                   |
 | `tts.localVoice`                    | enum    | `af_heart` | Voice used by the local Kokoro TTS runner. Available local voices remain configurable independently of `modelRoles.speech`.                                                                                                                                                                                                                                                                                                           |
 | `speech.voice`                      | enum    | `af_heart` | Kokoro voice used when assistant-output vocalization is enabled.                                                                                                                                                                                                                                                                                                                                                                     |
@@ -937,14 +937,14 @@ searxng:
 | `searxng.endpoint`                  | string  | _(unset)_ | SearXNG instance URL.                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `searxng.token`                     | string  | _(unset)_ | SearXNG token; also `searxng.basicUsername`/`searxng.basicPassword`/`searxng.categories`/`searxng.language`/`searxng.engines` (comma-separated engine names or bang shortcuts, e.g. `ddg, br, startpage`, sent as the API's `engines=` parameter)/`searxng.safesearch`.                                                                                                                                                                                                                                                                                                 |
 | `auth.broker.url`                   | string  | _(unset)_ | Auth-broker URL. The actual credential connection uses env then the main global config, not project/config-overlay values.                                                                                                                                                                                                                                                                                                                                                                                  |
-| `auth.broker.token`                 | string  | _(unset)_ | Auth-broker token. `OMP_AUTH_BROKER_TOKEN` wins over the main global config; the broker token file is a fallback. Project/config-overlay values do not redirect credentials.                                                                                                                                                                                                                                                                                                                                                                              |
+| `auth.broker.token`                 | string  | _(unset)_ | Auth-broker token. `AGENT_SMITH_AUTH_BROKER_TOKEN` wins over the main global config; the broker token file is a fallback. Project/config-overlay values do not redirect credentials.                                                                                                                                                                                                                                                                                                                                                                              |
 | `secrets.enabled`                   | boolean | `false`   | Enable configured secret obfuscation and built-in credential-shaped token redaction before provider requests. See [Secret obfuscation](./secrets.md).                                                                                                                                                                                                                                                                                  |
 
 Provider credentials and custom model definitions are configured separately — see [Providers](./providers.md) and [Models](./models.md).
 
 ### Other groups
 
-Every schema path not individually tabulated in this catalog is explicitly deferred to `omp config list`. Additional groups include:
+Every schema path not individually tabulated in this catalog is explicitly deferred to `agent-smith config list`. Additional groups include:
 
 - Agent behavior and safety: `ask.*`, `dev.*`, `eval.*`, `features.*`, `goal.*`, `loop.*`, `model.loopGuard.*`, `model.toolCallLoopGuard.*`, `prewalk.*`, `recap.*`, `sharpshooter.*`, `task.*`, `tools.*`, and `vault.*`.
 - Execution and content: `commit.*`, `completion.*`, `edit.*`, `error.*`, `extensionHandlers.*`, `generate_image.*`, `git.*`, `images.*`, `live.*`, `paste.*`, `power.*`, `read.*`, `shellMinimizer.*`, `speech.*`, `terminal.*`, and `title.*`.
@@ -956,7 +956,7 @@ These settings follow the same schema-defined type and default rules shown above
 
 ## Legacy migration
 
-`omp` migrates older config shapes automatically. None of these require action; they are listed so you know what changes you may see in `config.yml`.
+`agent-smith` migrates older config shapes automatically. None of these require action; they are listed so you know what changes you may see in `config.yml`.
 
 ### Startup migration to `config.yml`
 
@@ -1007,10 +1007,10 @@ Selected migrations applied whenever raw settings are loaded (global, project, o
 
 ### A project setting is not taking effect
 
-- Start `omp` from the directory that contains `.omp/config.yml`. Settings discovery only checks the current working directory's `.omp/`, not ancestor directories.
-- Ensure `.omp/` is non-empty; empty config directories are ignored.
+- Start `agent-smith` from the directory that contains `.agent-smith/config.yml`. Settings discovery only checks the current working directory's `.agent-smith/`, not ancestor directories.
+- Ensure `.agent-smith/` is non-empty; empty config directories are ignored.
 - Confirm the file is valid YAML and its top level is a mapping.
-- Run `omp config get <key>` from that directory to see the effective value.
+- Run `agent-smith config get <key>` from that directory to see the effective value.
 - Remember that `--config` overlays and runtime flags override project config.
 
 ### A global array disappeared in a project
@@ -1024,9 +1024,9 @@ Arrays replace; they do not append. If a project sets `disabledProviders`, `enab
 - Credentials can still come from environment variables, `.env`, OAuth, stored auth, or `models.yml`; disabling a provider blocks selection regardless, but verify you edited the right layer. See [Providers](./providers.md).
 - Check for a warning that a live reload retained the last good layer. Provider-source switches affect the next discovery pass; an already-open catalog/picker may need refreshing.
 
-### `omp config set` changed the wrong file
+### `agent-smith config set` changed the wrong file
 
-`omp config set` and `omp config reset` write the main global YAML file (`config.yml`, or the existing compatible `config.yaml`) under the active agent/profile directory. Run `omp config path` to print that directory and check `--profile`, `OMP_PROFILE`, and `PI_CODING_AGENT_DIR`. For project-local keys, edit `<repo>/.omp/config.yml` directly.
+`agent-smith config set` and `agent-smith config reset` write the main global YAML file (`config.yml`, or the existing compatible `config.yaml`) under the active agent/profile directory. Run `agent-smith config path` to print that directory and check `--profile`, `AGENT_SMITH_PROFILE`, and `AGENT_SMITH_CODING_AGENT_DIR`. For project-local keys, edit `<repo>/.agent-smith/config.yml` directly.
 
 ### A `--config` overlay fails at startup
 
@@ -1036,6 +1036,6 @@ Arrays replace; they do not append. If a project sets `disabledProviders`, `enab
 
 Some settings (model roles, eval backends, tiny-model device/precision, auth broker, PTY) are overridable by env vars or CLI flags for per-machine convenience, and those take precedence over `config.yml`. Unset the variable or drop the flag to let the persisted value win. See [Environment overrides](#environment-overrides) and [Environment variables](./environment-variables.md).
 
-### `omp config set <key>` says "Unknown setting"
+### `agent-smith config set <key>` says "Unknown setting"
 
-Keys must match a schema path exactly, with no shorthand. Use `theme.dark`, not `theme`. Run `omp config list` to see every valid key.
+Keys must match a schema path exactly, with no shorthand. Use `theme.dark`, not `theme`. Run `agent-smith config list` to see every valid key.

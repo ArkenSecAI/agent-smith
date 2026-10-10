@@ -132,7 +132,7 @@ fn remote_start_is_unsupported_without_creating_storage() {
 		start_blocking(&core, CancelToken::default()).unwrap(),
 		StartOutcome::Unsupported
 	));
-	assert!(!home.join(".omp").exists());
+	assert!(!home.join(".agent-smith").exists());
 	fs::remove_dir_all(home).unwrap();
 }
 
@@ -146,7 +146,7 @@ fn wsl_env_is_unsupported_without_creating_storage() {
 		start_blocking(&core, CancelToken::default()).unwrap(),
 		StartOutcome::Unsupported
 	));
-	assert!(!home.join(".omp").exists());
+	assert!(!home.join(".agent-smith").exists());
 	fs::remove_dir_all(home).unwrap();
 }
 
@@ -159,6 +159,32 @@ fn prepare_failure_releases_lease_and_removes_private_artifacts() {
 	let succeeding = core(home.clone(), environment(&[]));
 	let mut registration = active(start_blocking(&succeeding, CancelToken::default()).unwrap());
 	cleanup_registration(&mut registration, CancelToken::default()).unwrap();
+	fs::remove_dir_all(home).unwrap();
+}
+
+#[test]
+fn registration_cannot_consume_another_applications_recovery_state() {
+	let _serial = TEST_SERIAL.blocking_lock();
+	let home = temp_home("foreign-state");
+	let foreign = home
+		.join(".omp/oauth/native")
+		.join(platform_name())
+		.join("omp-test");
+	fs::create_dir_all(&foreign).unwrap();
+	let marker = foreign.join("journal.json");
+	fs::write(&marker, b"foreign recovery must not be parsed or changed").unwrap();
+	let core = core(home.clone(), environment(&[]));
+
+	let mut registration = active(start_blocking(&core, CancelToken::default()).unwrap());
+	assert!(
+		registration
+			.context
+			.directory
+			.starts_with(home.join(".agent-smith"))
+	);
+	assert_eq!(fs::read(&marker).unwrap(), b"foreign recovery must not be parsed or changed");
+	cleanup_registration(&mut registration, CancelToken::default()).unwrap();
+	assert_eq!(fs::read(&marker).unwrap(), b"foreign recovery must not be parsed or changed");
 	fs::remove_dir_all(home).unwrap();
 }
 
@@ -265,7 +291,7 @@ async fn cancellation_prevents_start_and_wait_claims_once() {
 	let mut cancel = CancelToken::default();
 	cancel.emplace_abort_token().abort(AbortReason::User);
 	assert!(start_blocking(&core, cancel).is_err());
-	assert!(!home.join(".omp").exists());
+	assert!(!home.join(".agent-smith").exists());
 
 	let callback = home.join("callback.url");
 	fs::write(&callback, b"omp-test://callback?code=one").unwrap();

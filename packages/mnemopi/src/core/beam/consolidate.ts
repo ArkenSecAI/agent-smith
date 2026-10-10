@@ -55,11 +55,11 @@ function envInt(name: string, defaultValue: number): number {
 	return Number.isFinite(parsed) ? parsed : defaultValue;
 }
 
-const SLEEP_BATCH_SIZE = envInt("MNEMOPI_SLEEP_BATCH", 5000);
-const TIER2_DAYS = envInt("MNEMOPI_TIER2_DAYS", 30);
-const TIER3_DAYS = envInt("MNEMOPI_TIER3_DAYS", 180);
-const DEGRADE_BATCH_SIZE = envInt("MNEMOPI_DEGRADE_BATCH", 100);
-const TIER3_MAX_CHARS = envInt("MNEMOPI_TIER3_MAX_CHARS", 300);
+const SLEEP_BATCH_SIZE = envInt("AGENT_SMITH_MEMORY_SLEEP_BATCH", 5000);
+const TIER2_DAYS = envInt("AGENT_SMITH_MEMORY_TIER2_DAYS", 30);
+const TIER3_DAYS = envInt("AGENT_SMITH_MEMORY_TIER3_DAYS", 180);
+const DEGRADE_BATCH_SIZE = envInt("AGENT_SMITH_MEMORY_DEGRADE_BATCH", 100);
+const TIER3_MAX_CHARS = envInt("AGENT_SMITH_MEMORY_TIER3_MAX_CHARS", 300);
 const DEFAULT_MAX_EPISODE_CHARS = 100_000;
 const SLEEP_SUMMARY_SEPARATOR = " | ";
 const SLEEP_TRUNCATION_MARKER = "\n[... sleep_consolidation episode truncated by maxEpisodeChars ...]";

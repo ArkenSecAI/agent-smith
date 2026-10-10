@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use super::context::{Context, atomic_write};
 
 const SNAPSHOT_VERSION: u32 = 1;
-const DESKTOP_ID_PREFIX: &str = "dev.omp.oauth-callback.";
+const DESKTOP_ID_PREFIX: &str = "com.arkensec.agent-smith.oauth-callback.";
 const DESKTOP_SOURCE_NAME: &str = "linux-callback.desktop";
 const DEFAULT_APPLICATIONS_SECTION: &str = "Default Applications";
 const DEFAULT_APPLICATIONS_HEADER: &str = "[Default Applications]";
@@ -435,7 +435,7 @@ fn desktop_file(snapshot: &Snapshot) -> anyhow::Result<String> {
 	Ok([
 		"[Desktop Entry]".to_owned(),
 		"Type=Application".to_owned(),
-		"Name=omp OAuth Callback".to_owned(),
+		"Name=Agent Smith OAuth Callback".to_owned(),
 		"NoDisplay=true".to_owned(),
 		"Terminal=false".to_owned(),
 		format!(

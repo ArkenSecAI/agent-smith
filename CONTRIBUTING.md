@@ -1,101 +1,29 @@
-# Contributing to omp
+# Contributing to ArkenSec Agent Smith
 
-Pull requests are welcome. Keep them focused, understand the work you submit,
-and be prepared to explain and maintain it.
+This is an unreleased development fork of OMP. Read [the roadmap](docs/agent-smith-roadmap.md), [security policy](.github/SECURITY.md) and [development commands](docs/agent-smith-development.md) before changing the project. Source availability is not a supported security product or permission to test third-party targets.
 
-> [!NOTE]
-> Pull requests are **temporarily open to everyone** as a trial. We previously
-> required a vouch before accepting PRs; that requirement is lifted for now
-> while we evaluate how open contributions go. Depending on the results, the
-> vouch system may return.
+## Scope first
 
-## Before you start
+Keep one logical change per pull request. Small bug fixes and documentation improvements can be proposed directly; discuss architecture, execution authority, state/evidence schemas, dependencies and broad behavior changes in an issue before implementation. Do not use the upstream OMP issue automation or Discord as this fork's approval process.
 
-### Small changes
+Before a task/build, record its classification, affected interfaces and paths, acceptance checks and integration workflow. For agent-assisted work, record the implementation and independent review model/runtime/effort and the legitimate account route. Choose them per task; model names do not grant authorization or justify a billing/authentication fallback. Do not introduce a second general agent loop or import another application's account homes.
 
-Bug fixes, documentation updates, and narrowly scoped improvements can go
-straight to a pull request.
+## Human responsibility and evidence
 
-### Major changes
+AI assistance is allowed, but the submitter must understand and review the result. Explain what changed and why in your own words. Exercise the changed path and report the exact scenario and observed result; a green build alone does not establish correct runtime behavior. Preserve errors, partial results and limitations. For fixes, keep a deterministic failing-before/passing-after regression where practical. Tests should catch consumer-visible boundaries, invariants and errors—not merely copied strings, wiring or mocks echoing inputs.
 
-Discuss major features and broad architectural or behavioral changes in
-[Discord](https://discord.gg/4NMW9cdXZa) **before writing the implementation**.
-This includes new subsystems, large UI changes, new dependencies, and changes
-that span several packages. A GitHub issue is not a substitute for this
-discussion, and prior discussion does not guarantee that a pull request will be
-merged.
+Use only owned, synthetic or explicitly licensed fixtures. Never submit real customer data, tokens, signed-in account homes, private histories or confidential vulnerability reports. Never run a live security test as part of a contribution. Report security issues privately as described in SECURITY.md.
 
-### Do not open an issue for work you are about to submit
+## Integration and review
 
-If you intend to implement a change yourself, **do not create an issue for it
-first**. robomp treats actionable issues as work to pick up and may start the
-same fix in parallel, wasting compute and maintainer time.
+Use an isolated task branch/worktree or explicitly disjoint paths. Stage explicit paths only, preserve unrelated work and sign maintainer-authored commits. Main integration is serial. A reviewer independent of that slice's author must review the exact commit/tree and actual check evidence. A changed subject invalidates that review. Resolve required findings before fast-forward integration; do not force-push or bypass signing, review or secret scanning to make a build pass.
 
-Open an issue when you are reporting a problem or proposing work that you are
-not already turning into a pull request. If a relevant issue already exists,
-link it from your pull request instead of creating another one.
+The maintainer, @davidsly4954, controls integration and publication. Public contribution CI is unprivileged and has no provider credentials, signing keys or self-hosted virtualization access. Workflow, trust-root, dependency and release-policy changes require particular review against the trusted base; candidate-controlled checks cannot authorize their own policy changes. A signature or provenance record identifies origin/integrity, not correctness, legal clearance or independent third-party certification.
 
-## AI-assisted contributions
+No public binary/package release, hosted service deployment or upstream package publication follows automatically from a contribution. Release artifacts require the roadmap's later qualification and human authorization.
 
-AI agents are welcome as tools, not as unattended contributors. Do not give an
-agent a vague goal and submit whatever it produces.
+## Licensing
 
-Before opening a pull request, you must:
+Contributions intentionally submitted for inclusion in Agent Smith are MIT-licensed where the contributor owns the rights. Preserve all upstream and third-party copyrights, licenses and notices. You must have the right to submit the work; identify any external code/data/assets and its exact source and license. No CLA or mandatory DCO is currently required. AI generation does not waive provenance or licensing responsibilities.
 
-- constrain the agent to the agreed scope and reject unrelated changes;
-- review every changed file and understand the resulting behavior;
-- run the relevant checks and exercise the changed behavior yourself; and
-- submit the pull request only after that review, rather than letting an agent
-  publish it autonomously.
-
-You are responsible for the code, regardless of who or what generated it.
-
-## Pull request requirements
-
-Every pull request body **MUST include at least one sentence written by you, in
-your own words**, explaining what changed and why. A generated summary, pasted
-agent transcript, or checklist alone does not satisfy this requirement.
-
-One honest line is enough:
-
-> I reviewed the full diff; this change fixes duplicate PR reviews by reusing
-> the existing delivery guard.
-
-You **MUST verify that the change works as intended**. `bun check` and automated
-tests are expected where relevant, but they are not proof that the behavior
-works. Exercise the changed path yourself and report the exact scenario and
-result in the pull request:
-
-- for a bug fix, reproduce the bug and confirm the same reproduction no longer
-  fails;
-- for a feature, launch the product and use the feature end to end; and
-- for a UI change, interact with it and inspect the rendered result.
-
-“`bun check` passes” by itself is not sufficient verification. For coding-agent
-development commands and repository structure, see
-[`packages/coding-agent/DEVELOPMENT.md`](packages/coding-agent/DEVELOPMENT.md).
-
-Keep each pull request to one logical change. Avoid unrelated cleanup,
-drive-by refactors, generated noise, or features that were not part of the
-agreed scope.
-
-## Contribution licensing
-
-A contribution intentionally submitted for inclusion in OMP is licensed under
-the MIT License.
-
-This policy does not relicense third-party or vendored code. You must have the
-right to submit your contribution and must preserve applicable copyright,
-license, attribution, and notice material. Submitting a contribution does not
-require signing a Contributor License Agreement (CLA) or certifying a
-Developer Certificate of Origin (DCO).
-
-## Review
-
-Maintainers review the submitted behavior and the contributor's understanding
-of it—not the volume of generated code. Respond to review feedback yourself,
-and only apply suggestions you have checked.
-
-Pull requests may be closed when they skip required prior discussion, lack the
-human-written explanation, contain unreviewed agent output, or mix unrelated
-changes.
+The MIT license does not relicense Kali packages, models, rules, firmware or separately licensed dependencies. Do not copy third-party character art, logos or other proprietary assets for the project name. No response/merge schedule or future volunteer capacity is promised.

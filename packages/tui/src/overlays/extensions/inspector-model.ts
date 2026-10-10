@@ -6,7 +6,7 @@
  */
 import * as path from "node:path";
 import { arkToWireSchema, isArkSchema } from "@oh-my-pi/pi-ai/utils/schema";
-import { normalizePathForComparison, parseFrontmatter } from "@oh-my-pi/pi-utils";
+import { CONFIG_DIR_NAME, normalizePathForComparison, parseFrontmatter } from "@oh-my-pi/pi-utils";
 import {
 	sanitizeDisplayField,
 	sanitizeDisplayLine,
@@ -257,7 +257,7 @@ function pathSegments(filePath: string): string[] {
 export function projectListHint(ext: Extension): string | undefined {
 	if (ext.source.level !== "project") return undefined;
 	const parts = pathSegments(ext.path);
-	const ompIndex = parts.lastIndexOf(".omp");
+	const ompIndex = parts.lastIndexOf(CONFIG_DIR_NAME);
 	if (ompIndex <= 0) return undefined;
 	const parent = parts[ompIndex - 1];
 	return parent && parent !== "." ? parent : undefined;
@@ -472,7 +472,7 @@ export function enablementLabel(state: ExtensionState, reason?: string, shadowed
 				reason === "provider-disabled"
 					? "provider disabled"
 					: reason === "user-opt-in"
-						? "~/ config not enabled"
+						? "Foreign config not enabled"
 						: reason === "item-disabled"
 							? "manually disabled"
 							: "unknown";

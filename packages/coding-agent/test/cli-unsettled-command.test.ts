@@ -70,9 +70,9 @@ async function runConfigSet(tempDir: TempDir, settingsInit: SettingsInitMode): P
 	}
 	// The child must resolve its agent dir from the isolated home, not an inherited override or profile.
 	const env: Record<string, string | undefined> = { ...process.env, HOME: home, USERPROFILE: home, NO_COLOR: "1" };
-	delete env.PI_CODING_AGENT_DIR;
-	delete env.PI_CONFIG_DIR;
-	delete env.OMP_PROFILE;
+	delete env.AGENT_SMITH_CODING_AGENT_DIR;
+	delete env.AGENT_SMITH_CONFIG_DIR;
+	delete env.AGENT_SMITH_PROFILE;
 	delete env.PI_PROFILE;
 	delete env.XDG_CACHE_HOME;
 	delete env.XDG_CONFIG_HOME;
@@ -87,7 +87,7 @@ async function runConfigSet(tempDir: TempDir, settingsInit: SettingsInitMode): P
 		new Response(proc.stdout).text(),
 		new Response(proc.stderr).text(),
 	]);
-	return { exitCode, stdout, stderr, configPath: path.join(home, ".omp", "agent", "config.yml") };
+	return { exitCode, stdout, stderr, configPath: path.join(home, ".agent-smith", "agent", "config.yml") };
 }
 
 // Each case cold-starts the CLI graph in a child process; the budget covers that transpile.

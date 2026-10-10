@@ -15,10 +15,10 @@ export { TEXT_PREDICT_WORKER_ARG } from "../cli/worker-selectors";
 export const TEXT_PREDICT_BROKER_SCOPE = "text-predict";
 
 /** Environment key carrying the endpoint the daemon listens on. */
-export const TEXT_PREDICT_SOCKET_ENV = "OMP_TEXT_PREDICT_SOCKET";
+export const TEXT_PREDICT_SOCKET_ENV = "AGENT_SMITH_TEXT_PREDICT_SOCKET";
 
 /** Environment key carrying the agent directory whose history and state the daemon serves. */
-export const TEXT_PREDICT_AGENT_DIR_ENV = "OMP_TEXT_PREDICT_AGENT_DIR";
+export const TEXT_PREDICT_AGENT_DIR_ENV = "AGENT_SMITH_TEXT_PREDICT_AGENT_DIR";
 
 /** Broker readiness regex matched against {@link textPredictReadyBanner}. */
 export const TEXT_PREDICT_READY_PATTERN = String.raw`omp text-predict listening on \S+`;
@@ -40,7 +40,7 @@ export function textPredictDaemon(runtimeDir: string, agentDir: string): { name:
 	const key = Bun.hash.wyhash(path.resolve(agentDir)).toString(16).padStart(16, "0").slice(0, 12);
 	const endpoint =
 		process.platform === "win32"
-			? `\\\\.\\pipe\\omp-text-predict-${Bun.hash.wyhash(runtimeDir).toString(16)}-${key}`
+			? `\\\\.\\pipe\\agent-smith-text-predict-${Bun.hash.wyhash(runtimeDir).toString(16)}-${key}`
 			: path.join(runtimeDir, `text-predict-${key}.sock`);
 	return { name: `omp.text-predict.${key}`, endpoint };
 }

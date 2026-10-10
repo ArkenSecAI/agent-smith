@@ -1,0 +1,67 @@
+Component notices for the reconstructed Devin/Codeium schema corpus
+
+This directory contains several distinct upstream components. The repository's
+root MIT license does not replace their licenses or establish rights in the
+provider-specific schemas. See PROVENANCE.md for source URLs, comparison
+versions, transformations, evidence limits, and unresolved publication items.
+
+cel/expr/{checked,eval,explain,syntax,value}.proto
+  Common Expression Language specification, google/cel-spec (now cel-expr/cel-spec).
+  Copyright 2023 Google LLC
+  Apache License, Version 2.0; see LICENSE.Apache-2.0.
+
+io/prometheus/client/metrics.proto
+  prometheus/client_model.
+  Copyright 2013 Prometheus Team
+  Apache License, Version 2.0; see LICENSE.Apache-2.0.
+  The additional upstream NOTICE is retained in NOTICE.Prometheus, including
+  The Prometheus Authors and SoundCloud attribution.
+
+buf/validate/validate.proto
+  bufbuild/protovalidate; comparison source v0.11.0.
+  Copyright 2023-2025 Buf Technologies, Inc.
+  Apache License, Version 2.0; see LICENSE.Apache-2.0.
+  The comparison tag is not a verified extraction version.
+
+grpc/binlog/v1/binarylog.proto
+  grpc/grpc-proto.
+  Copyright 2018 The gRPC Authors
+  All rights reserved.
+  Apache License, Version 2.0; see LICENSE.Apache-2.0.
+
+errorspb/{errors,hintdetail,markers,tags,testing}.proto
+  Identified with cockroachdb/errors (not the CockroachDB database license).
+  Apache-2.0; see LICENSE.Apache-2.0. All five source schemas were retrieved at
+  b63dfdf0b860a689995c5e2a9eb0c089d61c9d95. They have no per-file license header;
+  that complete repository tree lists no separate NOTICE. The original
+  extraction revision remains unknown; see PROVENANCE.md.
+
+google.golang.org/appengine/internal/{base/api_base,datastore/datastore_v3,
+  log/log_service,remote_api/remote_api,urlfetch/urlfetch_service}.proto
+  Identified with the Go App Engine packages, golang/appengine.
+  Apache-2.0; see LICENSE.Apache-2.0. All five source schemas were retrieved at
+  v1.6.8, aa58fcd18e4ab7ac816760ee266fa30a0907ab9e. They have no per-file license
+  header; that complete repository tree lists no separate NOTICE. The original
+  extraction revision remains unknown; no copyright year is invented.
+
+connectext/grpc/status/v1/status.proto
+  Identified with the Connect Go gRPC status extension (formerly bufbuild/connect-go,
+  now connectrpc/connect-go), which is published under Apache-2.0.
+  Copyright 2021-2023 Buf Technologies, Inc.
+  Apache-2.0; see LICENSE.Apache-2.0. The authentic header was restored from
+  v1.10.0, 495b8810f4ab7fe3720eb3310cfcab570df06151; no separate NOTICE is listed.
+  This is a comparison pin, not a recovered extraction revision.
+
+exa/**/*.proto (33 retained files)
+  OMP's original generation config describes these as a reverse-engineered
+  Codeium corpus. A license or other basis to publish these particular
+  provider-specific reproductions has not been established by this remediation.
+  None of the open-component licenses above is extended to these files.
+
+Modification notice
+  The inherited .proto files are reconstructed/adapted declarations, not
+  verbatim upstream source. Comments and options were lost, names were
+  qualified, and declarations were reordered; individual differences and
+  the limits of the extraction evidence are recorded in PROVENANCE.md.
+  Agent Smith's 2026-10-10 remediation adds attribution comments and adjacent
+  notices only. It does not repair, regenerate, or change schema declarations.

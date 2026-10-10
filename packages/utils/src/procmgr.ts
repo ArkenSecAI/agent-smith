@@ -29,7 +29,7 @@ let cachedCustomShellConfig: ShellConfig | null = null;
  * Build the spawn environment (cached).
  */
 function buildSpawnEnv(shell: string): Record<string, string> {
-	const noCI = $env.PI_BASH_NO_CI || $env.CLAUDE_BASH_NO_CI;
+	const noCI = $env.AGENT_SMITH_BASH_NO_CI;
 	return {
 		...filterChildShellEnv(Bun.env),
 		SHELL: shell,
@@ -86,7 +86,7 @@ export function isPosixShell(shell: string): boolean {
  * Get shell prefix for wrapping commands (profilers, strace, etc.).
  */
 function getShellPrefix(): string | undefined {
-	return $env.PI_SHELL_PREFIX || $env.CLAUDE_CODE_SHELL_PREFIX;
+	return $env.AGENT_SMITH_SHELL_PREFIX;
 }
 
 /**

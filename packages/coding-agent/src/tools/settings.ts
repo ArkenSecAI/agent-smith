@@ -928,7 +928,7 @@ export const cfgDevAutoqa = register({
 	id: "dev.autoqa",
 	type: "boolean",
 	default: true,
-	env: "PI_AUTO_QA",
+	env: "AGENT_SMITH_AUTO_QA",
 	ui: {
 		tab: "tools",
 		group: "Developer",

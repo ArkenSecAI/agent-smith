@@ -37,7 +37,7 @@ function buildLocalModel(api: string): Model<Api> {
 
 // User-scope `RULES.md` resolves through the process-global agent dir (getAgentDir()),
 // not the createAgentSession `agentDir` option, so a user-scope case must redirect it.
-const originalAgentDirEnv = process.env.PI_CODING_AGENT_DIR;
+const originalAgentDirEnv = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 const fallbackAgentDir = path.join(getConfigRootDir(), "agent");
 
 function restoreAgentDir(): void {
@@ -45,7 +45,7 @@ function restoreAgentDir(): void {
 		setAgentDir(originalAgentDirEnv);
 	} else {
 		setAgentDir(fallbackAgentDir);
-		delete process.env.PI_CODING_AGENT_DIR;
+		delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
 	}
 }
 
@@ -83,10 +83,12 @@ async function expectStickyRuleReload(
 	const original = `ORIGINAL_STICKY_${marker}`;
 	const updated = `UPDATED_STICKY_${marker}`;
 	// User scope: `<agentDir>/RULES.md` via the process-global getAgentDir().
-	// Project scope: nearest `.omp/RULES.md` walking up from cwd.
+	// Project scope: nearest `.agent-smith/RULES.md` walking up from cwd.
 	if (opts.scope === "user") setAgentDir(tempDir.path());
 	const rulesMd =
-		opts.scope === "user" ? path.join(tempDir.path(), "RULES.md") : path.join(tempDir.path(), ".omp", "RULES.md");
+		opts.scope === "user"
+			? path.join(tempDir.path(), "RULES.md")
+			: path.join(tempDir.path(), ".agent-smith", "RULES.md");
 	if (opts.seedInitial) {
 		await fs.mkdir(path.dirname(rulesMd), { recursive: true });
 		await fs.writeFile(rulesMd, original);
@@ -152,8 +154,8 @@ describe("AgentSession session-local rule snapshot reload on session reset", () 
 		const marker = Bun.nanoseconds().toString(36);
 		const body = `RULEBOOK_BODY_${marker}`;
 		const ruleName = `reload-book-${marker}`;
-		// Empty `.omp/rules/` keeps the project config scope present without any rulebook rule yet.
-		const rulesDir = path.join(tempDir.path(), ".omp", "rules");
+		// Empty `.agent-smith/rules/` keeps the project config scope present without any rulebook rule yet.
+		const rulesDir = path.join(tempDir.path(), ".agent-smith", "rules");
 		await fs.mkdir(rulesDir, { recursive: true });
 
 		const { session, authStorage } = await createReloadSession(tempDir);

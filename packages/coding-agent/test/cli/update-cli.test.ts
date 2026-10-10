@@ -7,26 +7,19 @@ const npmjs = fixedNpmRegistry();
 type FetchInput = string | URL | Request;
 type FetchInit = RequestInit | BunFetchRequestInit;
 
-describe("runUpdateCommand fetch cancellation", () => {
+describe("unreleased application updates", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
 	});
 
-	it("checks release metadata with a timeout signal", async () => {
-		let requestSignal: AbortSignal | undefined;
-		vi.spyOn(console, "log").mockImplementation(() => {});
-		const fetchStub = Object.assign(
-			async (_input: FetchInput, init?: FetchInit) => {
-				requestSignal = init?.signal ?? undefined;
-				return Response.json({ version: "999.0.0" });
-			},
-			{ preconnect: globalThis.fetch.preconnect },
-		);
-		vi.spyOn(globalThis, "fetch").mockImplementation(fetchStub);
+	it("rejects the inherited updater before contacting a registry", async () => {
+		const fetchStub = Object.assign(async () => Response.json({ version: "999.0.0" }), {
+			preconnect: globalThis.fetch.preconnect,
+		});
+		const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(fetchStub);
 
-		await runUpdateCommand({ force: false, check: true });
-
-		expect(requestSignal).toBeInstanceOf(AbortSignal);
+		await expect(runUpdateCommand({ force: false, check: true })).rejects.toThrow("unreleased");
+		expect(fetchSpy).not.toHaveBeenCalled();
 	});
 });
 

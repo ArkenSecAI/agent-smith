@@ -1000,7 +1000,7 @@ const ENHANCED_RECALL_CACHE_TTL_SECONDS = 300;
  * optionally merged with extracted facts.
  *
  * Two opt-in layers sit on top, each gated per instance (`BeamConfig`) with the
- * `MNEMOPI_POLYPHONIC_RECALL` / `MNEMOPI_ENHANCED_RECALL` env vars winning:
+ * `AGENT_SMITH_MEMORY_POLYPHONIC_RECALL` / `AGENT_SMITH_MEMORY_ENHANCED_RECALL` env vars winning:
  * - polyphonic recall fuses this ranking with the vector, graph, fact and temporal
  *   voices (see {@link orchestrateRecall});
  * - the enhanced recall cache serves repeated or similar queries whose options all

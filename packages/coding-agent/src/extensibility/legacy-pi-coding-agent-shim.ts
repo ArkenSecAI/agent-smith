@@ -1500,7 +1500,7 @@ export { getProjectDir } from "@oh-my-pi/pi-utils";
  * every legacy `path.join(getPackageDir(), ...)` at runtime in the shipped
  * binary, the primary distribution. So fall back to the executable's own
  * directory in compiled mode, where the binary *is* the install root. The
- * `PI_PACKAGE_DIR` override and dev/source/npm-dist walk-up still win via the
+ * `AGENT_SMITH_PACKAGE_DIR` override and dev/source/npm-dist walk-up still win via the
  * canonical helper.
  */
 export function getPackageDir(): string {

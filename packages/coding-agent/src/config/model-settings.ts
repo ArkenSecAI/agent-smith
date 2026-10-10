@@ -43,14 +43,14 @@ export const cfgAuthBrokerUrl = register({
 	id: "auth.broker.url",
 	type: "string",
 	default: undefined,
-	env: "OMP_AUTH_BROKER_URL",
+	env: "AGENT_SMITH_AUTH_BROKER_URL",
 });
 
 export const cfgAuthBrokerToken = register({
 	id: "auth.broker.token",
 	type: "string",
 	default: undefined,
-	env: "OMP_AUTH_BROKER_TOKEN",
+	env: "AGENT_SMITH_AUTH_BROKER_TOKEN",
 	credential: true,
 });
 

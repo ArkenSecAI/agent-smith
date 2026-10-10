@@ -219,9 +219,9 @@ describe("agentLoop with owned in-band tool calls", () => {
 		expect(resultsText).toContain("echoed:hi");
 	});
 
-	it("uses PI_DIALECT=minimax when config.dialect is unset", async () => {
-		const before = Bun.env.PI_DIALECT;
-		Bun.env.PI_DIALECT = "minimax";
+	it("uses AGENT_SMITH_DIALECT=minimax when config.dialect is unset", async () => {
+		const before = Bun.env.AGENT_SMITH_DIALECT;
+		Bun.env.AGENT_SMITH_DIALECT = "minimax";
 		try {
 			const echoArgs: Array<{ msg: string }> = [];
 			const toolSchema = type({ msg: "string" });
@@ -263,8 +263,8 @@ describe("agentLoop with owned in-band tool calls", () => {
 			expect(captured[0].tools).toBeUndefined();
 			expect((captured[0].systemPrompt ?? []).join("\n")).toContain("<minimax:tool_call>");
 		} finally {
-			if (before === undefined) delete Bun.env.PI_DIALECT;
-			else Bun.env.PI_DIALECT = before;
+			if (before === undefined) delete Bun.env.AGENT_SMITH_DIALECT;
+			else Bun.env.AGENT_SMITH_DIALECT = before;
 		}
 	});
 });

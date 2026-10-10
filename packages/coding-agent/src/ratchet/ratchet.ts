@@ -1,3 +1,4 @@
+import { CONFIG_DIR_NAME } from "@oh-my-pi/pi-utils/dirs";
 /**
  * Ratchet: host-side state, statistics, and keep/revert gate for the
  * `/ratchet` eval hillclimb. Everything the model must not be able to argue
@@ -16,7 +17,7 @@ import { calculateUsageCost } from "@oh-my-pi/pi-catalog/models";
 import type { ModelCost, Usage } from "@oh-my-pi/pi-catalog/types";
 import { isEnoent, isRecord } from "@oh-my-pi/pi-utils";
 
-export const RATCHET_ROOT = path.join(".omp", "ratchet");
+export const RATCHET_ROOT = path.join(CONFIG_DIR_NAME, "ratchet");
 export const RATCHET_STAGES = ["inputs", "grader", "plan"] as const;
 export type RatchetStage = (typeof RATCHET_STAGES)[number];
 export type Direction = "higher" | "lower";

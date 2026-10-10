@@ -13,7 +13,7 @@ describe("python gateway directory", () => {
 
 	beforeEach(async () => {
 		originalAgentDir = getAgentDir();
-		originalConfigDir = process.env.PI_CONFIG_DIR;
+		originalConfigDir = process.env.AGENT_SMITH_CONFIG_DIR;
 		originalXdgStateHome = process.env.XDG_STATE_HOME;
 		tempRoot = path.join(os.tmpdir(), "pi-utils-python-gateway", Snowflake.next());
 		await fs.mkdir(tempRoot, { recursive: true });
@@ -21,9 +21,9 @@ describe("python gateway directory", () => {
 
 	afterEach(async () => {
 		if (originalConfigDir === undefined) {
-			delete process.env.PI_CONFIG_DIR;
+			delete process.env.AGENT_SMITH_CONFIG_DIR;
 		} else {
-			process.env.PI_CONFIG_DIR = originalConfigDir;
+			process.env.AGENT_SMITH_CONFIG_DIR = originalConfigDir;
 		}
 		if (originalXdgStateHome === undefined) {
 			delete process.env.XDG_STATE_HOME;
@@ -37,7 +37,7 @@ describe("python gateway directory", () => {
 	it("uses XDG state for the default agent profile", async () => {
 		if (process.platform === "win32") return;
 
-		process.env.PI_CONFIG_DIR = `.omp-test-${Snowflake.next()}`;
+		process.env.AGENT_SMITH_CONFIG_DIR = `.omp-test-${Snowflake.next()}`;
 		process.env.XDG_STATE_HOME = path.join(tempRoot, "state");
 		await fs.mkdir(path.join(process.env.XDG_STATE_HOME, "omp"), { recursive: true });
 

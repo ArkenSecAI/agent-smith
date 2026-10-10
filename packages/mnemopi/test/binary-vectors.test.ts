@@ -41,11 +41,11 @@ describe("binary vector helpers", () => {
 		expect(cosineSimilarity([Number.NaN, 1], [1, 0])).toBe(0);
 	});
 
-	it("normalizes MNEMOPI_VEC_TYPE with Python-compatible fallback", () => {
-		expect(getVecType({ MNEMOPI_VEC_TYPE: "bit" })).toBe("bit");
-		expect(getVecType({ MNEMOPI_VEC_TYPE: "int8" })).toBe("int8");
-		expect(getVecType({ MNEMOPI_VEC_TYPE: "float32" })).toBe("float32");
-		expect(getVecType({ MNEMOPI_VEC_TYPE: "bogus" })).toBe("float32");
+	it("normalizes AGENT_SMITH_MEMORY_VEC_TYPE with Python-compatible fallback", () => {
+		expect(getVecType({ AGENT_SMITH_MEMORY_VEC_TYPE: "bit" })).toBe("bit");
+		expect(getVecType({ AGENT_SMITH_MEMORY_VEC_TYPE: "int8" })).toBe("int8");
+		expect(getVecType({ AGENT_SMITH_MEMORY_VEC_TYPE: "float32" })).toBe("float32");
+		expect(getVecType({ AGENT_SMITH_MEMORY_VEC_TYPE: "bogus" })).toBe("float32");
 		expect(getVecType({})).toBe("int8");
 	});
 });

@@ -6,11 +6,15 @@ import { cosineSimilarity } from "./vector-math";
 
 export { cosineSimilarity };
 
-export const SHMR_BATCH_SIZE = Number.parseInt(process.env.MNEMOPI_SHMR_BATCH_SIZE ?? "50", 10);
-export const SHMR_MAX_ITERATIONS = Number.parseInt(process.env.MNEMOPI_SHMR_MAX_ITERATIONS ?? "3", 10);
-export const SHMR_SIMILARITY_THRESHOLD = Number.parseFloat(process.env.MNEMOPI_SHMR_SIMILARITY_THRESHOLD ?? "0.70");
-export const SHMR_HARMONY_THRESHOLD = Number.parseFloat(process.env.MNEMOPI_SHMR_HARMONY_THRESHOLD ?? "0.60");
-export const SHMR_MIN_CLUSTER_SIZE = Number.parseInt(process.env.MNEMOPI_SHMR_MIN_CLUSTER_SIZE ?? "2", 10);
+export const SHMR_BATCH_SIZE = Number.parseInt(process.env.AGENT_SMITH_MEMORY_SHMR_BATCH_SIZE ?? "50", 10);
+export const SHMR_MAX_ITERATIONS = Number.parseInt(process.env.AGENT_SMITH_MEMORY_SHMR_MAX_ITERATIONS ?? "3", 10);
+export const SHMR_SIMILARITY_THRESHOLD = Number.parseFloat(
+	process.env.AGENT_SMITH_MEMORY_SHMR_SIMILARITY_THRESHOLD ?? "0.70",
+);
+export const SHMR_HARMONY_THRESHOLD = Number.parseFloat(
+	process.env.AGENT_SMITH_MEMORY_SHMR_HARMONY_THRESHOLD ?? "0.60",
+);
+export const SHMR_MIN_CLUSTER_SIZE = Number.parseInt(process.env.AGENT_SMITH_MEMORY_SHMR_MIN_CLUSTER_SIZE ?? "2", 10);
 export const EMBEDDING_DIM = 384;
 
 export type Vector = Float32Array;

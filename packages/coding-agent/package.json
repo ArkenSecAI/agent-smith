@@ -1,7 +1,7 @@
 {
 	"name": "@oh-my-pi/pi-coding-agent",
 	"version": "18.4.8",
-	"description": "Coding agent CLI with read, bash, edit, write tools and session management",
+	"description": "ArkenSec Agent Smith (unreleased), derived from OMP 18.4.8",
 	"keywords": [
 		"agent",
 		"ai",
@@ -10,9 +10,9 @@
 		"llm",
 		"tui"
 	],
-	"homepage": "https://omp.sh",
+	"homepage": "https://github.com/ArkenSecAI/agent-smith",
 	"bugs": {
-		"url": "https://github.com/can1357/oh-my-pi/issues"
+		"url": "https://github.com/ArkenSecAI/agent-smith/issues"
 	},
 	"license": "MIT",
 	"author": { "name": "Stencil Labs, Inc.", "url": "https://stencil.so" },
@@ -21,11 +21,11 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/can1357/oh-my-pi.git",
+		"url": "git+https://github.com/ArkenSecAI/agent-smith.git",
 		"directory": "packages/coding-agent"
 	},
 	"bin": {
-		"omp": "src/cli.ts"
+		"agent-smith": "src/cli.ts"
 	},
 	"files": [
 		"src",

@@ -1,0 +1,33 @@
+Syntax grammar component notices
+
+Julia.sublime-syntax
+  JuliaEditorSupport/Julia-sublime
+  Copyright (c) 2016-2021 Viktor Qvarfordt and other contributors
+  https://github.com/JuliaLang/julia-sublime/contributors
+  MIT license text: LICENSE.Julia-sublime.
+
+TypeScript.sublime-syntax and TypeScriptReact.sublime-syntax
+  Adapted from Microsoft's TypeScript-TmLanguage grammar family.
+  Copyright (c) Microsoft Corporation
+  All rights reserved.
+  MIT license text: LICENSE.TypeScript-TmLanguage.
+  Additional upstream notices: NOTICE.TypeScript-TmLanguage, including
+  babel-sublime (Copyright (c) 2015 Andres Suarez), language-javascript
+  (Copyright (c) 2015 GitHub Inc.), and its TextMate bundle permission notice.
+
+Mermaid.sublime-syntax
+  Existing file notice retained unchanged:
+  Source: SublimeText/Mermaid, MIT license, copyright (c) 2017 Peng Wang.
+
+Nix.sublime-syntax
+  Existing file notice retained unchanged:
+  Derived from wmertens/sublime-nix (MIT, copyright (c) 2016 Wout Mertens).
+
+Astro.sublime-syntax
+  OMP's composition of the vendored TypeScript syntax and syntect's bundled
+  HTML syntax. See PROVENANCE.md for the scope of this attribution record.
+
+The root license does not replace these component notices. PROVENANCE.md
+records upstream URLs, the established version/origin evidence, adaptations,
+and unresolved exact import revisions. This notice does not assert that all
+upstream grammars or all bundled highlighter assets are covered by root MIT.

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { defaultTripleDbPath, TripleStore } from "@oh-my-pi/pi-mnemopi/core/triples";
 
 const originalHome = process.env.HOME;
-const originalDataDir = process.env.MNEMOPI_DATA_DIR;
+const originalDataDir = process.env.AGENT_SMITH_MEMORY_DATA_DIR;
 const roots: string[] = [];
 
 function tempRoot(): string {
@@ -17,8 +17,8 @@ function tempRoot(): string {
 afterEach(() => {
 	if (originalHome === undefined) delete process.env.HOME;
 	else process.env.HOME = originalHome;
-	if (originalDataDir === undefined) delete process.env.MNEMOPI_DATA_DIR;
-	else process.env.MNEMOPI_DATA_DIR = originalDataDir;
+	if (originalDataDir === undefined) delete process.env.AGENT_SMITH_MEMORY_DATA_DIR;
+	else process.env.AGENT_SMITH_MEMORY_DATA_DIR = originalDataDir;
 	while (roots.length > 0) rmSync(roots.pop() as string, { recursive: true, force: true });
 });
 
@@ -28,7 +28,7 @@ describe("TripleStore default data-directory handling", () => {
 		const home = join(root, "home");
 		const dataDir = join(root, "configured-data");
 		process.env.HOME = home;
-		process.env.MNEMOPI_DATA_DIR = dataDir;
+		process.env.AGENT_SMITH_MEMORY_DATA_DIR = dataDir;
 
 		const store = new TripleStore();
 		try {
@@ -41,13 +41,13 @@ describe("TripleStore default data-directory handling", () => {
 		}
 	});
 
-	it("copies an existing legacy triples database into MNEMOPI_DATA_DIR", () => {
+	it("starts with empty app memory when a foreign triples database exists", () => {
 		const root = tempRoot();
 		const home = join(root, "home");
 		const dataDir = join(root, "configured-data");
 		const legacyDb = join(home, ".hermes", "mnemopi", "data", "triples.db");
 		process.env.HOME = home;
-		process.env.MNEMOPI_DATA_DIR = dataDir;
+		process.env.AGENT_SMITH_MEMORY_DATA_DIR = dataDir;
 
 		const legacy = new TripleStore(legacyDb);
 		try {
@@ -63,7 +63,7 @@ describe("TripleStore default data-directory handling", () => {
 		const migrated = new TripleStore();
 		try {
 			expect(migrated.dbPath).toBe(join(dataDir, "triples.db"));
-			expect(migrated.query({ subject: "legacy-subject" })[0]?.object).toBe("legacy-object");
+			expect(migrated.query({ subject: "legacy-subject" })).toEqual([]);
 		} finally {
 			migrated.close();
 		}

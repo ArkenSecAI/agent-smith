@@ -1,0 +1,28 @@
+ArkenSec Agent Smith
+
+Derived from oh-my-pi (OMP), https://github.com/can1357/oh-my-pi
+Initial immutable base: v18.4.8, commit 717f97f4d22b3d65c4a4eef6a744255d46f4d1a6.
+OMP itself derives from Pi by Mario Zechner, https://github.com/badlogic/pi-mono.
+
+The complete inherited MIT copyright, permission and warranty text remains in LICENSE:
+Copyright (c) 2025 Mario Zechner
+Copyright (c) 2025-2026 Can Bölük
+Copyright (c) 2026 Stencil Labs, Inc.
+
+Agent Smith-owned additions:
+Copyright (c) 2026 ArkenSec LLC and Agent Smith contributors.
+Licensed under the MIT terms in LICENSE. This notice does not claim ownership of upstream work.
+
+Additional third-party notices remain in THIRD-PARTY-NOTICES.txt and the applicable
+vendored source/package files. Per-file licenses and dependency obligations are not
+replaced by the top-level MIT license. See the pinned build/dependency inventory
+for the actual source/native artifact boundary; a version label alone is not
+binary provenance or legal clearance.
+
+No Kali image, model weights, firmware bundle, external ruleset or provider-account
+entitlement is granted or redistributed by this notice. Future delivered assets
+require their own exact inventory, licenses, notices and source obligations.
+
+OMP and other product names identify source or compatibility, not endorsement.
+ArkenSec Agent Smith is not an official OMP distribution and makes no affiliation
+claim with similarly named projects or third-party entertainment properties.

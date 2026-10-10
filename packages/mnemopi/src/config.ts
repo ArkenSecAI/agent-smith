@@ -1,5 +1,5 @@
-import { homedir } from "node:os";
-import { join } from "node:path";
+import * as path from "node:path";
+import { getFastembedCacheDir, getMemoriesDir, getTinyModelsCacheDir } from "@oh-my-pi/pi-utils/dirs";
 import { hostMatchesUrl } from "@oh-my-pi/pi-catalog/hosts";
 import {
 	type Env,
@@ -16,10 +16,10 @@ import {
 export type { Env };
 export { envBool, envDisabled, envFloat, envInt, envOneOf, envOptionalString, envString, envTruthy };
 
-export const DEFAULT_DATA_DIR = join(homedir(), ".hermes", "mnemopi", "data");
+export const DEFAULT_DATA_DIR = path.join(getMemoriesDir(), "mnemopi");
 export const DEFAULT_DB_FILENAME = "mnemopi.db";
-export const FASTEMBED_CACHE_DIR = join(homedir(), ".hermes", "cache", "fastembed");
-export const MODEL_CACHE_DIR = join(homedir(), ".hermes", "mnemopi", "models");
+export const FASTEMBED_CACHE_DIR = getFastembedCacheDir();
+export const MODEL_CACHE_DIR = path.join(getTinyModelsCacheDir(), "mnemopi");
 
 export const DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5";
 export const DEFAULT_EMBEDDING_API_URL = "https://openrouter.ai/api/v1";
@@ -58,45 +58,49 @@ export const VERACITY_WEIGHT_DEFAULTS = {
 } as const;
 
 export function dataDir(env: Env = process.env): string {
-	return envOptionalString("MNEMOPI_DATA_DIR", env) ?? DEFAULT_DATA_DIR;
+	return envOptionalString("AGENT_SMITH_MEMORY_DATA_DIR", env) ?? path.join(getMemoriesDir(), "mnemopi");
 }
 
 export function dbPath(env: Env = process.env): string {
-	return join(dataDir(env), DEFAULT_DB_FILENAME);
+	return path.join(dataDir(env), DEFAULT_DB_FILENAME);
 }
 
 export function beamOptimizationsEnabled(env: Env = process.env): boolean {
-	return envTruthy("MNEMOPI_BEAM_OPTIMIZATIONS", env);
+	return envTruthy("AGENT_SMITH_MEMORY_BEAM_OPTIMIZATIONS", env);
 }
 
 export function embeddingModel(env: Env = process.env): string {
-	return envString("MNEMOPI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL, env);
+	return envString("AGENT_SMITH_MEMORY_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL, env);
 }
 
 export function embeddingDim(env: Env = process.env): number {
-	const explicit = envInt("MNEMOPI_EMBEDDING_DIM", NaN, env);
+	const explicit = envInt("AGENT_SMITH_MEMORY_EMBEDDING_DIM", NaN, env);
 	if (Number.isFinite(explicit)) return explicit;
 	return EMBEDDING_DIMS[embeddingModel(env)] ?? 384;
 }
 
 export function embeddingApiKey(env: Env = process.env): string {
 	return envString(
-		"MNEMOPI_EMBEDDING_API_KEY",
+		"AGENT_SMITH_MEMORY_EMBEDDING_API_KEY",
 		envString("OPENROUTER_API_KEY", envString("OPENAI_API_KEY", "", env), env),
 		env,
 	);
 }
 
 export function embeddingApiUrl(env: Env = process.env): string {
-	return envString("MNEMOPI_EMBEDDING_API_URL", envString("OPENROUTER_BASE_URL", DEFAULT_EMBEDDING_API_URL, env), env);
+	return envString(
+		"AGENT_SMITH_MEMORY_EMBEDDING_API_URL",
+		envString("OPENROUTER_BASE_URL", DEFAULT_EMBEDDING_API_URL, env),
+		env,
+	);
 }
 
 export function embeddingsViaApi(env: Env = process.env): boolean {
-	return envTruthy("MNEMOPI_EMBEDDINGS_VIA_API", env);
+	return envTruthy("AGENT_SMITH_MEMORY_EMBEDDINGS_VIA_API", env);
 }
 
 export function embeddingsDisabled(env: Env = process.env): boolean {
-	return envString("MNEMOPI_NO_EMBEDDINGS", "", env) !== "";
+	return envString("AGENT_SMITH_MEMORY_NO_EMBEDDINGS", "", env) !== "";
 }
 
 /**
@@ -116,13 +120,13 @@ export function embeddingsDisabled(env: Env = process.env): boolean {
  * `0` disables the cap.
  */
 export function embeddingMaxInputChars(env: Env = process.env): number {
-	return Math.max(0, envInt("MNEMOPI_EMBEDDING_MAX_INPUT_CHARS", 8192, env));
+	return Math.max(0, envInt("AGENT_SMITH_MEMORY_EMBEDDING_MAX_INPUT_CHARS", 8192, env));
 }
 
 export function isApiEmbeddingModel(model = embeddingModel(), env: Env = process.env): boolean {
 	if (model.startsWith("openai/") || model.includes("text-embedding") || model.startsWith("text-embedding"))
 		return true;
-	const baseUrl = envString("MNEMOPI_EMBEDDING_API_URL", envString("OPENROUTER_BASE_URL", "", env), env);
+	const baseUrl = envString("AGENT_SMITH_MEMORY_EMBEDDING_API_URL", envString("OPENROUTER_BASE_URL", "", env), env);
 	if (baseUrl && !hostMatchesUrl(baseUrl, "openrouter")) return true;
 	return embeddingsViaApi(env);
 }
@@ -130,97 +134,97 @@ export function isApiEmbeddingModel(model = embeddingModel(), env: Env = process
 export function apiEmbeddingsAvailable(env: Env = process.env): boolean {
 	if (embeddingsDisabled(env)) return false;
 	if (!isApiEmbeddingModel(embeddingModel(env), env)) return false;
-	const baseUrl = envString("MNEMOPI_EMBEDDING_API_URL", envString("OPENROUTER_BASE_URL", "", env), env);
+	const baseUrl = envString("AGENT_SMITH_MEMORY_EMBEDDING_API_URL", envString("OPENROUTER_BASE_URL", "", env), env);
 	return Boolean(baseUrl && !hostMatchesUrl(baseUrl, "openrouter")) || Boolean(embeddingApiKey(env));
 }
 
 export function workingMemoryMaxItems(env: Env = process.env): number {
-	return envInt("MNEMOPI_WM_MAX_ITEMS", 10000, env);
+	return envInt("AGENT_SMITH_MEMORY_WM_MAX_ITEMS", 10000, env);
 }
 
 export function workingMemoryTtlHours(env: Env = process.env): number {
-	return envInt("MNEMOPI_WM_TTL_HOURS", 24, env);
+	return envInt("AGENT_SMITH_MEMORY_WM_TTL_HOURS", 24, env);
 }
 
 export function episodicRecallLimit(env: Env = process.env): number {
-	return envInt("MNEMOPI_EP_LIMIT", 50000, env);
+	return envInt("AGENT_SMITH_MEMORY_EP_LIMIT", 50000, env);
 }
 
 export function maxEpisodeChars(env: Env = process.env): number {
-	return Math.max(1, envInt("MNEMOPI_MAX_EPISODE_CHARS", 100000, env));
+	return Math.max(1, envInt("AGENT_SMITH_MEMORY_MAX_EPISODE_CHARS", 100000, env));
 }
 
 export function sleepBatchSize(env: Env = process.env): number {
-	return envInt("MNEMOPI_SLEEP_BATCH", 5000, env);
+	return envInt("AGENT_SMITH_MEMORY_SLEEP_BATCH", 5000, env);
 }
 
 export function scratchpadMaxItems(env: Env = process.env): number {
-	return envInt("MNEMOPI_SP_MAX", 1000, env);
+	return envInt("AGENT_SMITH_MEMORY_SP_MAX", 1000, env);
 }
 
 export function recencyHalflifeHours(env: Env = process.env): number {
-	return envFloat("MNEMOPI_RECENCY_HALFLIFE", 168, env);
+	return envFloat("AGENT_SMITH_MEMORY_RECENCY_HALFLIFE", 168, env);
 }
 
 export function tier2Days(env: Env = process.env): number {
-	return envInt("MNEMOPI_TIER2_DAYS", 30, env);
+	return envInt("AGENT_SMITH_MEMORY_TIER2_DAYS", 30, env);
 }
 
 export function tier3Days(env: Env = process.env): number {
-	return envInt("MNEMOPI_TIER3_DAYS", 180, env);
+	return envInt("AGENT_SMITH_MEMORY_TIER3_DAYS", 180, env);
 }
 
 export function tier1Weight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_TIER1_WEIGHT", 1.0, env);
+	return envFloat("AGENT_SMITH_MEMORY_TIER1_WEIGHT", 1.0, env);
 }
 
 export function tier2Weight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_TIER2_WEIGHT", 0.5, env);
+	return envFloat("AGENT_SMITH_MEMORY_TIER2_WEIGHT", 0.5, env);
 }
 
 export function tier3Weight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_TIER3_WEIGHT", 0.25, env);
+	return envFloat("AGENT_SMITH_MEMORY_TIER3_WEIGHT", 0.25, env);
 }
 
 export function degradeBatchSize(env: Env = process.env): number {
-	return envInt("MNEMOPI_DEGRADE_BATCH", 100, env);
+	return envInt("AGENT_SMITH_MEMORY_DEGRADE_BATCH", 100, env);
 }
 
 export function smartCompressEnabled(env: Env = process.env): boolean {
-	return !envDisabled("MNEMOPI_SMART_COMPRESS", env);
+	return !envDisabled("AGENT_SMITH_MEMORY_SMART_COMPRESS", env);
 }
 
 export function tier3MaxChars(env: Env = process.env): number {
-	return envInt("MNEMOPI_TIER3_MAX_CHARS", 300, env);
+	return envInt("AGENT_SMITH_MEMORY_TIER3_MAX_CHARS", 300, env);
 }
 
 export function statedWeight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_STATED_WEIGHT", VERACITY_WEIGHT_DEFAULTS.stated, env);
+	return envFloat("AGENT_SMITH_MEMORY_STATED_WEIGHT", VERACITY_WEIGHT_DEFAULTS.stated, env);
 }
 
 export function inferredWeight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_INFERRED_WEIGHT", VERACITY_WEIGHT_DEFAULTS.inferred, env);
+	return envFloat("AGENT_SMITH_MEMORY_INFERRED_WEIGHT", VERACITY_WEIGHT_DEFAULTS.inferred, env);
 }
 
 export function toolWeight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_TOOL_WEIGHT", VERACITY_WEIGHT_DEFAULTS.tool, env);
+	return envFloat("AGENT_SMITH_MEMORY_TOOL_WEIGHT", VERACITY_WEIGHT_DEFAULTS.tool, env);
 }
 
 export function importedWeight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_IMPORTED_WEIGHT", VERACITY_WEIGHT_DEFAULTS.imported, env);
+	return envFloat("AGENT_SMITH_MEMORY_IMPORTED_WEIGHT", VERACITY_WEIGHT_DEFAULTS.imported, env);
 }
 
 export function unknownWeight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_UNKNOWN_WEIGHT", VERACITY_WEIGHT_DEFAULTS.unknown, env);
+	return envFloat("AGENT_SMITH_MEMORY_UNKNOWN_WEIGHT", VERACITY_WEIGHT_DEFAULTS.unknown, env);
 }
 
 export function veracityWeightOverrides(env: Env = process.env): string[] {
 	const names = [
-		"MNEMOPI_STATED_WEIGHT",
-		"MNEMOPI_INFERRED_WEIGHT",
-		"MNEMOPI_TOOL_WEIGHT",
-		"MNEMOPI_IMPORTED_WEIGHT",
-		"MNEMOPI_UNKNOWN_WEIGHT",
+		"AGENT_SMITH_MEMORY_STATED_WEIGHT",
+		"AGENT_SMITH_MEMORY_INFERRED_WEIGHT",
+		"AGENT_SMITH_MEMORY_TOOL_WEIGHT",
+		"AGENT_SMITH_MEMORY_IMPORTED_WEIGHT",
+		"AGENT_SMITH_MEMORY_UNKNOWN_WEIGHT",
 	];
 	const overrides: string[] = [];
 	for (const name of names) {
@@ -230,19 +234,19 @@ export function veracityWeightOverrides(env: Env = process.env): string[] {
 }
 
 export function vecType(env: Env = process.env): VecType {
-	return envOneOf("MNEMOPI_VEC_TYPE", ["float32", "int8", "bit"] as const, "int8", env);
+	return envOneOf("AGENT_SMITH_MEMORY_VEC_TYPE", ["float32", "int8", "bit"] as const, "int8", env);
 }
 
 export function vectorWeight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_VEC_WEIGHT", 0.5, env);
+	return envFloat("AGENT_SMITH_MEMORY_VEC_WEIGHT", 0.5, env);
 }
 
 export function ftsWeight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_FTS_WEIGHT", 0.3, env);
+	return envFloat("AGENT_SMITH_MEMORY_FTS_WEIGHT", 0.3, env);
 }
 
 export function importanceWeight(env: Env = process.env): number {
-	return envFloat("MNEMOPI_IMPORTANCE_WEIGHT", 0.2, env);
+	return envFloat("AGENT_SMITH_MEMORY_IMPORTANCE_WEIGHT", 0.2, env);
 }
 
 export function normalizedRecallWeights(
@@ -265,7 +269,7 @@ export function normalizedRecallWeights(
 }
 
 export function autoMigrateEnabled(env: Env = process.env): boolean {
-	return envString("MNEMOPI_AUTO_MIGRATE", "1", env) !== "0";
+	return envString("AGENT_SMITH_MEMORY_AUTO_MIGRATE", "1", env) !== "0";
 }
 
 export interface RecallFeatureFlags {
@@ -283,8 +287,8 @@ let proactiveLinkingDefault = false;
  * several memories with different policies should pass the per-instance
  * `polyphonicRecall` / `enhancedRecall` / `proactiveLinking` options instead
  * (`Mnemopi` / `BeamMemory` constructors), which take precedence over these
- * defaults. The `MNEMOPI_POLYPHONIC_RECALL` / `MNEMOPI_ENHANCED_RECALL` /
- * `MNEMOPI_PROACTIVE_LINKING` environment variables still win whenever they are set.
+ * defaults. The `AGENT_SMITH_MEMORY_POLYPHONIC_RECALL` / `AGENT_SMITH_MEMORY_ENHANCED_RECALL` /
+ * `AGENT_SMITH_MEMORY_PROACTIVE_LINKING` environment variables still win whenever they are set.
  */
 export function configureRecallFeatures(flags: RecallFeatureFlags): void {
 	if (flags.polyphonicRecall !== undefined) polyphonicRecallDefault = flags.polyphonicRecall;
@@ -297,12 +301,12 @@ export function configureRecallFeatures(flags: RecallFeatureFlags): void {
  * per-instance `configured` value, then the process-wide default.
  */
 export function polyphonicRecallEnabled(env: Env = process.env, configured?: boolean): boolean {
-	const value = envOptionalString("MNEMOPI_POLYPHONIC_RECALL", env);
+	const value = envOptionalString("AGENT_SMITH_MEMORY_POLYPHONIC_RECALL", env);
 	return value === undefined ? (configured ?? polyphonicRecallDefault) : value === "1";
 }
 
 export function temporalHalflifeHours(env: Env = process.env): number {
-	return envFloat("MNEMOPI_TEMPORAL_HALFLIFE_HOURS", 24, env);
+	return envFloat("AGENT_SMITH_MEMORY_TEMPORAL_HALFLIFE_HOURS", 24, env);
 }
 
 /**
@@ -310,73 +314,73 @@ export function temporalHalflifeHours(env: Env = process.env): number {
  * set, then the per-instance `configured` value, then the process-wide default.
  */
 export function enhancedRecallEnabled(env: Env = process.env, configured?: boolean): boolean {
-	const value = envOptionalString("MNEMOPI_ENHANCED_RECALL", env);
+	const value = envOptionalString("AGENT_SMITH_MEMORY_ENHANCED_RECALL", env);
 	return value === undefined ? (configured ?? enhancedRecallDefault) : value === "1";
 }
 
 export function proactiveLinkingEnabled(env: Env = process.env): boolean {
-	const value = envOptionalString("MNEMOPI_PROACTIVE_LINKING", env);
+	const value = envOptionalString("AGENT_SMITH_MEMORY_PROACTIVE_LINKING", env);
 	return value === undefined ? proactiveLinkingDefault : value === "1";
 }
 
 export function llmEnabled(env: Env = process.env): boolean {
-	return envBool("MNEMOPI_LLM_ENABLED", true, env);
+	return envBool("AGENT_SMITH_MEMORY_LLM_ENABLED", true, env);
 }
 
 export function llmMaxTokens(env: Env = process.env): number {
-	return envInt("MNEMOPI_LLM_MAX_TOKENS", 2048, env);
+	return envInt("AGENT_SMITH_MEMORY_LLM_MAX_TOKENS", 2048, env);
 }
 
 export function llmThreads(env: Env = process.env): number {
-	return envInt("MNEMOPI_LLM_N_THREADS", 4, env);
+	return envInt("AGENT_SMITH_MEMORY_LLM_N_THREADS", 4, env);
 }
 
 export function llmContext(env: Env = process.env): number {
-	return envInt("MNEMOPI_LLM_N_CTX", 2048, env);
+	return envInt("AGENT_SMITH_MEMORY_LLM_N_CTX", 2048, env);
 }
 
 export function llmRepo(env: Env = process.env): string {
-	return envString("MNEMOPI_LLM_REPO", DEFAULT_LLM_MODEL_REPO, env);
+	return envString("AGENT_SMITH_MEMORY_LLM_REPO", DEFAULT_LLM_MODEL_REPO, env);
 }
 
 export function llmFile(env: Env = process.env): string {
-	return envString("MNEMOPI_LLM_FILE", DEFAULT_LLM_MODEL_FILE, env);
+	return envString("AGENT_SMITH_MEMORY_LLM_FILE", DEFAULT_LLM_MODEL_FILE, env);
 }
 
 export function llmModelFiles(env: Env = process.env): readonly [repo: string, file: string] {
-	const repo = envOptionalString("MNEMOPI_LLM_REPO", env);
-	const file = envOptionalString("MNEMOPI_LLM_FILE", env);
+	const repo = envOptionalString("AGENT_SMITH_MEMORY_LLM_REPO", env);
+	const file = envOptionalString("AGENT_SMITH_MEMORY_LLM_FILE", env);
 	return repo && file ? [repo, file] : [DEFAULT_LLM_MODEL_REPO, DEFAULT_LLM_MODEL_FILE];
 }
 
 export function llmBaseUrl(env: Env = process.env): string {
-	return envString("MNEMOPI_LLM_BASE_URL", "", env).replace(/\/+$/, "");
+	return envString("AGENT_SMITH_MEMORY_LLM_BASE_URL", "", env).replace(/\/+$/, "");
 }
 
 export function llmApiKey(env: Env = process.env): string {
-	return envString("MNEMOPI_LLM_API_KEY", "", env);
+	return envString("AGENT_SMITH_MEMORY_LLM_API_KEY", "", env);
 }
 
 export function llmModel(env: Env = process.env): string {
-	return envString("MNEMOPI_LLM_MODEL", "", env);
+	return envString("AGENT_SMITH_MEMORY_LLM_MODEL", "", env);
 }
 
 export function hostLlmEnabled(env: Env = process.env): boolean {
-	return envBool("MNEMOPI_HOST_LLM_ENABLED", false, env);
+	return envBool("AGENT_SMITH_MEMORY_HOST_LLM_ENABLED", false, env);
 }
 
 export function hostLlmProvider(env: Env = process.env): string | undefined {
-	return envOptionalString("MNEMOPI_HOST_LLM_PROVIDER", env);
+	return envOptionalString("AGENT_SMITH_MEMORY_HOST_LLM_PROVIDER", env);
 }
 
 export function hostLlmModel(env: Env = process.env): string | undefined {
-	return envOptionalString("MNEMOPI_HOST_LLM_MODEL", env);
+	return envOptionalString("AGENT_SMITH_MEMORY_HOST_LLM_MODEL", env);
 }
 
 export function hostLlmContext(env: Env = process.env): number {
-	return envInt("MNEMOPI_HOST_LLM_N_CTX", 32000, env);
+	return envInt("AGENT_SMITH_MEMORY_HOST_LLM_N_CTX", 32000, env);
 }
 
 export function sleepPrompt(env: Env = process.env): string {
-	return envString("MNEMOPI_SLEEP_PROMPT", "", env).trim();
+	return envString("AGENT_SMITH_MEMORY_SLEEP_PROMPT", "", env).trim();
 }

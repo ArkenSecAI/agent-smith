@@ -89,12 +89,11 @@ describe("parseEnvFile", () => {
 		});
 	});
 
-	it("mirrors valid OMP_ variables to PI_ variables", () => {
+	it("does not synthesize cross-app environment aliases", () => {
 		const filePath = writeTempEnv("OMP_FEATURE=enabled\nOMP_BAD=before\0after\n");
 
 		expect(parseEnvFile(filePath)).toEqual({
 			OMP_FEATURE: "enabled",
-			PI_FEATURE: "enabled",
 		});
 	});
 

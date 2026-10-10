@@ -1,0 +1,20 @@
+{
+  "upstreamRevision": "717f97f4d22b3d65c4a4eef6a744255d46f4d1a6",
+  "version": "18.4.8",
+  "toolchain": "nightly-2026-08-12",
+  "upstreamSha256": "f3d06afd4d2cdc11e63f2d8399dc983e379d7dfad20856459b8a07459455a50e",
+  "inputs": [
+    ".cargo/config.toml",
+    "Cargo.lock",
+    "Cargo.toml",
+    "rust-toolchain.toml",
+    "crates",
+    "scripts/bazel-natives.ts",
+    "scripts/host-detect.ts",
+    "scripts/stamp-native-version.ts",
+    "packages/natives/scripts/build-bindings.ts",
+    "packages/natives/scripts/gen-enums.ts",
+    "packages/natives/native/version-sentinel.js"
+  ],
+  "sha256": "8cc5152fcb9bd0441286f1db73ddb67adb5e86ff727d23863fb5b60a4ee478e8"
+}

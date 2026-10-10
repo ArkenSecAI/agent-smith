@@ -6,7 +6,7 @@ import { register } from "../config/registry";
 
 const HINDSIGHT_RECALL_TYPES_DEFAULT: string[] = ["world", "experience"];
 
-/** Integer `HINDSIGHT_*` variables: base-10 `parseInt` prefix (`5000ms` → 5000, `2.5` → 2); other text is unset. */
+/** Integer `AGENT_SMITH_HINDSIGHT_*` variables: base-10 `parseInt` prefix (`5000ms` → 5000, `2.5` → 2); other text is unset. */
 function parseEnvInteger(raw: string): number | undefined {
 	const value = Number.parseInt(raw, 10);
 	return Number.isFinite(value) ? value : undefined;
@@ -15,21 +15,21 @@ function parseEnvInteger(raw: string): number | undefined {
 // Hindsight (https://hindsight.vectorize.io)
 export const cfgHindsightApiUrl = register({
 	id: "hindsight.apiUrl",
-	env: "HINDSIGHT_API_URL",
+	env: "AGENT_SMITH_HINDSIGHT_API_URL",
 	type: "string",
-	default: "http://localhost:8888",
+	default: "",
 	ui: {
 		tab: "memory",
 		group: "Hindsight",
 		label: "Hindsight API URL",
-		description: "Hindsight server URL (Cloud or self-hosted)",
+		description: "Explicit Hindsight server URL (required before connecting)",
 		condition: "hindsightActive",
 	},
 });
 
 export const cfgHindsightApiToken = register({
 	id: "hindsight.apiToken",
-	env: "HINDSIGHT_API_TOKEN",
+	env: "AGENT_SMITH_HINDSIGHT_API_TOKEN",
 	type: "string",
 	credential: true,
 	default: undefined,
@@ -44,7 +44,7 @@ export const cfgHindsightApiToken = register({
 
 export const cfgHindsightBankId = register({
 	id: "hindsight.bankId",
-	env: "HINDSIGHT_BANK_ID",
+	env: "AGENT_SMITH_HINDSIGHT_BANK_ID",
 	type: "string",
 	default: undefined,
 	ui: {
@@ -60,7 +60,7 @@ export const cfgHindsightBankIdPrefix = register({ id: "hindsight.bankIdPrefix",
 
 export const cfgHindsightScoping = register({
 	id: "hindsight.scoping",
-	env: "HINDSIGHT_SCOPING",
+	env: "AGENT_SMITH_HINDSIGHT_SCOPING",
 	type: "enum",
 	values: ["global", "per-project", "per-project-tagged"] as const,
 	default: "per-project-tagged",
@@ -94,7 +94,7 @@ export const cfgHindsightScoping = register({
 
 export const cfgHindsightBankMission = register({
 	id: "hindsight.bankMission",
-	env: "HINDSIGHT_BANK_MISSION",
+	env: "AGENT_SMITH_HINDSIGHT_BANK_MISSION",
 	type: "string",
 	default: undefined,
 });
@@ -107,7 +107,7 @@ export const cfgHindsightRetainMission = register({
 
 export const cfgHindsightAutoRecall = register({
 	id: "hindsight.autoRecall",
-	env: "HINDSIGHT_AUTO_RECALL",
+	env: "AGENT_SMITH_HINDSIGHT_AUTO_RECALL",
 	type: "boolean",
 	default: true,
 	ui: {
@@ -121,7 +121,7 @@ export const cfgHindsightAutoRecall = register({
 
 export const cfgHindsightAutoRetain = register({
 	id: "hindsight.autoRetain",
-	env: "HINDSIGHT_AUTO_RETAIN",
+	env: "AGENT_SMITH_HINDSIGHT_AUTO_RETAIN",
 	type: "boolean",
 	default: true,
 	ui: {
@@ -135,7 +135,7 @@ export const cfgHindsightAutoRetain = register({
 
 export const cfgHindsightRetainMode = register({
 	id: "hindsight.retainMode",
-	env: "HINDSIGHT_RETAIN_MODE",
+	env: "AGENT_SMITH_HINDSIGHT_RETAIN_MODE",
 	type: "enum",
 	values: ["full-session", "last-turn"] as const,
 	default: "full-session",
@@ -158,7 +158,7 @@ export const cfgHindsightRetainMode = register({
 
 export const cfgHindsightRetainEveryNTurns = register({
 	id: "hindsight.retainEveryNTurns",
-	env: { name: "HINDSIGHT_RETAIN_EVERY_N_TURNS", parse: parseEnvInteger },
+	env: { name: "AGENT_SMITH_HINDSIGHT_RETAIN_EVERY_N_TURNS", parse: parseEnvInteger },
 	type: "number",
 	default: 3,
 });
@@ -173,7 +173,7 @@ export const cfgHindsightRetainContext = register({ id: "hindsight.retainContext
 
 export const cfgHindsightRecallBudget = register({
 	id: "hindsight.recallBudget",
-	env: "HINDSIGHT_RECALL_BUDGET",
+	env: "AGENT_SMITH_HINDSIGHT_RECALL_BUDGET",
 	type: "enum",
 	values: ["low", "mid", "high"] as const,
 	default: "mid",
@@ -181,21 +181,21 @@ export const cfgHindsightRecallBudget = register({
 
 export const cfgHindsightRecallMaxTokens = register({
 	id: "hindsight.recallMaxTokens",
-	env: { name: "HINDSIGHT_RECALL_MAX_TOKENS", parse: parseEnvInteger },
+	env: { name: "AGENT_SMITH_HINDSIGHT_RECALL_MAX_TOKENS", parse: parseEnvInteger },
 	type: "number",
 	default: 1024,
 });
 
 export const cfgHindsightRecallContextTurns = register({
 	id: "hindsight.recallContextTurns",
-	env: { name: "HINDSIGHT_RECALL_CONTEXT_TURNS", parse: parseEnvInteger },
+	env: { name: "AGENT_SMITH_HINDSIGHT_RECALL_CONTEXT_TURNS", parse: parseEnvInteger },
 	type: "number",
 	default: 1,
 });
 
 export const cfgHindsightRecallMaxQueryChars = register({
 	id: "hindsight.recallMaxQueryChars",
-	env: { name: "HINDSIGHT_RECALL_MAX_QUERY_CHARS", parse: parseEnvInteger },
+	env: { name: "AGENT_SMITH_HINDSIGHT_RECALL_MAX_QUERY_CHARS", parse: parseEnvInteger },
 	type: "number",
 	default: 800,
 });
@@ -208,35 +208,35 @@ export const cfgHindsightRecallTypes = register({
 
 export const cfgHindsightDebug = register({
 	id: "hindsight.debug",
-	env: "HINDSIGHT_DEBUG",
+	env: "AGENT_SMITH_HINDSIGHT_DEBUG",
 	type: "boolean",
 	default: false,
 });
 
 export const cfgHindsightRequestTimeoutMs = register({
 	id: "hindsight.requestTimeoutMs",
-	env: { name: "HINDSIGHT_REQUEST_TIMEOUT_MS", parse: parseEnvInteger },
+	env: { name: "AGENT_SMITH_HINDSIGHT_REQUEST_TIMEOUT_MS", parse: parseEnvInteger },
 	type: "number",
 	default: 30_000,
 });
 
 export const cfgHindsightReflectTimeoutMs = register({
 	id: "hindsight.reflectTimeoutMs",
-	env: { name: "HINDSIGHT_REFLECT_TIMEOUT_MS", parse: parseEnvInteger },
+	env: { name: "AGENT_SMITH_HINDSIGHT_REFLECT_TIMEOUT_MS", parse: parseEnvInteger },
 	type: "number",
 	default: 120_000,
 });
 
 export const cfgHindsightRecallTimeoutMs = register({
 	id: "hindsight.recallTimeoutMs",
-	env: { name: "HINDSIGHT_RECALL_TIMEOUT_MS", parse: parseEnvInteger },
+	env: { name: "AGENT_SMITH_HINDSIGHT_RECALL_TIMEOUT_MS", parse: parseEnvInteger },
 	type: "number",
 	default: 30_000,
 });
 
 export const cfgHindsightRetainTimeoutMs = register({
 	id: "hindsight.retainTimeoutMs",
-	env: { name: "HINDSIGHT_RETAIN_TIMEOUT_MS", parse: parseEnvInteger },
+	env: { name: "AGENT_SMITH_HINDSIGHT_RETAIN_TIMEOUT_MS", parse: parseEnvInteger },
 	type: "number",
 	default: 60_000,
 });

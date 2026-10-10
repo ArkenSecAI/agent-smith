@@ -1,12 +1,19 @@
+import { slashCommandFrontmatterDisplay } from "@oh-my-pi/pi-tui/overlays/extensions/inspector-model";
 import { parseFrontmatter, prompt } from "@oh-my-pi/pi-utils";
 import { slashCommandCapability } from "../capability/slash-command";
-import { slashCommandFrontmatterDisplay } from "@oh-my-pi/pi-tui/overlays/extensions/inspector-model";
 import type { EffectiveExtensionRoots } from "../capability/types";
 import { appendInlineArgsFallback, templateUsesInlineArgPlaceholders } from "../config/prompt-templates";
+import { settings } from "../config/settings";
 import type { SlashCommand } from "../discovery";
 import { loadCapability } from "../discovery";
 import { EMBEDDED_COMMAND_TEMPLATES } from "../task/commands";
 import { parseCommandArgs, substituteArgs } from "../utils/command-args";
+import {
+	cfgCommandsEnableClaudeProject,
+	cfgCommandsEnableClaudeUser,
+	cfgCommandsEnableOpencodeProject,
+	cfgCommandsEnableOpencodeUser,
+} from "./settings";
 
 export type SlashCommandSource = "extension" | "prompt" | "skill";
 
@@ -70,8 +77,20 @@ export interface LoadSlashCommandsOptions {
  * Loads from all registered providers (builtin, user, project).
  */
 export async function loadSlashCommands(options: LoadSlashCommandsOptions = {}): Promise<FileSlashCommand[]> {
+	const optInProviders: string[] = [];
+	try {
+		if (cfgCommandsEnableClaudeUser.get(settings) || cfgCommandsEnableClaudeProject.get(settings)) {
+			optInProviders.push("claude");
+		}
+		if (cfgCommandsEnableOpencodeUser.get(settings) || cfgCommandsEnableOpencodeProject.get(settings)) {
+			optInProviders.push("opencode");
+		}
+	} catch {
+		// No initialized settings: only native/default providers participate.
+	}
 	const result = await loadCapability<SlashCommand>(slashCommandCapability.id, {
 		cwd: options.cwd,
+		optInProviders,
 		extensionRoots: options.extensionRoots,
 	});
 

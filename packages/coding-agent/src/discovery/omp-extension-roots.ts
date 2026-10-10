@@ -1,3 +1,4 @@
+import { getProjectAgentDir } from "@oh-my-pi/pi-utils/dirs";
 /**
  * OMP extension package roots.
  *
@@ -159,7 +160,7 @@ interface ScopeDirs {
 
 function scopeDirs(ctx: LoadContext): ScopeDirs {
 	return {
-		project: path.join(ctx.cwd, ".omp"),
+		project: getProjectAgentDir(ctx.cwd),
 		user: getAgentDir(),
 	};
 }

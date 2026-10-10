@@ -1,4 +1,4 @@
-import * as os from "node:os";
+import { getConfigRootDir } from "@oh-my-pi/pi-utils/dirs";
 import * as path from "node:path";
 
 import { isRecord, untilAborted } from "@oh-my-pi/pi-utils";
@@ -467,7 +467,7 @@ export function storageStatePath(tabName: string, requestedPath: string | undefi
 	const fileName = safeName === "." || safeName === ".." ? "_" : safeName || "main";
 	return requestedPath
 		? resolveToCwd(requestedPath, cwd)
-		: path.join(os.homedir(), ".omp", "browser-state", `${fileName}.json`);
+		: path.join(getConfigRootDir(), "browser-state", `${fileName}.json`);
 }
 
 /** Save cookies and current-origin Web Storage to a Playwright-compatible state file. */

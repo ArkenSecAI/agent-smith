@@ -268,7 +268,7 @@ async function mergeDirectoryInto(
  * The destination may already exist: a session moving back into a bucket it
  * lived in before finds its own `<id>/` there whenever a writer that captured
  * the old path — subagents adopt the parent's `ArtifactManager`, eval
- * subprocesses inherit `PI_ARTIFACTS_DIR` — kept writing after the move away.
+ * subprocesses inherit `AGENT_SMITH_ARTIFACTS_DIR` — kept writing after the move away.
  * Renaming onto an existing directory fails with a platform-specific code
  * (ENOTEMPTY, EEXIST, EPERM on Windows), so the fallback is decided by what is
  * there, not by the code: an existing directory is merged into.

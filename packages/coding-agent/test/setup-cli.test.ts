@@ -23,7 +23,7 @@ async function runSetupPython(cwd: string): Promise<CliProcessResult> {
 	const env: NodeJS.ProcessEnv = {
 		...process.env,
 		NO_COLOR: "1",
-		PI_CODING_AGENT_DIR: path.join(cwd, "agent"),
+		AGENT_SMITH_CODING_AGENT_DIR: path.join(cwd, "agent"),
 	};
 	delete env.VIRTUAL_ENV;
 	delete env.CONDA_DEFAULT_ENV;
@@ -44,7 +44,7 @@ async function runSetup(cwd: string, ...setupArgs: string[]): Promise<CliProcess
 	const env: NodeJS.ProcessEnv = {
 		...process.env,
 		NO_COLOR: "1",
-		PI_CODING_AGENT_DIR: path.join(cwd, "agent"),
+		AGENT_SMITH_CODING_AGENT_DIR: path.join(cwd, "agent"),
 	};
 	const proc = Bun.spawn([process.execPath, cliEntry, "setup", ...setupArgs], {
 		cwd,
@@ -96,7 +96,7 @@ describe("omp setup python", () => {
 			const interpreter = path.join(cwd, "configured-python");
 			await Bun.write(interpreter, "#!/bin/sh\nexit 0\n");
 			await fs.chmod(interpreter, 0o755);
-			await Bun.write(path.join(cwd, ".omp", "config.yml"), `python:\n  interpreter: ${interpreter}\n`);
+			await Bun.write(path.join(cwd, ".agent-smith", "config.yml"), `python:\n  interpreter: ${interpreter}\n`);
 
 			const result = await runSetupPython(cwd);
 

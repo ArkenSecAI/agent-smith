@@ -423,7 +423,7 @@ function metadataArg(args: ToolArguments): Record<string, JsonValue> | null {
 }
 
 function resolveBank(args: ToolArguments): string {
-	return stringArg(args, "bank") || process.env.MNEMOPI_MCP_BANK || "default";
+	return stringArg(args, "bank") || process.env.AGENT_SMITH_MEMORY_MCP_BANK || "default";
 }
 
 function bankDbPath(bank: string): string {
@@ -431,18 +431,18 @@ function bankDbPath(bank: string): string {
 }
 
 function createBeam(args: ToolArguments, bank = resolveBank(args)): BeamMemory {
-	const sessionId = process.env.MNEMOPI_SESSION_ID || `mcp_${bank}`;
+	const sessionId = process.env.AGENT_SMITH_MEMORY_SESSION_ID || `mcp_${bank}`;
 	return new BeamMemory({
 		sessionId,
 		dbPath: bankDbPath(bank),
-		authorId: optionalStringArg(args, "author_id") ?? process.env.MNEMOPI_AUTHOR_ID ?? null,
-		authorType: optionalStringArg(args, "author_type") ?? process.env.MNEMOPI_AUTHOR_TYPE ?? null,
-		channelId: optionalStringArg(args, "channel_id") ?? process.env.MNEMOPI_CHANNEL_ID ?? sessionId,
+		authorId: optionalStringArg(args, "author_id") ?? process.env.AGENT_SMITH_MEMORY_AUTHOR_ID ?? null,
+		authorType: optionalStringArg(args, "author_type") ?? process.env.AGENT_SMITH_MEMORY_AUTHOR_TYPE ?? null,
+		channelId: optionalStringArg(args, "channel_id") ?? process.env.AGENT_SMITH_MEMORY_CHANNEL_ID ?? sessionId,
 	});
 }
 
 function sharedBeam(): BeamMemory {
-	const configured = process.env.MNEMOPI_SHARED_SURFACE_DB;
+	const configured = process.env.AGENT_SMITH_MEMORY_SHARED_SURFACE_DB;
 	const dbPath = configured && configured.length > 0 ? configured : join(dataDir(), "shared", DEFAULT_DB_FILENAME);
 	return new BeamMemory({ sessionId: "mcp_shared_surface", dbPath });
 }

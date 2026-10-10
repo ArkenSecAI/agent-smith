@@ -1,10 +1,9 @@
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { dataDir as configuredDataDir } from "../config";
 import { closeQuietly, openDatabase } from "../db";
 
-export const DEFAULT_DATA_DIR = join(homedir(), ".hermes", "mnemopi", "data");
+export const DEFAULT_DATA_DIR = configuredDataDir();
 export const BANKS_DIR = join(DEFAULT_DATA_DIR, "banks");
 const DB_FILENAME = "mnemopi.db";
 

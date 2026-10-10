@@ -55,9 +55,9 @@ registerMockApi();
 
 describe("local LLM TypeScript port", () => {
 	it("reports remote availability and calls OpenAI-compatible HTTP", async () => {
-		process.env.MNEMOPI_LLM_BASE_URL = "http://local-llm/v1";
-		process.env.MNEMOPI_LLM_API_KEY = "sk-test";
-		process.env.MNEMOPI_LLM_MODEL = "test-model";
+		process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL = "http://local-llm/v1";
+		process.env.AGENT_SMITH_MEMORY_LLM_API_KEY = "sk-test";
+		process.env.AGENT_SMITH_MEMORY_LLM_MODEL = "test-model";
 		let auth = "";
 		let model = "";
 		const fetchMock: FetchImpl = async (_input, init?) => {
@@ -76,7 +76,7 @@ describe("local LLM TypeScript port", () => {
 	});
 
 	it("removes leading reasoning blocks from remote summaries", async () => {
-		process.env.MNEMOPI_LLM_BASE_URL = "http://reasoning-llm/v1";
+		process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL = "http://reasoning-llm/v1";
 		const fetchMock: FetchImpl = async () =>
 			new Response(
 				JSON.stringify({
@@ -102,9 +102,9 @@ describe("local LLM TypeScript port", () => {
 	});
 
 	it("uses host backend before remote and skips remote on host miss", async () => {
-		process.env.MNEMOPI_LLM_ENABLED = "true";
-		process.env.MNEMOPI_HOST_LLM_ENABLED = "true";
-		process.env.MNEMOPI_LLM_BASE_URL = "http://remote/v1";
+		process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_HOST_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL = "http://remote/v1";
 		let calls = 0;
 		const fetchMock: FetchImpl = async () => {
 			calls += 1;
@@ -123,17 +123,17 @@ describe("local LLM TypeScript port", () => {
 	});
 
 	it("renders host sleep prompt override without chat-template tokens", () => {
-		process.env.MNEMOPI_SLEEP_PROMPT = "Write in German. Source={source}. Memories:\n{memories}";
+		process.env.AGENT_SMITH_MEMORY_SLEEP_PROMPT = "Write in German. Source={source}. Memories:\n{memories}";
 		expect(buildHostPrompt(["User prefers tea"], "profile")).toBe(
 			"Write in German. Source=profile. Memories:\n- User prefers tea",
 		);
 	});
 
 	it("expands chunk budget when host backend will handle calls", () => {
-		process.env.MNEMOPI_LLM_ENABLED = "true";
-		process.env.MNEMOPI_HOST_LLM_ENABLED = "true";
-		process.env.MNEMOPI_HOST_LLM_N_CTX = "32000";
-		process.env.MNEMOPI_LLM_N_CTX = "2048";
+		process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_HOST_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_HOST_LLM_N_CTX = "32000";
+		process.env.AGENT_SMITH_MEMORY_LLM_N_CTX = "2048";
 		setHostLlmBackend(new CallableLlmBackend("host", () => "x"));
 		const hostChunks = chunkMemoriesByBudget(["x".repeat(10_000)]);
 		resetHostLlmBackendForTests();
@@ -143,8 +143,8 @@ describe("local LLM TypeScript port", () => {
 	});
 
 	it("uses a constructor-scoped completion function instead of remote URL settings", async () => {
-		process.env.MNEMOPI_LLM_ENABLED = "true";
-		process.env.MNEMOPI_LLM_BASE_URL = "http://remote.example/v1";
+		process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL = "http://remote.example/v1";
 		let fetchCalls = 0;
 		const fetchMock: FetchImpl = async () => {
 			fetchCalls += 1;
@@ -179,8 +179,8 @@ describe("local LLM TypeScript port", () => {
 	});
 
 	it("lets llm:false override remote environment defaults", async () => {
-		process.env.MNEMOPI_LLM_ENABLED = "true";
-		process.env.MNEMOPI_LLM_BASE_URL = "http://remote.example/v1";
+		process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL = "http://remote.example/v1";
 		let fetchCalls = 0;
 		const fetchMock: FetchImpl = async () => {
 			fetchCalls += 1;

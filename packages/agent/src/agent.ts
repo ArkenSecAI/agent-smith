@@ -893,7 +893,7 @@ export class Agent {
 		if (!model) throw new Error("No active model on agent");
 		const ownedDialect =
 			(this.#dialectResolver ? this.#dialectResolver(model) : this.#dialect) ??
-			resolveOwnedDialectFromEnv(Bun.env.PI_DIALECT);
+			resolveOwnedDialectFromEnv(Bun.env.AGENT_SMITH_DIALECT);
 		const messages = normalizeMessagesForProvider(llmMessages, model);
 		const tools = ownedDialect
 			? []

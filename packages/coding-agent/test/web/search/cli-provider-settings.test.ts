@@ -6,8 +6,8 @@ import { runSearchCommand } from "../../../src/cli/web-search-cli";
 
 import { cfgRetryFallbackChains } from "@oh-my-pi/pi-coding-agent/session/settings";
 
-const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
-const originalOmpProfile = process.env.OMP_PROFILE;
+const originalAgentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
+const originalOmpProfile = process.env.AGENT_SMITH_PROFILE;
 const originalPiProfile = process.env.PI_PROFILE;
 
 let tempAgentDir: TempDir | undefined;
@@ -61,8 +61,8 @@ afterEach(async () => {
 	vi.restoreAllMocks();
 	resetSettingsForTest();
 	process.exitCode = originalExitCode;
-	restoreEnv("PI_CODING_AGENT_DIR", originalAgentDir);
-	restoreEnv("OMP_PROFILE", originalOmpProfile);
+	restoreEnv("AGENT_SMITH_CODING_AGENT_DIR", originalAgentDir);
+	restoreEnv("AGENT_SMITH_PROFILE", originalOmpProfile);
 	restoreEnv("PI_PROFILE", originalPiProfile);
 	__resetDirsFromEnvForTests();
 	if (tempAgentDir) {

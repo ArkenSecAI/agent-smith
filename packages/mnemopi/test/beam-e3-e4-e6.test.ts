@@ -11,11 +11,11 @@ import { BeamMemory } from "@oh-my-pi/pi-mnemopi/core/beam";
 // on-demand install hangs each test past the 5s timeout (and starves siblings
 // under parallel CI).
 beforeEach(() => {
-	process.env.MNEMOPI_NO_EMBEDDINGS = "1";
+	process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS = "1";
 });
 
 afterEach(() => {
-	delete process.env.MNEMOPI_NO_EMBEDDINGS;
+	delete process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS;
 });
 
 type TempDb = { dir: string; path: string };
@@ -89,7 +89,7 @@ function seedLegacyTriples(dbPath: string): void {
 }
 
 afterEach(() => {
-	delete process.env.MNEMOPI_AUTO_MIGRATE;
+	delete process.env.AGENT_SMITH_MEMORY_AUTO_MIGRATE;
 	while (tempDbs.length > 0) {
 		const db = tempDbs.pop();
 		if (db) rmSync(db.dir, { recursive: true, force: true });

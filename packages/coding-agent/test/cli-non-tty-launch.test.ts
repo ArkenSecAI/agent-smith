@@ -34,10 +34,10 @@ async function launchWithoutTerminal(
 		if (CREDENTIAL_ENV.test(key)) delete env[key];
 	}
 	for (const key of [
-		"PI_CODING_AGENT_DIR",
-		"PI_CONFIG_DIR",
-		"PI_CONFIG_FILES",
-		"OMP_PROFILE",
+		"AGENT_SMITH_CODING_AGENT_DIR",
+		"AGENT_SMITH_CONFIG_DIR",
+		"AGENT_SMITH_CONFIG_FILES",
+		"AGENT_SMITH_PROFILE",
 		"PI_PROFILE",
 		"XDG_CACHE_HOME",
 		"XDG_CONFIG_HOME",

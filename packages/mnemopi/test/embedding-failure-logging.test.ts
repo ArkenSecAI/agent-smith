@@ -10,10 +10,10 @@ import { logger } from "@oh-my-pi/pi-utils";
 const ENV_KEYS = [
 	"NODE_ENV",
 	"BUN_ENV",
-	"MNEMOPI_NO_EMBEDDINGS",
-	"MNEMOPI_EMBEDDING_MODEL",
-	"MNEMOPI_EMBEDDING_API_URL",
-	"MNEMOPI_EMBEDDING_API_KEY",
+	"AGENT_SMITH_MEMORY_NO_EMBEDDINGS",
+	"AGENT_SMITH_MEMORY_EMBEDDING_MODEL",
+	"AGENT_SMITH_MEMORY_EMBEDDING_API_URL",
+	"AGENT_SMITH_MEMORY_EMBEDDING_API_KEY",
 	"OPENROUTER_BASE_URL",
 	"OPENROUTER_API_KEY",
 	"OPENAI_API_KEY",
@@ -29,7 +29,7 @@ async function withLocalModelEnv<T>(fn: () => Promise<T>): Promise<T> {
 		if (value !== undefined) snapshot[key] = value;
 		delete process.env[key];
 	}
-	process.env.MNEMOPI_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5";
+	process.env.AGENT_SMITH_MEMORY_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5";
 	resetEmbeddingProviderForTests();
 	try {
 		return await fn();

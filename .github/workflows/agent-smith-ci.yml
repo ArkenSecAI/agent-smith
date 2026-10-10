@@ -1,0 +1,142 @@
+name: Agent Smith P1
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    # Candidate refs allow exact-commit checks before protected main is created.
+    branches: [main, 'p1/**', 'task/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-smith-p1-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Preserve the committed bytes on Windows too; native source hashes are byte hashes.
+env:
+  GIT_CONFIG_COUNT: '1'
+  GIT_CONFIG_KEY_0: core.autocrlf
+  GIT_CONFIG_VALUE_0: 'false'
+
+jobs:
+  secrets:
+    name: Gitleaks 8.30.1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Provision verified Gitleaks CLI
+        shell: pwsh
+        run: ./scripts/agent-smith-ci-tools.ps1 -Tool gitleaks
+      - name: Scan history and checkout with default rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          scan_config="$RUNNER_TEMP/agent-smith-gitleaks.toml"
+          ignore_file="$RUNNER_TEMP/agent-smith-empty-ignore"
+          printf '[extend]\nuseDefault = true\n' > "$scan_config"
+          : > "$ignore_file"
+          unset GITLEAKS_CONFIG GITLEAKS_CONFIG_TOML GITLEAKS_LICENSE
+          history_status=0
+          checkout_status=0
+          # Gitleaks can exit zero after a decoder error. At error-only log level,
+          # any stderr is a failed scan, independently of the findings exit code.
+          history_errors="$RUNNER_TEMP/agent-smith-history-errors.log"
+          checkout_errors="$RUNNER_TEMP/agent-smith-checkout-errors.log"
+          gitleaks git --no-banner --no-color --log-level error --redact --ignore-gitleaks-allow --max-archive-depth=2 --max-decode-depth=2 --config "$scan_config" --gitleaks-ignore-path "$ignore_file" --log-opts='--full-history --all --diff-merges=first-parent' --report-format=json --report-path="$RUNNER_TEMP/agent-smith-history-findings.json" . 2>"$history_errors" || history_status=$?
+          gitleaks dir --no-banner --no-color --log-level error --redact --ignore-gitleaks-allow --max-archive-depth=2 --max-decode-depth=2 --config "$scan_config" --gitleaks-ignore-path "$ignore_file" --report-format=json --report-path="$RUNNER_TEMP/agent-smith-checkout-findings.json" . 2>"$checkout_errors" || checkout_status=$?
+          cat "$history_errors" "$checkout_errors"
+          printf 'History exit: %s; checkout exit: %s\n' "$history_status" "$checkout_status"
+          test "$history_status" -eq 0 && test "$checkout_status" -eq 0 && test ! -s "$history_errors" && test ! -s "$checkout_errors"
+      - name: Retain redacted scan evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: agent-smith-scan-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/agent-smith-*-findings.json
+            ${{ runner.temp }}/agent-smith-*-errors.log
+          if-no-files-found: error
+          retention-days: 7
+
+  candidate:
+    name: Development (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: linux-x64
+          - os: windows-2025
+            target: win32-x64
+          - os: macos-15
+            target: darwin-arm64
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/agent-smith-bun
+      - name: Provision pinned source-native toolchain (runner only)
+        env:
+          RUSTUP_HOME: ${{ runner.temp }}/agent-smith-rustup
+          CARGO_HOME: ${{ runner.temp }}/agent-smith-cargo-bootstrap
+        run: |
+          set -euo pipefail
+          command -v rustup
+          command -v cmake
+          command -v ninja
+          rustup toolchain install nightly-2026-08-12 --profile minimal --no-self-update
+          printf 'RUSTUP_HOME=%s\n' "$RUSTUP_HOME" >> "$GITHUB_ENV"
+      - name: Install frozen dependencies, build and load native addon, generate assets
+        run: bun --no-env-file run smith:prepare
+      - name: Static checks and maintained subprocess contracts
+        run: bun --no-env-file run smith:check
+      - name: Source CLI synthetic state and worker smoke
+        run: bun --no-env-file run smith:smoke
+      - name: Compile, package, unpack, and smoke development artifact
+        run: bun --no-env-file run smith:build
+      - name: Confirm committed lockfiles were preserved
+        run: git diff --exit-code -- bun.lock Cargo.lock MODULE.bazel.lock
+      # P1 deliberately does not upload or publish candidate binaries.
+
+  source_provenance:
+    name: Main source provenance
+    needs: [secrets, candidate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'ArkenSecAI/agent-smith'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Archive this trusted main commit only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir -p "$RUNNER_TEMP/agent-smith-source"
+          git archive --format=tar.gz --prefix=agent-smith/ --output="$RUNNER_TEMP/agent-smith-source/agent-smith-source.tar.gz" "$GITHUB_SHA"
+      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-path: ${{ runner.temp }}/agent-smith-source/agent-smith-source.tar.gz
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: agent-smith-source-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-smith-source/agent-smith-source.tar.gz
+          if-no-files-found: error
+          retention-days: 7

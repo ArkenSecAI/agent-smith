@@ -77,10 +77,10 @@ function seedPolyphonicFixture(beam: BeamMemoryState): PolyphonicRecallEngine {
 }
 
 afterEach(() => {
-	delete process.env.MNEMOPI_VOICE_VECTOR;
-	delete process.env.MNEMOPI_VOICE_GRAPH;
-	delete process.env.MNEMOPI_VOICE_FACT;
-	delete process.env.MNEMOPI_VOICE_TEMPORAL;
+	delete process.env.AGENT_SMITH_MEMORY_VOICE_VECTOR;
+	delete process.env.AGENT_SMITH_MEMORY_VOICE_GRAPH;
+	delete process.env.AGENT_SMITH_MEMORY_VOICE_FACT;
+	delete process.env.AGENT_SMITH_MEMORY_VOICE_TEMPORAL;
 });
 
 describe("PolyphonicRecallEngine", () => {
@@ -104,9 +104,9 @@ describe("PolyphonicRecallEngine", () => {
 		const beam = makeBeam();
 		try {
 			const engine = seedPolyphonicFixture(beam);
-			process.env.MNEMOPI_VOICE_VECTOR = "0";
-			process.env.MNEMOPI_VOICE_GRAPH = "0";
-			process.env.MNEMOPI_VOICE_TEMPORAL = "0";
+			process.env.AGENT_SMITH_MEMORY_VOICE_VECTOR = "0";
+			process.env.AGENT_SMITH_MEMORY_VOICE_GRAPH = "0";
+			process.env.AGENT_SMITH_MEMORY_VOICE_TEMPORAL = "0";
 			const results = engine.recall("Alice recent", [1, 0], 10);
 			expect(results.map(result => result.id)).toEqual(["m1"]);
 			expect(results[0]?.voice_scores).toEqual({ fact: 1 / 61 });
@@ -145,16 +145,16 @@ describe("PolyphonicRecallEngine", () => {
 				"wm-global-b",
 				JSON.stringify([1, 0]),
 			]);
-			process.env.MNEMOPI_VOICE_GRAPH = "0";
-			process.env.MNEMOPI_VOICE_FACT = "0";
-			process.env.MNEMOPI_VOICE_TEMPORAL = "0";
+			process.env.AGENT_SMITH_MEMORY_VOICE_GRAPH = "0";
+			process.env.AGENT_SMITH_MEMORY_VOICE_FACT = "0";
+			process.env.AGENT_SMITH_MEMORY_VOICE_TEMPORAL = "0";
 
 			const vectorResults = polyphonicRecall(beam, "vector marker", 5, { queryEmbedding: [1, 0] });
 
 			expect(vectorResults.map(result => result.id)).toEqual(["wm-global-b"]);
 
-			process.env.MNEMOPI_VOICE_VECTOR = "0";
-			delete process.env.MNEMOPI_VOICE_TEMPORAL;
+			process.env.AGENT_SMITH_MEMORY_VOICE_VECTOR = "0";
+			delete process.env.AGENT_SMITH_MEMORY_VOICE_TEMPORAL;
 
 			const temporalResults = polyphonicRecall(beam, "recent vector marker", 5);
 
@@ -197,9 +197,9 @@ describe("PolyphonicRecallEngine", () => {
 					VALUES ('cf_alice_visibility', 'Alice', 'owns', 'visibility fixture', 0.9, 2, ?, ?, ?, 'likely_true')`,
 				[timestamp, timestamp, JSON.stringify(["wm-private-fact", "wm-global-fact"])],
 			);
-			process.env.MNEMOPI_VOICE_VECTOR = "0";
-			process.env.MNEMOPI_VOICE_GRAPH = "0";
-			process.env.MNEMOPI_VOICE_TEMPORAL = "0";
+			process.env.AGENT_SMITH_MEMORY_VOICE_VECTOR = "0";
+			process.env.AGENT_SMITH_MEMORY_VOICE_GRAPH = "0";
+			process.env.AGENT_SMITH_MEMORY_VOICE_TEMPORAL = "0";
 
 			const results = engine.recall("Alice", null, 5);
 

@@ -25,8 +25,8 @@
  *   bun scripts/rewrite-changelog.ts --package coding-agent
  *   bun scripts/rewrite-changelog.ts --model google/gemini-3.5-flash
  *
- * Auth: resolves the provider API key through omp's auth storage
- * (~/.omp/agent/agent.db: stored key, OAuth, or env var fallback).
+ * Auth: resolves the provider API key through Agent Smith's auth storage
+ * (~/.agent-smith/agent/agent.db: stored key, OAuth, or env var fallback).
  */
 
 import * as path from "node:path";
@@ -48,7 +48,7 @@ import {
 
 const DEFAULT_MODEL = "openai-codex/gpt-5.6-luna";
 /** Tried in order after the primary model fails (quota exhaustion, auth, hard API errors). */
-const FALLBACK_MODELS = [];
+const FALLBACK_MODELS: string[] = [];
 
 // --------------------------------------------------------------------------
 // Prompts

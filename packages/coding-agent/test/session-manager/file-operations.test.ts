@@ -162,7 +162,7 @@ describe("resolveResumableSession", () => {
 
 describe("SessionManager temp cwd session dirs", () => {
 	let testAgentDir: string;
-	const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+	const originalAgentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 	const fallbackAgentDir = path.join(getConfigRootDir(), "agent");
 
 	function expectedTempSessionDirName(tempCwd: string): string {
@@ -186,7 +186,7 @@ describe("SessionManager temp cwd session dirs", () => {
 			setAgentDir(originalAgentDir);
 		} else {
 			setAgentDir(fallbackAgentDir);
-			delete process.env.PI_CODING_AGENT_DIR;
+			delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
 		}
 		removeSyncWithRetries(testAgentDir);
 	});
@@ -252,7 +252,7 @@ describe("SessionManager temp cwd session dirs", () => {
 describe("SessionManager legacy session migration persistence", () => {
 	let tempDir: string;
 	let testAgentDir: string;
-	const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+	const originalAgentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 	const originalTmuxPane = process.env.TMUX_PANE;
 	const fallbackAgentDir = path.join(getConfigRootDir(), "agent");
 
@@ -299,7 +299,7 @@ describe("SessionManager legacy session migration persistence", () => {
 			setAgentDir(originalAgentDir);
 		} else {
 			setAgentDir(fallbackAgentDir);
-			delete process.env.PI_CODING_AGENT_DIR;
+			delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
 		}
 		removeSyncWithRetries(tempDir);
 		removeSyncWithRetries(testAgentDir);

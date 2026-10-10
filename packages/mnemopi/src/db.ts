@@ -37,7 +37,7 @@ function detectSystemPageSize(): number | undefined {
 }
 
 function configuredPageSize(): SqlitePageSize | undefined {
-	const raw = process.env.MNEMOPI_DB_PAGE_SIZE?.trim();
+	const raw = process.env.AGENT_SMITH_MEMORY_DB_PAGE_SIZE?.trim();
 	if (!raw) return undefined;
 	if (raw.toLowerCase() === "os") return "os";
 	const size = Number(raw);

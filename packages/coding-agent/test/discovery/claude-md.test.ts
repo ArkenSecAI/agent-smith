@@ -153,7 +153,10 @@ describe("claude-md final registration and precedence", () => {
 		writeClaude(path.join(repoRoot, "CLAUDE.md"), "root context");
 		writeClaude(path.join(cwd, "CLAUDE.md"), "cwd context");
 
-		const result = await loadCapability<ContextFile>(contextFileCapability.id, { cwd });
+		const result = await loadCapability<ContextFile>(contextFileCapability.id, {
+			cwd,
+			optInProviders: ["claude-md", "claude", "agents"],
+		});
 
 		const claudeFiles = result.items.filter(file => file._source.providerName === "CLAUDE.md");
 		expect(claudeFiles.map(file => file.path)).toEqual([
@@ -170,7 +173,10 @@ describe("claude-md final registration and precedence", () => {
 		writeClaude(path.join(cwd, ".claude", "CLAUDE.md"), "config-dir context");
 		writeClaude(path.join(cwd, "CLAUDE.md"), "standalone context");
 
-		const result = await loadCapability<ContextFile>(contextFileCapability.id, { cwd });
+		const result = await loadCapability<ContextFile>(contextFileCapability.id, {
+			cwd,
+			optInProviders: ["claude-md", "claude", "agents"],
+		});
 
 		expect(result.items.filter(file => file.level === "project" && file.depth === 0).map(file => file.path)).toEqual([
 			path.join(cwd, ".claude", "CLAUDE.md"),
@@ -185,7 +191,10 @@ describe("claude-md final registration and precedence", () => {
 		writeClaude(path.join(repoRoot, "CLAUDE.md"), "claude context");
 		writeClaude(path.join(repoRoot, "AGENTS.md"), "agents context");
 
-		const result = await loadCapability<ContextFile>(contextFileCapability.id, { cwd });
+		const result = await loadCapability<ContextFile>(contextFileCapability.id, {
+			cwd,
+			optInProviders: ["claude-md", "claude", "agents"],
+		});
 
 		expect(result.items.filter(file => file.level === "project" && file.depth === 1).map(file => file.path)).toEqual([
 			path.join(repoRoot, "AGENTS.md"),
@@ -200,7 +209,10 @@ describe("claude-md final registration and precedence", () => {
 		writeClaude(path.join(repoRoot, "AGENTS.md"), "");
 		writeClaude(path.join(repoRoot, "CLAUDE.md"), "claude context");
 
-		const result = await loadCapability<ContextFile>(contextFileCapability.id, { cwd });
+		const result = await loadCapability<ContextFile>(contextFileCapability.id, {
+			cwd,
+			optInProviders: ["claude-md", "claude", "agents"],
+		});
 
 		expect(result.items.filter(file => file.level === "project" && file.depth === 1).map(file => file.path)).toEqual([
 			path.join(repoRoot, "CLAUDE.md"),

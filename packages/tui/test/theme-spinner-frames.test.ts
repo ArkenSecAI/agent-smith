@@ -11,7 +11,7 @@ import { getConfigRootDir, getCustomThemesDir, removeWithRetries, setAgentDir } 
 // extend with custom `symbols.spinnerFrames` shapes.
 const DARK_THEME_PATH = path.join(import.meta.dir, "..", "src", "theme", "dark.json");
 
-const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+const originalAgentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 const fallbackAgentDir = path.join(getConfigRootDir(), "agent");
 
 let tmpAgentDir: string;
@@ -40,7 +40,7 @@ describe("theme symbols.spinnerFrames", () => {
 			setAgentDir(originalAgentDir);
 		} else {
 			setAgentDir(fallbackAgentDir);
-			delete process.env.PI_CODING_AGENT_DIR;
+			delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
 		}
 		await removeWithRetries(tmpAgentDir);
 	});

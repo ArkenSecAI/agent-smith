@@ -34,16 +34,16 @@ describe("configureRecallFeatures", () => {
 
 	it("lets the env vars override the configured value in both directions", () => {
 		configureRecallFeatures({ polyphonicRecall: true, enhancedRecall: true, proactiveLinking: true });
-		expect(polyphonicRecallEnabled({ MNEMOPI_POLYPHONIC_RECALL: "0" })).toBe(false);
-		expect(enhancedRecallEnabled({ MNEMOPI_ENHANCED_RECALL: "0" })).toBe(false);
-		expect(proactiveLinkingEnabled({ MNEMOPI_PROACTIVE_LINKING: "0" })).toBe(false);
-		expect(isQueryCacheEnabled(true, { MNEMOPI_ENHANCED_RECALL: "0" })).toBe(false);
+		expect(polyphonicRecallEnabled({ AGENT_SMITH_MEMORY_POLYPHONIC_RECALL: "0" })).toBe(false);
+		expect(enhancedRecallEnabled({ AGENT_SMITH_MEMORY_ENHANCED_RECALL: "0" })).toBe(false);
+		expect(proactiveLinkingEnabled({ AGENT_SMITH_MEMORY_PROACTIVE_LINKING: "0" })).toBe(false);
+		expect(isQueryCacheEnabled(true, { AGENT_SMITH_MEMORY_ENHANCED_RECALL: "0" })).toBe(false);
 
 		configureRecallFeatures({ polyphonicRecall: false, enhancedRecall: false, proactiveLinking: false });
-		expect(polyphonicRecallEnabled({ MNEMOPI_POLYPHONIC_RECALL: "1" })).toBe(true);
-		expect(enhancedRecallEnabled({ MNEMOPI_ENHANCED_RECALL: "1" })).toBe(true);
-		expect(proactiveLinkingEnabled({ MNEMOPI_PROACTIVE_LINKING: "1" })).toBe(true);
-		expect(isQueryCacheEnabled(true, { MNEMOPI_ENHANCED_RECALL: "1" })).toBe(true);
+		expect(polyphonicRecallEnabled({ AGENT_SMITH_MEMORY_POLYPHONIC_RECALL: "1" })).toBe(true);
+		expect(enhancedRecallEnabled({ AGENT_SMITH_MEMORY_ENHANCED_RECALL: "1" })).toBe(true);
+		expect(proactiveLinkingEnabled({ AGENT_SMITH_MEMORY_PROACTIVE_LINKING: "1" })).toBe(true);
+		expect(isQueryCacheEnabled(true, { AGENT_SMITH_MEMORY_ENHANCED_RECALL: "1" })).toBe(true);
 	});
 
 	it("updates only the flags that are present", () => {
@@ -65,11 +65,11 @@ describe("configureRecallFeatures", () => {
 		configureRecallFeatures({ polyphonicRecall: true, enhancedRecall: true });
 		expect(polyphonicRecallEnabled({}, false)).toBe(false);
 		expect(isQueryCacheEnabled(true, {}, false)).toBe(false);
-		expect(polyphonicRecallEnabled({ MNEMOPI_POLYPHONIC_RECALL: "1" }, false)).toBe(true);
+		expect(polyphonicRecallEnabled({ AGENT_SMITH_MEMORY_POLYPHONIC_RECALL: "1" }, false)).toBe(true);
 
 		configureRecallFeatures({ polyphonicRecall: false, enhancedRecall: false });
 		expect(polyphonicRecallIsEnabled({}, true)).toBe(true);
 		expect(enhancedRecallEnabled({}, true)).toBe(true);
-		expect(enhancedRecallEnabled({ MNEMOPI_ENHANCED_RECALL: "0" }, true)).toBe(false);
+		expect(enhancedRecallEnabled({ AGENT_SMITH_MEMORY_ENHANCED_RECALL: "0" }, true)).toBe(false);
 	});
 });

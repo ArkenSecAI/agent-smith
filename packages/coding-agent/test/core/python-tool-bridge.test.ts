@@ -152,9 +152,9 @@ asyncio.run(check_intent())
 				signal: AbortSignal.timeout(10_000),
 				env: {
 					...process.env,
-					PI_TOOL_BRIDGE_URL: info.url,
-					PI_TOOL_BRIDGE_TOKEN: info.token,
-					PI_TOOL_BRIDGE_SESSION: sessionId,
+					AGENT_SMITH_TOOL_BRIDGE_URL: info.url,
+					AGENT_SMITH_TOOL_BRIDGE_TOKEN: info.token,
+					AGENT_SMITH_TOOL_BRIDGE_SESSION: sessionId,
 				},
 			});
 			try {
@@ -344,9 +344,9 @@ asyncio.run(check_identity())
 				signal: AbortSignal.timeout(10_000),
 				env: {
 					...process.env,
-					PI_TOOL_BRIDGE_URL: info.url,
-					PI_TOOL_BRIDGE_TOKEN: info.token,
-					PI_TOOL_BRIDGE_SESSION: sessionId,
+					AGENT_SMITH_TOOL_BRIDGE_URL: info.url,
+					AGENT_SMITH_TOOL_BRIDGE_TOKEN: info.token,
+					AGENT_SMITH_TOOL_BRIDGE_SESSION: sessionId,
 				},
 			});
 			try {

@@ -305,12 +305,12 @@ export function createCancelledKernelResult(output: string): KernelExecutionResu
 // ---------------------------------------------------------------------------
 
 export const MANAGED_KERNEL_ENV_KEYS = [
-	"PI_SESSION_FILE",
-	"PI_ARTIFACTS_DIR",
-	"PI_TOOL_BRIDGE_URL",
-	"PI_TOOL_BRIDGE_TOKEN",
-	"PI_TOOL_BRIDGE_SESSION",
-	"PI_EVAL_LOCAL_ROOTS",
+	"AGENT_SMITH_SESSION_FILE",
+	"AGENT_SMITH_ARTIFACTS_DIR",
+	"AGENT_SMITH_TOOL_BRIDGE_URL",
+	"AGENT_SMITH_TOOL_BRIDGE_TOKEN",
+	"AGENT_SMITH_TOOL_BRIDGE_SESSION",
+	"AGENT_SMITH_EVAL_LOCAL_ROOTS",
 ] as const;
 
 interface ManagedKernelEnvOptions {
@@ -336,23 +336,24 @@ export function buildManagedKernelEnvPatch(
 	const localRoots = options.localRoots;
 	if (policy?.sparse) {
 		const patch: Record<string, string | undefined> = {};
-		if (options.sessionFile) patch.PI_SESSION_FILE = options.sessionFile;
-		if (options.artifactsDir) patch.PI_ARTIFACTS_DIR = options.artifactsDir;
+		if (options.sessionFile) patch.AGENT_SMITH_SESSION_FILE = options.sessionFile;
+		if (options.artifactsDir) patch.AGENT_SMITH_ARTIFACTS_DIR = options.artifactsDir;
 		if (options.bridge) {
-			patch.PI_TOOL_BRIDGE_URL = options.bridge.url;
-			patch.PI_TOOL_BRIDGE_TOKEN = options.bridge.token;
-			patch.PI_TOOL_BRIDGE_SESSION = options.bridgeSessionId ?? "";
+			patch.AGENT_SMITH_TOOL_BRIDGE_URL = options.bridge.url;
+			patch.AGENT_SMITH_TOOL_BRIDGE_TOKEN = options.bridge.token;
+			patch.AGENT_SMITH_TOOL_BRIDGE_SESSION = options.bridgeSessionId ?? "";
 		}
-		if (localRoots) patch.PI_EVAL_LOCAL_ROOTS = JSON.stringify(localRoots);
+		if (localRoots) patch.AGENT_SMITH_EVAL_LOCAL_ROOTS = JSON.stringify(localRoots);
 		return patch;
 	}
 	return {
-		PI_SESSION_FILE: options.sessionFile ?? null,
-		PI_ARTIFACTS_DIR: options.artifactsDir ?? null,
-		PI_TOOL_BRIDGE_URL: options.bridge?.url ?? null,
-		PI_TOOL_BRIDGE_TOKEN: options.bridge?.token ?? null,
-		PI_TOOL_BRIDGE_SESSION: options.bridge && options.bridgeSessionId ? options.bridgeSessionId : null,
-		PI_EVAL_LOCAL_ROOTS: localRoots && Object.keys(localRoots).length > 0 ? JSON.stringify(localRoots) : null,
+		AGENT_SMITH_SESSION_FILE: options.sessionFile ?? null,
+		AGENT_SMITH_ARTIFACTS_DIR: options.artifactsDir ?? null,
+		AGENT_SMITH_TOOL_BRIDGE_URL: options.bridge?.url ?? null,
+		AGENT_SMITH_TOOL_BRIDGE_TOKEN: options.bridge?.token ?? null,
+		AGENT_SMITH_TOOL_BRIDGE_SESSION: options.bridge && options.bridgeSessionId ? options.bridgeSessionId : null,
+		AGENT_SMITH_EVAL_LOCAL_ROOTS:
+			localRoots && Object.keys(localRoots).length > 0 ? JSON.stringify(localRoots) : null,
 	};
 }
 

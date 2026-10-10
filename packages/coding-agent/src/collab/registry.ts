@@ -409,13 +409,13 @@ function socketFallbackDir(dir: string, base: string): string {
 		.update(dir)
 		.digest("hex")
 		.slice(0, 20);
-	return path.join(base, `omp-collab-${key}`);
+	return path.join(base, `agent-smith-collab-${key}`);
 }
 
 /**
  * Where this publication's Unix socket lives. The canonical location is next
  * to the metadata, but a deep config root (long home directory, nested
- * `PI_CONFIG_DIR`) can push that past `sun_path`, and a host that cannot bind
+ * `AGENT_SMITH_CONFIG_DIR`) can push that past `sun_path`, and a host that cannot bind
  * would silently stay absent from `omp collab list`. Listers never guess the
  * relocated path; the metadata records the endpoint.
  */
@@ -453,7 +453,7 @@ export async function publishCollabHost(
 	const token = crypto.randomBytes(32).toString("hex");
 	const endpoint =
 		process.platform === "win32"
-			? `\\\\.\\pipe\\omp-collab-${entryId}`
+			? `\\\\.\\pipe\\agent-smith-collab-${entryId}`
 			: await resolveSocketEndpoint(dir, entryId, options?.socketFallbackBase ?? DEFAULT_SOCKET_FALLBACK_BASE);
 	const metaPath = path.join(dir, `${entryId}.json`);
 

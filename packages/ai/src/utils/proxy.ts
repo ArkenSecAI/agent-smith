@@ -127,8 +127,8 @@ export function __resetProxyCache(): void {
 }
 
 /**
- * Normalizes provider id (e.g. github-copilot -> PI_PROXY_GITHUB_COPILOT) and looks it up.
- * If not found, falls back to PI_PROXY. Results are memoized because env values are static
+ * Normalizes provider id (e.g. github-copilot -> AGENT_SMITH_PROXY_GITHUB_COPILOT) and looks it up.
+ * If not found, falls back to AGENT_SMITH_PROXY. Results are memoized because env values are static
  * for the lifetime of the process and this function is called for every outgoing request.
  */
 export function getProxyForProvider(provider: string): string | undefined {
@@ -137,15 +137,15 @@ export function getProxyForProvider(provider: string): string | undefined {
 	}
 
 	const normalized = provider.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-	const envKey = `PI_PROXY_${normalized}`;
-	const value = Bun.env[envKey] || Bun.env.PI_PROXY;
+	const envKey = `AGENT_SMITH_PROXY_${normalized}`;
+	const value = Bun.env[envKey] || Bun.env.AGENT_SMITH_PROXY;
 	proxyCache.set(provider, value);
 	// Once per provider per process: a silently unproxied provider request is
 	// otherwise indistinguishable from a proxied one until the region block
 	// answers 403.
 	logger.debug("provider proxy resolved", {
 		provider,
-		source: Bun.env[envKey] ? envKey : value ? "PI_PROXY" : "none",
+		source: Bun.env[envKey] ? envKey : value ? "AGENT_SMITH_PROXY" : "none",
 		proxy: value ? proxyLogTarget(value) : undefined,
 	});
 	return value;
@@ -227,37 +227,39 @@ export function __resetGlobalProxyFetch(): void {
 }
 
 /**
- * Routes the process-wide `globalThis.fetch` through `PI_PROXY`.
+ * Routes the process-wide `globalThis.fetch` through `AGENT_SMITH_PROXY`.
  *
  * Bun's native fetch resolves `HTTPS_PROXY` / `HTTP_PROXY` / `ALL_PROXY` by
- * itself but knows nothing about `PI_PROXY`. Provider *streams* get their proxy
+ * itself but knows nothing about `AGENT_SMITH_PROXY`. Provider *streams* get their proxy
  * from {@link wrapFetchForProxy}; every other provider-bound request — OAuth
  * token refresh and login, usage probes, model discovery — goes out through the
- * bare global `fetch` and would silently ignore `PI_PROXY`. That asymmetry is
+ * bare global `fetch` and would silently ignore `AGENT_SMITH_PROXY`. That asymmetry is
  * fatal wherever a provider geo-blocks its token endpoint: the stream is
  * proxied, the refresh is not, and the credential dies with a 403.
  *
- * A per-request `proxy` (including `PI_PROXY_<PROVIDER>` injected by
+ * A per-request `proxy` (including `AGENT_SMITH_PROXY_<PROVIDER>` injected by
  * {@link wrapFetchForProxy}) still wins, and loopback / private-range /
  * `NO_PROXY` targets bypass, so local model servers and MCP hosts are
- * untouched. Idempotent; a no-op when `PI_PROXY` is unset.
+ * untouched. Idempotent; a no-op when `AGENT_SMITH_PROXY` is unset.
  */
 export function installGlobalProxyFetch(): void {
 	if (globalProxyFetchInstalled) return;
-	const proxyUrl = Bun.env.PI_PROXY?.trim();
+	const proxyUrl = Bun.env.AGENT_SMITH_PROXY?.trim();
 	// One line naming every proxy-relevant variable this process can see: a
-	// missing PI_PROXY and a NO_PROXY rule that silences it are otherwise
+	// missing AGENT_SMITH_PROXY and a NO_PROXY rule that silences it are otherwise
 	// indistinguishable from a working proxy that the peer rejected.
 	const env = {
-		PI_PROXY: proxyUrl ? proxyLogTarget(proxyUrl) : undefined,
-		PI_PROXY_ANTHROPIC: Bun.env.PI_PROXY_ANTHROPIC ? proxyLogTarget(Bun.env.PI_PROXY_ANTHROPIC) : undefined,
+		AGENT_SMITH_PROXY: proxyUrl ? proxyLogTarget(proxyUrl) : undefined,
+		AGENT_SMITH_PROXY_ANTHROPIC: Bun.env.AGENT_SMITH_PROXY_ANTHROPIC
+			? proxyLogTarget(Bun.env.AGENT_SMITH_PROXY_ANTHROPIC)
+			: undefined,
 		HTTPS_PROXY: Bun.env.HTTPS_PROXY || Bun.env.https_proxy ? "set" : undefined,
 		ALL_PROXY: Bun.env.ALL_PROXY || Bun.env.all_proxy ? "set" : undefined,
 		NO_PROXY: Bun.env.NO_PROXY || Bun.env.no_proxy,
 	};
 	if (!proxyUrl) {
 		logger.debug("global proxy fetch not installed", {
-			reason: "PI_PROXY unset",
+			reason: "AGENT_SMITH_PROXY unset",
 			env,
 		});
 		return;

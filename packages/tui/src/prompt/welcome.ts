@@ -1,4 +1,4 @@
-import { APP_NAME } from "@oh-my-pi/pi-utils/dirs";
+import { APP_TITLE, VERSION_LABEL } from "@oh-my-pi/pi-utils/dirs";
 import type { TspSpan } from "@oh-my-pi/pi-wire";
 import { formatDoubleTap, formatKeyHint, formatKeyHints, type KeyName } from "../app-keybindings";
 import { editorKey } from "../chrome/keybinding-hints";
@@ -238,17 +238,7 @@ export class WelcomeComponent implements Component {
 			col(
 				[
 					art([span("Welcome back!", "strong")], "omp.welcome.greeting"),
-					node(
-						"image",
-						{
-							builtin: "omp",
-							alt: APP_NAME,
-							w: 128,
-							role: "omp.welcome.logo",
-						},
-						undefined,
-						"logo",
-					),
+					art([span(APP_TITLE, "strong")], "omp.welcome.logo"),
 				],
 				{ align: "center", role: "omp.welcome.brand" },
 			),
@@ -555,7 +545,7 @@ export class WelcomeComponent implements Component {
 		const lines: string[] = [];
 
 		// Top border with embedded title
-		const title = ` ${APP_NAME} v${this.version} `;
+		const title = ` ${VERSION_LABEL} `;
 		const titlePrefixRaw = hChar.repeat(3);
 		const titleStyled = theme.fg("dim", titlePrefixRaw) + theme.fg("muted", title);
 		const titleVisLen = visibleWidth(titlePrefixRaw) + visibleWidth(title);
@@ -680,7 +670,7 @@ export class WelcomeComponent implements Component {
 }
 
 /** Block-grid brand mark shared by the welcome and setup surfaces. */
-export const PI_LOGO = ["████████████", "   ██  ██   ", "   ██  ██   ", "   ▒▒  ██   ", "       ██   "];
+export const PI_LOGO = [" ArkenSec ", "AGENT SMITH"];
 
 /** The block-grid brand mark as accent lines; `shimmer` declares the terminal-clocked shine sweep. */
 export function logoNode(lines: readonly string[], shimmer: boolean): NativeNode {

@@ -17,7 +17,7 @@ import { makeAssistantMessage } from "../session-manager/helpers";
 describe("recent sessions title index", () => {
 	let testAgentDir: string;
 	let cwd: string;
-	const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+	const originalAgentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 	const fallbackAgentDir = path.join(getConfigRootDir(), "agent");
 
 	beforeEach(() => {
@@ -34,7 +34,7 @@ describe("recent sessions title index", () => {
 			setAgentDir(originalAgentDir);
 		} else {
 			setAgentDir(fallbackAgentDir);
-			delete process.env.PI_CODING_AGENT_DIR;
+			delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
 		}
 		removeSyncWithRetries(testAgentDir);
 	});

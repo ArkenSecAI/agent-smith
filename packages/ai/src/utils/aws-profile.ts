@@ -51,7 +51,8 @@ export function resolveAwsProfile(profile?: string): string {
  * the AWS SDK's `AWS_SDK_LOAD_CONFIG` opt-in.
  */
 export function shouldLoadAwsSharedConfig(profile?: string): boolean {
-	if (profile || $env.AWS_PROFILE) return true;
+	if (!hasExplicitAwsProfile(profile)) return false;
+	if (profile || $env.AWS_PROFILE || $env.AWS_CONFIG_FILE) return true;
 	const value = $env.AWS_SDK_LOAD_CONFIG?.toLowerCase();
 	return value === "1" || value === "true";
 }
@@ -72,7 +73,13 @@ export function resolveAwsRegion(explicitRegion?: string, profile?: string): str
 	return explicitRegion || resolveAwsAmbientRegion(profile) || "us-east-1";
 }
 
+/** Shared account homes are read only after a profile or file was explicitly selected. */
+export function hasExplicitAwsProfile(profile?: string): boolean {
+	return !!(profile || $env.AWS_PROFILE || $env.AWS_SHARED_CREDENTIALS_FILE || $env.AWS_CONFIG_FILE);
+}
+
 export function hasConfiguredAwsProfile(profile?: string): boolean {
+	if (!hasExplicitAwsProfile(profile)) return false;
 	const selectedProfile = resolveAwsProfile(profile);
 	const credentialsPath = $env.AWS_SHARED_CREDENTIALS_FILE || path.join(os.homedir(), ".aws", "credentials");
 	const configPath = $env.AWS_CONFIG_FILE || path.join(os.homedir(), ".aws", "config");

@@ -1,7 +1,7 @@
 /**
  * Resolved Hindsight runtime configuration.
  *
- * Every field reads a `hindsight.*` setting handle. Handles declare their `HINDSIGHT_*`
+ * Every field reads a `hindsight.*` setting handle. Handles declare their `AGENT_SMITH_HINDSIGHT_*`
  * environment variable, which wins over the settings layers because operators frequently
  * override per-shell (CI, prod) without touching the persisted settings file.
  */
@@ -83,7 +83,7 @@ const DEFAULT_PREAMBLE =
 	"Only use memories that are directly useful to continue this conversation; ignore the rest:";
 
 /**
- * Load the resolved Hindsight config. `HINDSIGHT_*` environment variables override settings
+ * Load the resolved Hindsight config. `AGENT_SMITH_HINDSIGHT_*` environment variables override settings
  * through the setting definitions (`hindsight/settings.ts`); invalid values fall back to defaults.
  */
 export function loadHindsightConfig(settings: Settings): HindsightConfig {

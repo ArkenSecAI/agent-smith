@@ -5,7 +5,7 @@
  * `xd://report_issue`, and the system prompt tells the model to write
  * `<tool>: <concise description>` there when auto-QA is enabled.
  *
- * Enabled by default (`dev.autoqa` defaults to true); `PI_AUTO_QA=0` or an
+ * Enabled by default (`dev.autoqa` defaults to true); `AGENT_SMITH_AUTO_QA=0` or an
  * explicit `dev.autoqa: false` short-circuits injection entirely. When the
  * user is only enabled by default (never configured `dev.autoqa` themselves),
  * a persisted `dev.autoqaConsent: "denied"` also disables injection so a "No"
@@ -18,7 +18,7 @@
  * wired by `InteractiveMode` to a Yes/No popup — is invoked exactly once and
  * the decision is persisted; a denial (or dismissal) drops the pending report
  * without touching the database. Subsequent calls (including from subagents)
- * read the persisted decision live without prompting. `PI_AUTO_QA_PUSH=1` bypasses
+ * read the persisted decision live without prompting. `AGENT_SMITH_AUTO_QA_PUSH=1` bypasses
  * the dialog for headless environments.
  *
  * When the user grants consent, push is automatically active against the
@@ -26,7 +26,7 @@
  * insert schedules a background flush that POSTs pending rows and marks them
  * pushed on HTTP 2xx. Rows the collector permanently refuses (400/413/422) are
  * isolated by bisecting the batch and parked with the server's error, so a
- * single bad row can't block the queue. `PI_AUTO_QA_PUSH=1` forces push in
+ * single bad row can't block the queue. `AGENT_SMITH_AUTO_QA_PUSH=1` forces push in
  * non-interactive environments where the consent dialog never fires. Device
  * execution is never blocked on the network and never throws.
  */
@@ -103,7 +103,7 @@ function parseReportIssueBody(text: string): { tool: string; report: string } {
 /**
  * Whether Auto-QA is active for this session.
  *
- * Precedence: explicit `dev.autoqa` (env `PI_AUTO_QA` or any settings layer) >
+ * Precedence: explicit `dev.autoqa` (env `AGENT_SMITH_AUTO_QA` or any settings layer) >
  * default-on unless the user previously denied consent. The denial veto only
  * applies to the default: explicitly configuring `dev.autoqa: true` re-enables
  * injection (recording still no-ops until consent is granted). Without settings,
@@ -375,18 +375,20 @@ function resolvePushConfig(settings: Settings | undefined, bypassConsent: boolea
 	// Consent IS the push opt-in for the auto-flush path. `bypassConsent`
 	// covers explicit user-driven pushes (`omp grievances push`) where the
 	// user clearly intends to ship regardless of dialog state. The
-	// `PI_AUTO_QA_PUSH` env flag stays as a CI/headless override too.
+	// `AGENT_SMITH_AUTO_QA_PUSH` env flag stays as a CI/headless override too.
 	if (!bypassConsent) {
 		const consented = (settings ? cfgDevAutoqaConsent.get(settings) : undefined) === "granted";
-		if (!consented && !$flag("PI_AUTO_QA_PUSH")) return null;
+		if (!consented && !$flag("AGENT_SMITH_AUTO_QA_PUSH")) return null;
 	}
 
 	const endpoint =
-		envOverrideString("PI_AUTO_QA_PUSH_URL") ?? (settings ? cfgDevAutoqaPushEndpoint.get(settings) : undefined);
+		envOverrideString("AGENT_SMITH_AUTO_QA_PUSH_URL") ??
+		(settings ? cfgDevAutoqaPushEndpoint.get(settings) : undefined);
 	if (!endpoint || endpoint.trim().length === 0) return null;
 
 	const token =
-		envOverrideString("PI_AUTO_QA_PUSH_TOKEN") ?? (settings ? cfgDevAutoqaPushToken.get(settings) : undefined);
+		envOverrideString("AGENT_SMITH_AUTO_QA_PUSH_TOKEN") ??
+		(settings ? cfgDevAutoqaPushToken.get(settings) : undefined);
 	return { endpoint: endpoint.trim(), token: token && token.length > 0 ? token : undefined };
 }
 
@@ -585,7 +587,7 @@ export function __awaitAutoQaRecordPipelineForTests(): Promise<void> {
 /**
  * Queue a grievance for recording. The consent → insert → flush pipeline is
  * fire-and-forget: nothing is written until the user grants consent (or
- * `PI_AUTO_QA_PUSH=1` forces headless recording), and the device result
+ * `AGENT_SMITH_AUTO_QA_PUSH=1` forces headless recording), and the device result
  * returns immediately so the model never waits on the dialog or the network.
  */
 function recordToolIssue(session: ToolSession, tool: string, report: string): void {
@@ -593,7 +595,7 @@ function recordToolIssue(session: ToolSession, tool: string, report: string): vo
 	const model = session.getActiveModelString?.() ?? "unknown";
 	lastRecordPipeline = (async () => {
 		try {
-			if (!$flag("PI_AUTO_QA_PUSH") && !(await resolveAutoQaConsent(session.settings))) return;
+			if (!$flag("AGENT_SMITH_AUTO_QA_PUSH") && !(await resolveAutoQaConsent(session.settings))) return;
 			const db = openAutoQaDb();
 			if (!db) return;
 			db.prepare(

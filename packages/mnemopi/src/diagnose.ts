@@ -101,8 +101,8 @@ export function inspectDatabase(options: DiagnosticOptions = {}): DiagnosticSumm
 
 	log("env", "bun_version", Bun.version);
 	log("env", "platform", `${process.platform}-${process.arch}`);
-	log("env", "MNEMOPI_DATA_DIR", safeEnv("MNEMOPI_DATA_DIR"));
-	log("env", "MNEMOPI_VEC_TYPE", safeEnv("MNEMOPI_VEC_TYPE"));
+	log("env", "AGENT_SMITH_MEMORY_DATA_DIR", safeEnv("AGENT_SMITH_MEMORY_DATA_DIR"));
+	log("env", "AGENT_SMITH_MEMORY_VEC_TYPE", safeEnv("AGENT_SMITH_MEMORY_VEC_TYPE"));
 	log("db", "db_path", "OK", path);
 	log("db", "data_dir", "OK", options.dataDir ?? configuredDataDir());
 	log("db", "data_dir_parent", existsSync(dirname(path)) ? "OK" : "MISSING", dirname(path));

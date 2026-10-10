@@ -81,15 +81,15 @@ function getConvertedUserText(message: Message | undefined): string {
 }
 
 async function withNativeDialectEnv<T>(fn: () => Promise<T>): Promise<T> {
-	const previous = Bun.env.PI_DIALECT;
-	delete Bun.env.PI_DIALECT;
+	const previous = Bun.env.AGENT_SMITH_DIALECT;
+	delete Bun.env.AGENT_SMITH_DIALECT;
 	try {
 		return await fn();
 	} finally {
 		if (previous === undefined) {
-			delete Bun.env.PI_DIALECT;
+			delete Bun.env.AGENT_SMITH_DIALECT;
 		} else {
-			Bun.env.PI_DIALECT = previous;
+			Bun.env.AGENT_SMITH_DIALECT = previous;
 		}
 	}
 }

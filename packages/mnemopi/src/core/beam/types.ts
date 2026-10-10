@@ -77,9 +77,9 @@ export interface BeamMemoryOptions {
 	channelId?: string | null;
 	useCloud?: boolean;
 	proactiveLinking?: boolean;
-	/** Route `recallEnhanced` through polyphonic recall. `MNEMOPI_POLYPHONIC_RECALL` wins when set. */
+	/** Route `recallEnhanced` through polyphonic recall. `AGENT_SMITH_MEMORY_POLYPHONIC_RECALL` wins when set. */
 	polyphonicRecall?: boolean;
-	/** Cache `recallEnhanced` results per query and options. `MNEMOPI_ENHANCED_RECALL` wins when set. */
+	/** Cache `recallEnhanced` results per query and options. `AGENT_SMITH_MEMORY_ENHANCED_RECALL` wins when set. */
 	enhancedRecall?: boolean;
 	eventEmitter?: (event: BeamEvent) => void;
 	pluginManager?: BeamPluginManager | null;

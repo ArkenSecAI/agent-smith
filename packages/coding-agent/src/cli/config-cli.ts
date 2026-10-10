@@ -349,7 +349,7 @@ function shadowingSource(setting: AnySetting): { json: Record<string, string>; m
 		case "overlay":
 			return {
 				json: { overriddenBy: provenance },
-				message: "A --config / PI_CONFIG_FILES overlay overrides this value for this process.",
+				message: "A --config / AGENT_SMITH_CONFIG_FILES overlay overrides this value for this process.",
 			};
 		case "runtime":
 			return {

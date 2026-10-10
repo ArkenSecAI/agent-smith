@@ -30,9 +30,9 @@ import {
 	setProjectDir,
 } from "@oh-my-pi/pi-utils";
 
-const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+const originalAgentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 const originalPiProfile = process.env.PI_PROFILE;
-const originalOmpProfile = process.env.OMP_PROFILE;
+const originalOmpProfile = process.env.AGENT_SMITH_PROFILE;
 let agentDirRoot: string | undefined;
 
 function restoreEnv(key: string, value: string | undefined): void {
@@ -49,9 +49,9 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-	restoreEnv("PI_CODING_AGENT_DIR", originalAgentDir);
+	restoreEnv("AGENT_SMITH_CODING_AGENT_DIR", originalAgentDir);
 	restoreEnv("PI_PROFILE", originalPiProfile);
-	restoreEnv("OMP_PROFILE", originalOmpProfile);
+	restoreEnv("AGENT_SMITH_PROFILE", originalOmpProfile);
 	__resetDirsFromEnvForTests();
 	if (agentDirRoot) {
 		await fsp.rm(agentDirRoot, { recursive: true, force: true });

@@ -24,6 +24,7 @@ import type { FetchImpl } from "../types";
 import { raceWithSignal } from "../utils/abort";
 import {
 	type AwsIniFile,
+	hasExplicitAwsProfile,
 	parseAwsIni,
 	resolveAwsProfile,
 	resolveAwsRegion,
@@ -89,7 +90,7 @@ function credentialCacheKey(profile: string, region: string, loadSharedConfig: b
 }
 
 export async function resolveAwsCredentials(opts: CredentialResolveOptions = {}): Promise<ResolvedCredentials> {
-	const profile = resolveAwsProfile(opts.profile);
+	const profile = hasExplicitAwsProfile(opts.profile) ? resolveAwsProfile(opts.profile) : "";
 	const region = resolveAwsRegion(opts.region, opts.profile);
 	const loadSharedConfig = shouldLoadAwsSharedConfig(opts.profile);
 	const cacheKey = credentialCacheKey(profile, region, loadSharedConfig);
@@ -140,7 +141,9 @@ async function resolveFresh(
 	if (webIdentityCreds) return webIdentityCreds;
 
 	// 3. Profile (static, SSO, or credential_process).
-	const profileCreds = await readProfileCredentials(profile, region, loadSharedConfig, signal, fetchImpl);
+	const profileCreds = profile
+		? await readProfileCredentials(profile, region, loadSharedConfig, signal, fetchImpl)
+		: undefined;
 	if (profileCreds) return profileCreds;
 
 	// 4. ECS/container credentials.
@@ -1072,7 +1075,7 @@ export function clearAwsCredentialCache(): void {
  * 401/403 responses so stale credentials are re-resolved instead of served until restart.
  */
 export function invalidateAwsCredentialCache(opts: { profile?: string; region?: string } = {}): void {
-	const profile = resolveAwsProfile(opts.profile);
+	const profile = hasExplicitAwsProfile(opts.profile) ? resolveAwsProfile(opts.profile) : "";
 	const region = resolveAwsRegion(opts.region, opts.profile);
 	cache.delete(credentialCacheKey(profile, region, shouldLoadAwsSharedConfig(opts.profile)));
 }

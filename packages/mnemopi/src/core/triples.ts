@@ -1,7 +1,7 @@
 import { Database, type SQLQueryBindings } from "bun:sqlite";
-import { copyFileSync, existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import * as os from "node:os";
+import * as path from "node:path";
+import { dataDir } from "../config";
 import { closeQuietly, type DatabasePath, openDatabase } from "../db";
 
 export interface TripleRow {
@@ -67,54 +67,30 @@ interface ImportBindingRow {
 }
 
 type ProcessEnv = Record<string, string | undefined>;
-type SerializableDatabase = Database & { serialize(): Uint8Array };
 
 function homeDir(env: ProcessEnv = process.env): string {
-	return env.HOME && env.HOME.length > 0 ? env.HOME : homedir();
+	return env.HOME && env.HOME.length > 0 ? env.HOME : os.homedir();
 }
 
 export function legacyDataDir(env: ProcessEnv = process.env): string {
-	return join(homeDir(env), ".hermes", "mnemopi", "data");
+	return path.join(homeDir(env), ".hermes", "mnemopi", "data");
 }
 
 export function defaultDataDir(env: ProcessEnv = process.env): string {
-	return env.MNEMOPI_DATA_DIR && env.MNEMOPI_DATA_DIR.length > 0 ? env.MNEMOPI_DATA_DIR : legacyDataDir(env);
+	return dataDir(env);
 }
 
 export function defaultTripleDbPath(env: ProcessEnv = process.env): string {
-	return join(defaultDataDir(env), "triples.db");
+	return path.join(defaultDataDir(env), "triples.db");
 }
 
 export function legacyTripleDbPath(env: ProcessEnv = process.env): string {
-	return join(legacyDataDir(env), "triples.db");
+	return path.join(legacyDataDir(env), "triples.db");
 }
 
-function copyLegacyDb(source: string, destination: string): void {
-	mkdirSync(dirname(destination), { recursive: true });
-	const tempPath = join(
-		dirname(destination),
-		`.${destination.split(/[\\/]/).at(-1) ?? "triples.db"}.${process.pid}.tmp`,
-	);
-	let sourceDb: Database | null = null;
-	try {
-		sourceDb = openDatabase(source, { create: false, readwrite: false, pragmas: false });
-		writeFileSync(tempPath, (sourceDb as SerializableDatabase).serialize());
-		if (!existsSync(destination)) copyFileSync(tempPath, destination);
-	} finally {
-		closeQuietly(sourceDb);
-		try {
-			unlinkSync(tempPath);
-		} catch {
-			// Best-effort cleanup; a failed copy should surface as the original error.
-		}
-	}
-}
-
+/** Resolve app-owned storage without importing another application's memory. */
 export function resolveDefaultTripleDb(env: ProcessEnv = process.env): string {
-	const destination = defaultTripleDbPath(env);
-	const legacy = legacyTripleDbPath(env);
-	if (destination !== legacy && !existsSync(destination) && existsSync(legacy)) copyLegacyDb(legacy, destination);
-	return destination;
+	return defaultTripleDbPath(env);
 }
 
 export function initTriples(dbOrPath?: Database | DatabasePath | null): void {

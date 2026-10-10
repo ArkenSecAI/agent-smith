@@ -89,9 +89,9 @@ export function normalizeWeights(
 	ftsWeight: number | null | undefined,
 	importanceWeight: number | null | undefined,
 ): HybridWeights {
-	let vw = Math.max(0, vecWeight ?? envNumber("MNEMOPI_VEC_WEIGHT", DEFAULT_WEIGHTS[0]));
-	let fw = Math.max(0, ftsWeight ?? envNumber("MNEMOPI_FTS_WEIGHT", DEFAULT_WEIGHTS[1]));
-	let iw = Math.max(0, importanceWeight ?? envNumber("MNEMOPI_IMPORTANCE_WEIGHT", DEFAULT_WEIGHTS[2]));
+	let vw = Math.max(0, vecWeight ?? envNumber("AGENT_SMITH_MEMORY_VEC_WEIGHT", DEFAULT_WEIGHTS[0]));
+	let fw = Math.max(0, ftsWeight ?? envNumber("AGENT_SMITH_MEMORY_FTS_WEIGHT", DEFAULT_WEIGHTS[1]));
+	let iw = Math.max(0, importanceWeight ?? envNumber("AGENT_SMITH_MEMORY_IMPORTANCE_WEIGHT", DEFAULT_WEIGHTS[2]));
 	if (!Number.isFinite(vw)) vw = 0;
 	if (!Number.isFinite(fw)) fw = 0;
 	if (!Number.isFinite(iw)) iw = 0;
@@ -376,7 +376,7 @@ export function workingMemoryVecSearch(
 ): WorkingVectorResult[] {
 	if (queryEmbedding.length === 0) return [];
 	try {
-		const limit = process.env.MNEMOPI_BEAM_MODE ? 500_000 : 50_000;
+		const limit = process.env.AGENT_SMITH_MEMORY_BEAM_MODE ? 500_000 : 50_000;
 		const rows = db
 			.query(`
 				SELECT wm.id, me.embedding_json

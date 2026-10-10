@@ -19,7 +19,7 @@ import type { TinyLocalModelKey } from "./models";
  */
 export const TINY_WORKER_ARG = "__omp_worker_tiny_inference";
 /** Env var carrying the endpoint the ONNX worker must own. */
-export const TINY_WORKER_SOCKET_ENV = "OMP_TINY_WORKER_SOCKET";
+export const TINY_WORKER_SOCKET_ENV = "AGENT_SMITH_TINY_WORKER_SOCKET";
 /** Env var naming the single local model the ONNX worker serves. */
 export const TINY_WORKER_MODEL_ENV = "OMP_TINY_WORKER_MODEL";
 /** Env var carrying the launch tag the worker echoes in `pong` so stale workers get replaced. */
@@ -44,7 +44,7 @@ export function tinyWorkerEndpoint(
 	const name = workerName(modelKey, backend);
 	if (process.platform === "win32") {
 		const key = Bun.hash.crc32(path.resolve(runtimeDir, name)).toString(16).padStart(8, "0");
-		return `\\\\.\\pipe\\omp-tiny-${name}-${key}`;
+		return `\\\\.\\pipe\\agent-smith-tiny-${name}-${key}`;
 	}
 	return path.join(runtimeDir, `${name}.sock`);
 }

@@ -32,7 +32,7 @@ it("classifies an interactive host before opening auth storage", async () => {
 	expect(observedTimeout).toBe(5000);
 });
 
-it("standalone auth discovery routes by PI_CONFIG_FILES policy over main config", async () => {
+it("standalone auth discovery routes by AGENT_SMITH_CONFIG_FILES policy over main config", async () => {
 	using tempDir = TempDir.createSync("@omp-standalone-policy-");
 	const overlayPath = tempDir.join("policy.yml");
 	await Bun.write(
@@ -53,8 +53,8 @@ it("standalone auth discovery routes by PI_CONFIG_FILES policy over main config"
 			"",
 		].join("\n"),
 	);
-	const previousOverlay = process.env.PI_CONFIG_FILES;
-	process.env.PI_CONFIG_FILES = overlayPath;
+	const previousOverlay = process.env.AGENT_SMITH_CONFIG_FILES;
+	process.env.AGENT_SMITH_CONFIG_FILES = overlayPath;
 	resetSettingsForTest();
 	try {
 		const storage = await discoverAuthStorage(tempDir.path(), { cwd: tempDir.path() });
@@ -80,8 +80,8 @@ it("standalone auth discovery routes by PI_CONFIG_FILES policy over main config"
 			storage.close();
 		}
 	} finally {
-		if (previousOverlay === undefined) delete process.env.PI_CONFIG_FILES;
-		else process.env.PI_CONFIG_FILES = previousOverlay;
+		if (previousOverlay === undefined) delete process.env.AGENT_SMITH_CONFIG_FILES;
+		else process.env.AGENT_SMITH_CONFIG_FILES = previousOverlay;
 		resetSettingsForTest();
 	}
 });

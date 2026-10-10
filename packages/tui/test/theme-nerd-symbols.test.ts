@@ -15,9 +15,9 @@ afterEach(async () => {
 	if (tempAgentDir === undefined) return;
 	setAgentDir(originalAgentDir);
 	if (originalAgentDirEnv === undefined) {
-		delete process.env.PI_CODING_AGENT_DIR;
+		delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
 	} else {
-		process.env.PI_CODING_AGENT_DIR = originalAgentDirEnv;
+		process.env.AGENT_SMITH_CODING_AGENT_DIR = originalAgentDirEnv;
 	}
 	await removeWithRetries(tempAgentDir);
 	tempAgentDir = undefined;
@@ -25,7 +25,7 @@ afterEach(async () => {
 
 it("uses the Nerd Fonts v3 session and C# icons", async () => {
 	originalAgentDir = getAgentDir();
-	originalAgentDirEnv = process.env.PI_CODING_AGENT_DIR;
+	originalAgentDirEnv = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 	tempAgentDir = await fs.mkdtemp(path.join(os.tmpdir(), "omp-nerd-symbols-"));
 	setAgentDir(tempAgentDir);
 
@@ -43,7 +43,7 @@ it("uses the Nerd Fonts v3 session and C# icons", async () => {
 
 it("resolves subscription and advisor icons in Nerd Font mode", async () => {
 	originalAgentDir = getAgentDir();
-	originalAgentDirEnv = process.env.PI_CODING_AGENT_DIR;
+	originalAgentDirEnv = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 	tempAgentDir = await fs.mkdtemp(path.join(os.tmpdir(), "omp-nerd-symbols-"));
 	setAgentDir(tempAgentDir);
 

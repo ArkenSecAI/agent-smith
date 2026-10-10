@@ -1,5 +1,10 @@
 %YAML 1.2
 ---
+# Vendored from JuliaEditorSupport/Julia-sublime; see PROVENANCE.md.
+# Copyright (c) 2016-2021 Viktor Qvarfordt and other contributors
+# https://github.com/JuliaLang/julia-sublime/contributors
+# MIT license: LICENSE.Julia-sublime in this directory.
+# Attribution restored for Agent Smith; grammar rules are unchanged.
 
 # https://www.sublimetext.com/docs/3/syntax.html
 # https://www.sublimetext.com/docs/3/scope_naming.html

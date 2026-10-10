@@ -1,18 +1,19 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported versions and current limits
 
-Only the latest release is supported with security updates.
+ArkenSec Agent Smith is unreleased development software. There is no supported product version, supported installer or production-security guarantee yet. Do not use this development base with client evidence or against real targets. Managed Kali, execution isolation, durable evidence and the full supported three-OS workflow are qualification milestones, not properties established by this source repository.
 
-## Reporting a Vulnerability
+Inherited OMP tools can execute on the host. An application-specific state directory is not a sandbox or a security-testing authorization boundary. Do not point the development build at personal account homes or import credentials from other agents.
 
-To report a security issue, either:
+## Report privately
 
-- Email can1357 directly, or
-- Open a [private security advisory](https://github.com/can1357/oh-my-pi/security/advisories/new) on GitHub
+Use [GitHub private vulnerability reporting](https://github.com/ArkenSecAI/agent-smith/security/advisories/new). Do **not** open a public issue containing vulnerability details, exploit material for a live target, credentials or customer evidence. Ordinary non-security bugs and feature proposals can use public issues.
 
-Include steps to reproduce and any relevant details. Do not open a public issue for security vulnerabilities.
+Provide the exact revision/build, OS/runtime, affected component, expected and observed behavior, and a minimal synthetic reproduction. Clearly distinguish a hypothesis from an observed result. Redact secrets and private identifiers before submission. Do not perform additional testing outside systems you own or are explicitly authorized to assess.
 
-## Response
+Repository maintainer **@davidsly4954** is responsible for private triage, acknowledgement, coordination and disclosure decisions. There is no guaranteed acknowledgement/fix deadline or backup maintainer. The maintainer will agree an appropriate disclosure plan with the reporter; submission does not authorize public disclosure by an automated agent or a CVE request.
 
-Reports are handled on a best-effort basis. You can expect an initial acknowledgment within a few days.
+The reporting feature is enabled. Source publication is gated on an actual synthetic external-report/maintainer-notification/acknowledgement check. Enabling a setting alone is not evidence that notifications reached a human. If the reporting form is unavailable, do not post the sensitive report publicly: open only a content-free request for a working private contact and wait for the maintainer.
+
+Upstream vulnerabilities should be coordinated with the affected upstream maintainer without exposing another party's confidential report. This fork does not operate OMP's or any provider's security-response program.

@@ -11,7 +11,7 @@ import { type } from "@oh-my-pi/omptype";
 export { IDA_HOST_WORKER_ARG } from "../cli/worker-selectors";
 
 /** Environment key carrying the JSON {@link IdaHostConfig} for the daemon. */
-export const IDA_HOST_CONFIG_ENV = "OMP_IDA_HOST_CONFIG";
+export const IDA_HOST_CONFIG_ENV = "AGENT_SMITH_IDA_HOST_CONFIG";
 
 /** Name prefix of every IDA daemon in a broker scope. */
 export const IDA_DAEMON_PREFIX = "omp.ida.";
@@ -67,7 +67,7 @@ export function idaDaemonName(id: string): string {
 /** Unix socket or Windows named pipe the host for `daemonName` listens on. */
 export function idaHostEndpoint(projectDir: string, runtimeDir: string, daemonName: string): string {
 	if (process.platform === "win32") {
-		return `\\\\.\\pipe\\omp-ida-${hash16(`${path.resolve(projectDir)}\0${daemonName}`)}`;
+		return `\\\\.\\pipe\\agent-smith-ida-${hash16(`${path.resolve(projectDir)}\0${daemonName}`)}`;
 	}
 	// Hashed to stay under the ~104-byte Unix socket path limit.
 	return path.join(runtimeDir, `ida-${hash16(daemonName)}.sock`);

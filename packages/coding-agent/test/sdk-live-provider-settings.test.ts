@@ -20,17 +20,17 @@ import { cfgToolsFormat } from "@oh-my-pi/pi-coding-agent/session/context-settin
 
 describe("primary-agent provider settings changed mid-session", () => {
 	const sessions: Array<{ dispose(): Promise<void> }> = [];
-	const previousDialectEnv = Bun.env.PI_DIALECT;
+	const previousDialectEnv = Bun.env.AGENT_SMITH_DIALECT;
 
 	afterEach(async () => {
 		clearCustomApis();
 		for (const session of sessions.splice(0)) await session.dispose();
-		if (previousDialectEnv === undefined) delete Bun.env.PI_DIALECT;
-		else Bun.env.PI_DIALECT = previousDialectEnv;
+		if (previousDialectEnv === undefined) delete Bun.env.AGENT_SMITH_DIALECT;
+		else Bun.env.AGENT_SMITH_DIALECT = previousDialectEnv;
 	});
 
 	it("applies thinking budgets, Kimi format, websocket policy, and tool format on the next request", async () => {
-		delete Bun.env.PI_DIALECT;
+		delete Bun.env.AGENT_SMITH_DIALECT;
 		using tempDir = TempDir.createSync("@pi-live-provider-settings-");
 		const api = "test-live-provider-settings";
 		const requests: Array<{ context: Context; options: SimpleStreamOptions | undefined }> = [];

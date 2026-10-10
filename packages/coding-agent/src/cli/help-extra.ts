@@ -1,9 +1,9 @@
 import "@oh-my-pi/pi-utils/env";
 import chalk from "@oh-my-pi/pi-utils/chalk";
-import { APP_NAME, CONFIG_DIR_NAME } from "@oh-my-pi/pi-utils/dirs";
+import { APP_NAME, APP_URL, CONFIG_DIR_NAME, VERSION_LABEL } from "@oh-my-pi/pi-utils/dirs";
 
 export function getExtraHelpText(): string {
-	return `${chalk.bold("Environment Variables:")}
+	return `${VERSION_LABEL}\n${APP_URL}\n\n${chalk.bold("Environment Variables:")}
   ${chalk.dim("# Core Providers")}
   ANTHROPIC_API_KEY          - Anthropic Claude models
   ANTHROPIC_OAUTH_TOKEN      - Anthropic OAuth (takes precedence over API key)
@@ -62,13 +62,13 @@ export function getExtraHelpText(): string {
   TYPESAFE_API_KEY           - TypeSafe System One judgments (auto thinking, unexpected-stop, AI staging, eval judge())
 
   ${chalk.dim("# Configuration")}
-  OMP_PROFILE                 - Named profile for isolated agent state (same as --profile)
-  Use \`omp --profile <name> --alias <command>\` to create a shell shortcut for a profile
-  PI_CODING_AGENT_DIR        - Session storage directory (default: ~/${CONFIG_DIR_NAME}/agent)
-  PI_PACKAGE_DIR             - Override package directory (for Nix/Guix store paths)
-  PI_SMOL_MODEL              - Override smol/fast model (see --smol)
-  PI_SLOW_MODEL              - Override slow/reasoning model (see --slow)
-  PI_PLAN_MODEL              - Override planning model (see --plan)
+  AGENT_SMITH_PROFILE                 - Named profile for isolated agent state (same as --profile)
+  Use \`agent-smith --profile <name> --alias <command>\` to create a shell shortcut for a profile
+  AGENT_SMITH_CODING_AGENT_DIR        - Session storage directory (default: ~/${CONFIG_DIR_NAME}/agent)
+  AGENT_SMITH_PACKAGE_DIR             - Override package directory (for Nix/Guix store paths)
+  AGENT_SMITH_SMOL_MODEL              - Override smol/fast model (see --smol)
+  AGENT_SMITH_SLOW_MODEL              - Override slow/reasoning model (see --slow)
+  AGENT_SMITH_PLAN_MODEL              - Override planning model (see --plan)
   PI_NO_PTY                  - Disable PTY-based interactive bash execution
   For complete environment variable reference, see:
   ${chalk.dim("docs/environment-variables.md")}
@@ -93,6 +93,6 @@ ${chalk.bold("Plugin Options:")}
   --plugin-dir <path>        Load plugin from directory (repeatable)
 
 ${chalk.bold("Useful Commands:")}
-  omp agents unpack           - Export bundled subagents to ~/.omp/agent/agents (default)
-  omp agents unpack --project - Export bundled subagents to ./.omp/agents`;
+  agent-smith agents unpack           - Export bundled subagents to ~/.agent-smith/agent/agents (default)
+  agent-smith agents unpack --project - Export bundled subagents to ./.agent-smith/agents`;
 }

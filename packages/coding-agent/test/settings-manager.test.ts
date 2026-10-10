@@ -392,7 +392,7 @@ describe("Settings", () => {
 
 		it("backs up a corrupted project config and retains the pending project role for retry", async () => {
 			await writeSettings({});
-			const projectConfigPath = path.join(projectDir, ".omp", "config.yml");
+			const projectConfigPath = path.join(projectDir, ".agent-smith", "config.yml");
 			await Bun.write(
 				projectConfigPath,
 				YAML.stringify({ modelRoles: { default: "keep/default" }, custom: { keep: true } }, null, 2),
@@ -1075,7 +1075,7 @@ describe("Settings", () => {
 
 		it("leaves an unreadable project config untouched and retains its pending role", async () => {
 			await writeSettings({});
-			const projectConfigPath = path.join(projectDir, ".omp", "config.yml");
+			const projectConfigPath = path.join(projectDir, ".agent-smith", "config.yml");
 			const original = YAML.stringify({ modelRoles: { default: "keep/default" }, custom: { keep: true } }, null, 2);
 			await Bun.write(projectConfigPath, original);
 			const settings = await Settings.init({ cwd: projectDir, agentDir });
@@ -1101,7 +1101,7 @@ describe("Settings", () => {
 			const malformed = 'modelRoles:\n  default: "unterminated\n';
 			await Promise.all([
 				Bun.write(getConfigPath(), malformed),
-				Bun.write(path.join(projectDir, ".omp", "config.yml"), malformed),
+				Bun.write(path.join(projectDir, ".agent-smith", "config.yml"), malformed),
 			]);
 			const unhandled: unknown[] = [];
 			const onUnhandled = (reason: unknown): void => {
@@ -1113,7 +1113,9 @@ describe("Settings", () => {
 				expect(unhandled).toEqual([]);
 				expect(fs.readdirSync(agentDir).some(name => name.startsWith("config.yml.broken-"))).toBe(true);
 				expect(
-					fs.readdirSync(path.join(projectDir, ".omp")).some(name => name.startsWith("config.yml.broken-")),
+					fs
+						.readdirSync(path.join(projectDir, ".agent-smith"))
+						.some(name => name.startsWith("config.yml.broken-")),
 				).toBe(true);
 			} finally {
 				process.removeListener("unhandledRejection", onUnhandled);
@@ -1123,7 +1125,7 @@ describe("Settings", () => {
 
 	describe("live persisted reload", () => {
 		it("rejects malformed live configs without moving them aside or replacing effective settings", async () => {
-			const projectConfigPath = path.join(projectDir, ".omp", "config.yml");
+			const projectConfigPath = path.join(projectDir, ".agent-smith", "config.yml");
 			await writeSettings({
 				setupVersion: 1,
 				modelRoles: { global_role: "openai/global" },
@@ -2859,14 +2861,14 @@ describe("Settings", () => {
 	});
 
 	describe("extensionsSourceLevel", () => {
-		it("reports project when a foreign project provider (.claude/settings.json) supplies extensions", async () => {
+		it("ignores extensions from ambient foreign project settings", async () => {
 			const claudeSettings = path.join(projectDir, ".claude", "settings.json");
 			fs.mkdirSync(path.dirname(claudeSettings), { recursive: true });
 			fs.writeFileSync(claudeSettings, JSON.stringify({ extensions: ["../claude-ext"] }));
 
 			const settings = await Settings.init({ cwd: projectDir, agentDir });
-			expect(cfgExtensions.get(settings)).toContain("../claude-ext");
-			expect(settings.extensionsSourceLevel()).toBe("project");
+			expect(cfgExtensions.get(settings)).not.toContain("../claude-ext");
+			expect(settings.extensionsSourceLevel()).toBe("user");
 		});
 
 		it("reports user for a user-only setting and for runtime overrides", async () => {
@@ -2879,31 +2881,29 @@ describe("Settings", () => {
 		});
 	});
 
-	describe("project .claude/settings.json parse warnings", () => {
+	describe("project .agent-smith/settings.json parse warnings", () => {
 		it("logs capability warnings when project settings.json fails to parse", async () => {
-			const claudeSettings = path.join(projectDir, ".claude", "settings.json");
+			const claudeSettings = path.join(projectDir, ".agent-smith", "settings.json");
 			await Bun.write(claudeSettings, '{ "symbolPreset": "ascii", }');
 
 			const warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
 
 			const settings = await Settings.init({ cwd: projectDir, agentDir, inMemory: true });
 			expect(cfgSymbolPreset.get(settings)).toBe("unicode");
-			expect(warnSpy).toHaveBeenCalledWith(
-				expect.stringMatching(/Settings: \[Claude Code\] Failed to parse JSON in .*settings\.json/),
-			);
+			expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(claudeSettings));
 
 			warnSpy.mockRestore();
 		});
 
 		it("drops user-level warnings that #readProjectSettings does not merge", async () => {
-			const projectSettingsJson = path.join(projectDir, ".claude", "settings.json");
+			const projectSettingsJson = path.join(projectDir, ".agent-smith", "settings.json");
 			vi.spyOn(discovery, "loadCapability").mockResolvedValue({
 				items: [],
 				all: [],
 				warnings: [
-					`[Claude Code] Failed to parse JSON in ${path.join(tempDir.path(), "home", ".claude", "settings.json")}`,
-					"[Claude Code] Failed to load: boom",
-					`[Claude Code] Failed to parse JSON in ${projectSettingsJson}`,
+					`[ArkenSec Agent Smith] Failed to parse ${path.join(tempDir.path(), "home", ".agent-smith", "settings.json")}`,
+					"[ArkenSec Agent Smith] Failed to load: boom",
+					`[ArkenSec Agent Smith] Failed to parse ${projectSettingsJson}`,
 				],
 				providers: [],
 			});
@@ -2917,11 +2917,11 @@ describe("Settings", () => {
 
 		it("logs project warnings when the cwd is a filesystem root", async () => {
 			const root = path.parse(projectDir).root;
-			const rootSettingsJson = path.join(root, ".claude", "settings.json");
+			const rootSettingsJson = path.join(root, ".agent-smith", "settings.json");
 			vi.spyOn(discovery, "loadCapability").mockResolvedValue({
 				items: [],
 				all: [],
-				warnings: [`[Claude Code] Failed to parse JSON in ${rootSettingsJson}`],
+				warnings: [`[ArkenSec Agent Smith] Failed to parse ${rootSettingsJson}`],
 				providers: [],
 			});
 			const warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
@@ -2931,24 +2931,24 @@ describe("Settings", () => {
 		});
 
 		it("logs a persistently malformed project file once across reloads", async () => {
-			const claudeSettings = path.join(projectDir, ".claude", "settings.json");
+			const claudeSettings = path.join(projectDir, ".agent-smith", "settings.json");
 			await Bun.write(claudeSettings, '{ "symbolPreset": "ascii", }');
 
 			const warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
 
 			const settings = await Settings.init({ cwd: projectDir, agentDir });
-			expect(warnSpy.mock.calls.filter(args => String(args[0]).includes("Failed to parse JSON"))).toHaveLength(1);
+			expect(warnSpy.mock.calls.filter(args => String(args[0]).includes("Failed to parse"))).toHaveLength(1);
 
 			await settings.reloadFromDisk();
-			expect(warnSpy.mock.calls.filter(args => String(args[0]).includes("Failed to parse JSON"))).toHaveLength(1);
+			expect(warnSpy.mock.calls.filter(args => String(args[0]).includes("Failed to parse"))).toHaveLength(1);
 		});
 
 		it("surfaces a project file that becomes malformed after startup", async () => {
-			const claudeSettings = path.join(projectDir, ".claude", "settings.json");
+			const claudeSettings = path.join(projectDir, ".agent-smith", "settings.json");
 
 			const warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
 			const settings = await Settings.init({ cwd: projectDir, agentDir });
-			expect(warnSpy.mock.calls.filter(args => String(args[0]).includes("Failed to parse JSON"))).toHaveLength(0);
+			expect(warnSpy.mock.calls.filter(args => String(args[0]).includes("Failed to parse"))).toHaveLength(0);
 
 			await Bun.write(claudeSettings, '{ "symbolPreset": "ascii", }');
 			await settings.reloadFromDisk();

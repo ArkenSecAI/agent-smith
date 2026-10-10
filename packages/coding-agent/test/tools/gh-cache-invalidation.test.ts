@@ -76,8 +76,8 @@ function seedPr(number: number, repo = REPO): void {
 let originalEnv: string | undefined;
 
 beforeAll(() => {
-	originalEnv = process.env.OMP_GITHUB_CACHE_DB;
-	process.env.OMP_GITHUB_CACHE_DB = ":memory:";
+	originalEnv = process.env.AGENT_SMITH_GITHUB_CACHE_DB;
+	process.env.AGENT_SMITH_GITHUB_CACHE_DB = ":memory:";
 	resetCacheForTests();
 });
 
@@ -88,9 +88,9 @@ beforeEach(() => {
 afterAll(() => {
 	resetCacheForTests();
 	if (originalEnv === undefined) {
-		delete process.env.OMP_GITHUB_CACHE_DB;
+		delete process.env.AGENT_SMITH_GITHUB_CACHE_DB;
 	} else {
-		process.env.OMP_GITHUB_CACHE_DB = originalEnv;
+		process.env.AGENT_SMITH_GITHUB_CACHE_DB = originalEnv;
 	}
 });
 

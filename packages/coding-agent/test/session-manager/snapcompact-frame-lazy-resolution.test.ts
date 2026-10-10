@@ -84,8 +84,8 @@ describe("lazy snapcompact frame resolution", () => {
 	const tempDirs: string[] = [];
 	const originalAgentDir = getAgentDir();
 	const originalEnv = {
-		PI_CODING_AGENT_DIR: process.env.PI_CODING_AGENT_DIR,
-		OMP_PROFILE: process.env.OMP_PROFILE,
+		AGENT_SMITH_CODING_AGENT_DIR: process.env.AGENT_SMITH_CODING_AGENT_DIR,
+		AGENT_SMITH_PROFILE: process.env.AGENT_SMITH_PROFILE,
 		PI_PROFILE: process.env.PI_PROFILE,
 	};
 

@@ -69,7 +69,7 @@ console.log(JSON.stringify({
 `,
 			],
 			{
-				env: { ...Bun.env, PI_BUNDLED: "1", PI_TEST_RUNTIME: "1", PI_CODING_AGENT_DIR: dir.join("agent") },
+				env: { ...Bun.env, PI_BUNDLED: "1", PI_TEST_RUNTIME: "1", AGENT_SMITH_CODING_AGENT_DIR: dir.join("agent") },
 				timeout: 15_000,
 				allowNonZero: true,
 			},

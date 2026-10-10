@@ -1,0 +1,44 @@
+Tokenizer source and vocabulary notices
+=======================================
+
+These retained third-party files have component-specific terms. The repository
+root license does not replace those terms. Keep this notice, ../../data/README.md,
+the applicable ../../data/LICENSE.* files and file-specific .NOTICE sidecars with
+copies of the corresponding cached files and their transformed tables.
+
+cl100k_base.tiktoken, o200k_base.tiktoken:
+  OpenAI tiktoken; Copyright (c) 2022 OpenAI, Shantanu Jain.
+  ../../data/LICENSE.openai-tiktoken (MIT).
+
+qwen3.8.tokenizer.json:
+  Qwen/Qwen3.8-27B; Copyright 2026 Alibaba Cloud.
+  ../../data/LICENSE.qwen3.8 (Apache-2.0), including its attribution appendix.
+  This cache is modified; see qwen3.8.tokenizer.json.NOTICE.
+
+kimi.tiktoken.model, tokenization_kimi.py:
+  The OMP cache identifies Kimi K3, despite the kimi_k2 packed output name.
+  Copyright (c) 2026 Moonshot AI; ../../data/LICENSE.kimi-k3.
+  Both files exactly match K3 snapshot f831ab66814297da540d832a5235f8e904f29d06.
+  The vocabulary also matches Moonshot's Kimi-VL-A3B-Instruct release; its
+  separate MIT notice is retained in ../../data/LICENSE.kimi-vl.
+  The Python file's existing Xenova citation is preserved; that fragment's
+  separate grant remains unestablished. See ../../data/README.md.
+
+deepseek-v3.tokenizer.json, deepseek-v4.tokenizer.json:
+  DeepSeek; Copyright (c) 2023 DeepSeek.
+  ../../data/LICENSE.deepseek reproduces the publisher's MIT license wording.
+  V4 matches DeepSeek-V4-Pro JSON in full, except formatting/object-key order.
+  V3 is byte-identical to the publisher's MIT-licensed DeepSeek-V3-0324 snapshot.
+  The original V3 model agreement is retained as historical context only in
+  ../../data/LICENSE.deepseek-v3-model. See README for exact matching pins.
+
+glm-5.tokenizer.json:
+  Full JSON content matches pinned zai-org/GLM-5 (Z.ai), except formatting/
+  object-key order. The model card declares license: mit, but the snapshot
+  supplies no complete component copyright/license notice. No grant is invented.
+
+ctok_v3.bin, ctok_v4_7.bin:
+  Generated ctok vocabulary data; preserve ../../data/LICENSE.ctok unchanged.
+
+This is a source provenance/notice record, not a publication approval. Exact
+evidence, transformations and remaining prerequisites are in ../../data/README.md.

@@ -94,9 +94,9 @@ describe("python prelude", () => {
 			const result = await runPrelude(
 				[`print(read("artifact://21", 3, 2))`, `print(read("mcp://server/resource", 10, 5))`].join("\n"),
 				{
-					PI_TOOL_BRIDGE_URL: server.url.toString(),
-					PI_TOOL_BRIDGE_TOKEN: "test-token",
-					PI_TOOL_BRIDGE_SESSION: "test-session",
+					AGENT_SMITH_TOOL_BRIDGE_URL: server.url.toString(),
+					AGENT_SMITH_TOOL_BRIDGE_TOKEN: "test-token",
+					AGENT_SMITH_TOOL_BRIDGE_SESSION: "test-session",
 				},
 			);
 
@@ -161,9 +161,9 @@ describe("python prelude", () => {
 					"asyncio.run(main())",
 				].join("\n"),
 				{
-					PI_TOOL_BRIDGE_URL: bridge.url.toString(),
-					PI_TOOL_BRIDGE_TOKEN: "test-token",
-					PI_TOOL_BRIDGE_SESSION: "test-session",
+					AGENT_SMITH_TOOL_BRIDGE_URL: bridge.url.toString(),
+					AGENT_SMITH_TOOL_BRIDGE_TOKEN: "test-token",
+					AGENT_SMITH_TOOL_BRIDGE_SESSION: "test-session",
 					HTTP_PROXY: proxyUrl,
 					http_proxy: proxyUrl,
 					ALL_PROXY: proxyUrl,

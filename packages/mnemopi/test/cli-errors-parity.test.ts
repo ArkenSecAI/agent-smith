@@ -8,14 +8,14 @@ let root: string;
 
 beforeEach(() => {
 	root = mkdtempSync(join(tmpdir(), "mnemopi-ts-cli-errors-parity-"));
-	process.env.MNEMOPI_DATA_DIR = root;
-	process.env.MNEMOPI_NO_EMBEDDINGS = "1";
+	process.env.AGENT_SMITH_MEMORY_DATA_DIR = root;
+	process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS = "1";
 });
 
 afterEach(() => {
 	rmSync(root, { recursive: true, force: true });
-	delete process.env.MNEMOPI_DATA_DIR;
-	delete process.env.MNEMOPI_NO_EMBEDDINGS;
+	delete process.env.AGENT_SMITH_MEMORY_DATA_DIR;
+	delete process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS;
 });
 
 function capture() {

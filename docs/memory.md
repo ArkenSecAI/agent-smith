@@ -1,6 +1,6 @@
 # Autonomous Memory
 
-omp supports five memory modes. Memory is disabled by default; select one backend via `/settings` or `config.yml`:
+agent-smith supports five memory modes. Memory is disabled by default; select one backend via `/settings` or `config.yml`:
 
 | `memory.backend` | Storage and behavior                                                   | Guide                                                   |
 | ---------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -133,14 +133,14 @@ If the requested memory role is not configured, memory model resolution falls ba
 
 ## Hindsight remote backend
 
-Hindsight requires a reachable [Hindsight](https://hindsight.vectorize.io/) server. The default endpoint is `http://localhost:8888`; set a token when the server requires authentication:
+Hindsight requires an explicitly configured, reachable [Hindsight](https://hindsight.vectorize.io/) endpoint; there is no implicit localhost connection. The example below deliberately selects a local server. Set a token when the server requires authentication:
 
 ```yaml
 memory:
   backend: hindsight
 hindsight:
   apiUrl: http://localhost:8888
-  apiToken: ${HINDSIGHT_API_TOKEN}
+  apiToken: ${AGENT_SMITH_HINDSIGHT_API_TOKEN}
 ```
 
 `HINDSIGHT_*` environment variables override `hindsight.*` settings, which override built-in defaults. See the [complete Hindsight environment-variable table](./environment-variables.md#hindsight-memory-backend) for all 18 supported overrides, accepted values, parsing rules, precedence, and defaults.

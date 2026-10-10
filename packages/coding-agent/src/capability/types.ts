@@ -53,9 +53,8 @@ export interface LoadContext {
 	/** Provider IDs explicitly requested by caller in LoadOptions */
 	explicitProviders?: Set<string>;
 	/**
-	 * Scan foreign `~/` sources even when not opted in. Set for
-	 * `includeDisabled` (dashboard) loads so opted-out items are listed
-	 * and can be switched on.
+	 * Deprecated and ignored: listing disabled items does not authorize reading
+	 * foreign sources. Select providers explicitly instead.
 	 */
 	includeOptOutUserSources?: boolean;
 }
@@ -104,6 +103,8 @@ export interface Provider<T> {
 export interface LoadOptions<T = unknown> {
 	/** Only use these providers (by ID). Default: all registered */
 	providers?: string[];
+	/** Explicitly admit additional foreign providers for this load, without enabling other sources. */
+	optInProviders?: string[];
 	/** Exclude these providers (by ID). Default: none */
 	excludeProviders?: string[];
 	/** Custom cwd. Default: getProjectDir() */

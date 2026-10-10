@@ -130,7 +130,7 @@ export function runMcpServer(
 	transport = "stdio",
 	options: { port?: number; bank?: string; host?: string } = {},
 ): Promise<void> {
-	if (options.bank !== undefined && options.bank.length > 0) process.env.MNEMOPI_MCP_BANK = options.bank;
+	if (options.bank !== undefined && options.bank.length > 0) process.env.AGENT_SMITH_MEMORY_MCP_BANK = options.bank;
 	if (transport !== "stdio") throw new Error("Only stdio transport is implemented in the TypeScript port");
 	return runStdio();
 }

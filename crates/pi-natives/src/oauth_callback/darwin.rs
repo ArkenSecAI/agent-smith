@@ -10,11 +10,10 @@ use serde::{Deserialize, Serialize};
 use super::context::{Context, atomic_write};
 
 const SNAPSHOT_VERSION: u32 = 1;
-const BUNDLE_PREFIX: &str = "dev.omp.oauth-callback.";
-const APP_PREFIX: &str = "omp OAuth Callback ";
-const STAGING_APP_NAME: &str = "OMP OAuth Callback.app";
+const BUNDLE_PREFIX: &str = "com.arkensec.agent-smith.oauth-callback.";
+const APP_PREFIX: &str = "Agent Smith OAuth Callback ";
+const STAGING_APP_NAME: &str = "Agent Smith OAuth Callback.app";
 const EXECUTABLE_NAME: &str = "darwin-helper";
-const LEGACY_RECOVERY_FILE: &str = "darwin-url-callback.json";
 const LSREGISTER: &str = "/System/Library/Frameworks/CoreServices.framework/Frameworks/\
                           LaunchServices.framework/Support/lsregister";
 
@@ -70,16 +69,6 @@ pub(super) struct Snapshot {
 #[serde(deny_unknown_fields)]
 struct OperationResult {
 	status: String,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-struct LegacyRecoveryRecord {
-	app_path:         PathBuf,
-	bundle_id:        String,
-	pid:              i32,
-	previous_handler: String,
-	scheme:           String,
 }
 
 fn staging_app_path(context: &Context) -> PathBuf {
@@ -202,7 +191,7 @@ fn info_plist(context: &Context) -> String {
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>omp OAuth Callback</string>
+	<string>Agent Smith OAuth Callback</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -215,7 +204,7 @@ fn info_plist(context: &Context) -> String {
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>CFBundleURLName</key>
-			<string>omp OAuth Callback</string>
+			<string>Agent Smith OAuth Callback</string>
 			<key>CFBundleURLSchemes</key>
 			<array><string>{}</string></array>
 		</dict>
@@ -424,186 +413,18 @@ fn remove_own_registration(
 		 &after,
 		 ApplicationState::Found { bundle_id, .. } if bundle_id == &snapshot.bundle_id
 	) {
-		bail!("macOS still resolves {} URLs to the temporary omp application", context.scheme);
+		bail!(
+			"macOS still resolves {} URLs to the temporary Agent Smith application",
+			context.scheme
+		);
 	}
 	if !same_application(&after, expected_handler) {
 		bail!(
-			"the external {} URL handler changed while removing the omp application",
+			"the external {} URL handler changed while removing the Agent Smith application",
 			context.scheme
 		);
 	}
 	remove_transaction_applications(context, snapshot)
-}
-
-fn legacy_recovery_path(context: &Context) -> PathBuf {
-	let config_directory = context
-		.env
-		.get("PI_CONFIG_DIR")
-		.map(|value| value.trim())
-		.filter(|value| !value.is_empty())
-		.unwrap_or(".omp");
-	context
-		.home
-		.join(config_directory)
-		.join("oauth")
-		.join(LEGACY_RECOVERY_FILE)
-}
-
-fn valid_legacy_record(context: &Context, record: &LegacyRecoveryRecord) -> bool {
-	let applications = context.home.join("Applications");
-	let Ok(relative) = record.app_path.strip_prefix(&applications) else {
-		return false;
-	};
-	let Some(file_name) = record.app_path.file_name().and_then(|value| value.to_str()) else {
-		return false;
-	};
-	is_safe_absolute_path(&record.app_path)
-		&& !relative.as_os_str().is_empty()
-		&& relative
-			.components()
-			.all(|component| matches!(component, Component::Normal(_)))
-		&& file_name.starts_with(APP_PREFIX)
-		&& file_name.len() > APP_PREFIX.len() + ".app".len()
-		&& record.app_path.extension().and_then(|value| value.to_str()) == Some("app")
-		&& record.bundle_id.starts_with(BUNDLE_PREFIX)
-		&& record.bundle_id.len() > BUNDLE_PREFIX.len()
-		&& valid_bundle_id(&record.bundle_id)
-		&& record.pid > 0
-		&& valid_scheme(&record.scheme)
-		&& (record.previous_handler.is_empty()
-			|| (valid_bundle_id(&record.previous_handler)
-				&& !record.previous_handler.starts_with(BUNDLE_PREFIX)))
-}
-
-fn read_legacy_recovery(context: &Context) -> Result<Option<LegacyRecoveryRecord>> {
-	let path = legacy_recovery_path(context);
-	let bytes = match fs::read(&path) {
-		Ok(bytes) => bytes,
-		Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
-		Err(error) => {
-			return Err(error)
-				.with_context(|| format!("failed to read legacy recovery record {}", path.display()));
-		},
-	};
-	let record: LegacyRecoveryRecord = serde_json::from_slice(&bytes).with_context(|| {
-		format!(
-			"invalid legacy macOS OAuth recovery record at {}; recovery was not attempted",
-			path.display()
-		)
-	})?;
-	if !valid_legacy_record(context, &record) {
-		bail!(
-			"invalid legacy macOS OAuth recovery record at {}; recovery was not attempted",
-			path.display()
-		);
-	}
-	Ok(Some(record))
-}
-
-#[cfg(unix)]
-fn process_is_alive(pid: i32) -> bool {
-	// A zero signal only probes process ownership/existence and does not alter
-	// it. SAFETY: `kill` accepts every integer PID and a zero signal has no
-	// side effect.
-	let result = unsafe { libc::kill(pid, 0) };
-	result == 0 || std::io::Error::last_os_error().raw_os_error() == Some(libc::EPERM)
-}
-
-#[cfg(not(unix))]
-fn process_is_alive(_pid: i32) -> bool {
-	false
-}
-
-fn remove_path_if_present(path: &Path) -> Result<()> {
-	match fs::remove_file(path) {
-		Ok(()) => Ok(()),
-		Err(error) if error.kind() == ErrorKind::NotFound => Ok(()),
-		Err(error) => Err(error).with_context(|| format!("failed to remove {}", path.display())),
-	}
-}
-
-fn recover_legacy_registration(context: &Context) -> Result<()> {
-	let Some(record) = read_legacy_recovery(context)? else {
-		return Ok(());
-	};
-	if process_is_alive(record.pid) {
-		bail!("another OAuth login is already waiting for a custom-scheme callback");
-	}
-	let owned_app = resolve_bundle(context, &record.bundle_id)?;
-	if owned_app != found_application(record.app_path.clone(), record.bundle_id.clone()) {
-		bail!("legacy recovery record does not identify the registered owned application");
-	}
-
-	let before = query_scheme(context, &record.scheme)?;
-	let expected_after = match &before {
-		ApplicationState::Found { app_path, bundle_id } if bundle_id == &record.bundle_id => {
-			if app_path != &record.app_path {
-				bail!("legacy omp callback bundle resolves to an unexpected application path");
-			}
-			if record.previous_handler.is_empty() {
-				unregister_application(context, &record.app_path)?;
-				let after = query_scheme(context, &record.scheme)?;
-				if matches!(
-					 &after,
-					 ApplicationState::Found { bundle_id, .. } if bundle_id == &record.bundle_id
-				) {
-					bail!("macOS still uses the legacy omp callback application");
-				}
-				after
-			} else {
-				let previous = resolve_bundle(context, &record.previous_handler)?;
-				if !matches!(&previous, ApplicationState::Found { .. }) {
-					bail!(
-						"cannot safely restore legacy handler {}; its application is unavailable",
-						record.previous_handler
-					);
-				}
-				let (previous_path, _) = previous
-					.found()
-					.context("resolved legacy handler has no application path")?;
-				set_scheme_handler(context, &record.scheme, previous_path)?;
-				let restored = query_scheme(context, &record.scheme)?;
-				if !same_application(&restored, &previous) {
-					bail!("macOS did not restore the legacy URL handler");
-				}
-				unregister_application(context, &record.app_path)?;
-				let after = query_scheme(context, &record.scheme)?;
-				if !same_application(&after, &restored) {
-					bail!("legacy URL handler changed while unregistering the omp application");
-				}
-				after
-			}
-		},
-		ApplicationState::Found { bundle_id, .. } if bundle_id.starts_with(BUNDLE_PREFIX) => {
-			bail!("an unrelated omp callback application owns the legacy URL scheme")
-		},
-		ApplicationState::Absent | ApplicationState::Found { .. } => {
-			unregister_application(context, &record.app_path)?;
-			let after = query_scheme(context, &record.scheme)?;
-			if !same_application(&after, &before) {
-				bail!("external URL handler changed during legacy recovery");
-			}
-			after
-		},
-		ApplicationState::Unknown => unreachable!("query_scheme rejects unknown state"),
-	};
-
-	if matches!(
-		 &expected_after,
-		 ApplicationState::Found { bundle_id, .. } if bundle_id == &record.bundle_id
-	) {
-		bail!("macOS still resolves the legacy omp callback application");
-	}
-	match fs::remove_dir_all(&record.app_path) {
-		Ok(()) => {},
-		Err(error) if error.kind() == ErrorKind::NotFound => {},
-		Err(error) => {
-			return Err(error).with_context(|| {
-				format!("failed to remove legacy callback application {}", record.app_path.display())
-			});
-		},
-	}
-	remove_path_if_present(&legacy_recovery_path(context))
 }
 
 /// Builds a private, unregistered staging bundle and captures the current
@@ -620,13 +441,13 @@ pub(super) fn prepare(context: &Context) -> Result<Snapshot> {
 	}
 	assemble_application(context, &staging_path)?;
 	let result = (|| {
-		recover_legacy_registration(context)?;
 		let previous = query_scheme(context, &context.scheme)?;
 		if let ApplicationState::Found { bundle_id, .. } = &previous
 			&& bundle_id.starts_with(BUNDLE_PREFIX)
 		{
 			bail!(
-				"stale omp callback handler {bundle_id} has no recovery journal; remove it and retry"
+				"stale Agent Smith callback handler {bundle_id} has no recovery journal; remove it \
+				 and retry"
 			);
 		}
 		Ok(Snapshot {
@@ -678,7 +499,7 @@ pub(super) fn restore(context: &Context, snapshot: &Snapshot) -> Result<()> {
 	let own_active = match &active {
 		ApplicationState::Found { app_path, bundle_id } if bundle_id == &snapshot.bundle_id => {
 			if app_path != &snapshot.app_path {
-				bail!("active omp callback bundle has an unexpected application path");
+				bail!("active Agent Smith callback bundle has an unexpected application path");
 			}
 			true
 		},
@@ -728,7 +549,7 @@ pub(super) fn restore(context: &Context, snapshot: &Snapshot) -> Result<()> {
 					 &after,
 					 ApplicationState::Found { bundle_id, .. } if bundle_id == &snapshot.bundle_id
 				) {
-					bail!("macOS still resolves URLs to the temporary omp application");
+					bail!("macOS still resolves URLs to the temporary Agent Smith application");
 				}
 				remove_transaction_applications(context, snapshot)
 			},
@@ -750,7 +571,6 @@ mod tests {
 	};
 
 	use parking_lot::Mutex;
-	use serde_json::json;
 
 	use super::*;
 	use crate::task::CancelToken;
@@ -1012,86 +832,26 @@ mod tests {
 	}
 
 	#[test]
-	fn legacy_recovery_restores_bundle_and_removes_owned_artifacts() {
+	fn foreign_legacy_recovery_and_application_are_left_untouched() {
 		let root = TempDir::new();
-		let legacy_app = root
-			.0
-			.join("home/Applications/omp OAuth Callback abandoned.app");
-		fs::create_dir_all(&legacy_app).unwrap();
-		let legacy_bundle = "dev.omp.oauth-callback.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-		let (context, state) = context(&root, found(&legacy_app, legacy_bundle));
-		let previous = found(root.0.join("Browser.app"), "com.example.browser");
-		let mut state_guard = state.lock();
-		state_guard
-			.apps
-			.insert(legacy_bundle.to_owned(), found(&legacy_app, legacy_bundle));
-		state_guard
-			.apps
-			.insert("com.example.browser".to_owned(), previous.clone());
-		drop(state_guard);
-		let recovery_path = legacy_recovery_path(&context);
-		fs::create_dir_all(recovery_path.parent().unwrap()).unwrap();
-		fs::write(
-			&recovery_path,
-			serde_json::to_vec(&json!({
-				 "appPath": legacy_app,
-				 "bundleId": legacy_bundle,
-				 "pid": i32::MAX,
-				 "previousHandler": "com.example.browser",
-				 "scheme": "omp-auth"
-			}))
-			.unwrap(),
-		)
-		.unwrap();
+		let previous = found(root.0.join("Editor.app"), "com.example.editor");
+		let (context, _) = context(&root, previous.clone());
+		let foreign_record = context.home.join(".omp/oauth/darwin-url-callback.json");
+		let foreign_app = context
+			.home
+			.join("Applications/omp OAuth Callback abandoned.app");
+		fs::create_dir_all(foreign_record.parent().unwrap()).unwrap();
+		fs::create_dir_all(&foreign_app).unwrap();
+		fs::write(&foreign_record, b"foreign recovery marker: not Agent Smith state").unwrap();
 
 		let snapshot = prepare(&context).unwrap();
 
 		assert_eq!(snapshot.previous, previous);
-		assert!(!legacy_app.exists());
-		assert!(!recovery_path.exists());
-	}
-
-	#[test]
-	fn invalid_legacy_record_is_retained_and_generated_app_is_removed() {
-		let root = TempDir::new();
-		let (context, _) = context(&root, ApplicationState::Absent);
-		let recovery_path = legacy_recovery_path(&context);
-		fs::create_dir_all(recovery_path.parent().unwrap()).unwrap();
-		fs::write(
-            &recovery_path,
-            br#"{"appPath":"/tmp/unowned.app","bundleId":"dev.omp.oauth-callback.bad","pid":999999,"previousHandler":"","scheme":"omp-auth"}"#,
-        )
-        .unwrap();
-
-		assert!(prepare(&context).is_err());
-		assert!(recovery_path.exists());
-		assert!(!expected_app_path(&context).exists());
-		assert!(!staging_app_path(&context).exists());
-	}
-
-	#[test]
-	fn live_legacy_owner_is_not_recovered() {
-		let root = TempDir::new();
-		let legacy_app = root.0.join("home/Applications/omp OAuth Callback live.app");
-		fs::create_dir_all(&legacy_app).unwrap();
-		let (context, _) = context(&root, ApplicationState::Absent);
-		let recovery_path = legacy_recovery_path(&context);
-		fs::create_dir_all(recovery_path.parent().unwrap()).unwrap();
-		fs::write(
-			&recovery_path,
-			serde_json::to_vec(&json!({
-				 "appPath": legacy_app,
-				 "bundleId": "dev.omp.oauth-callback.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-				 "pid": std::process::id(),
-				 "previousHandler": "",
-				 "scheme": "omp-auth"
-			}))
-			.unwrap(),
-		)
-		.unwrap();
-
-		assert!(prepare(&context).is_err());
-		assert!(recovery_path.exists());
-		assert!(legacy_app.exists());
+		assert_eq!(
+			fs::read(&foreign_record).unwrap(),
+			b"foreign recovery marker: not Agent Smith state"
+		);
+		assert!(foreign_app.is_dir());
+		assert_ne!(snapshot.app_path, foreign_app);
 	}
 }

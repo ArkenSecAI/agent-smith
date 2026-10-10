@@ -1,0 +1,8 @@
+name: Agent Smith pinned Bun
+description: Install an integrity-verified Bun 1.4.2 in a disposable hosted runner's temporary directory
+runs:
+  using: composite
+  steps:
+    - name: Verify and provision Bun
+      shell: pwsh
+      run: ./scripts/agent-smith-ci-tools.ps1 -Tool bun

@@ -11,7 +11,7 @@ const tempDirs: TempDir[] = [];
 
 async function runProbe(cacheRoot: string, script: string = probePath, args: string[] = []): Promise<string> {
 	const env: Record<string, string | undefined> = { ...process.env, XDG_CACHE_HOME: cacheRoot };
-	for (const key of ["PI_CODING_AGENT_DIR", "OMP_PROFILE", "PI_PROFILE", "PI_CONFIG_DIR"]) {
+	for (const key of ["AGENT_SMITH_CODING_AGENT_DIR", "AGENT_SMITH_PROFILE", "PI_PROFILE", "AGENT_SMITH_CONFIG_DIR"]) {
 		delete env[key];
 	}
 	const proc = Bun.spawn([process.execPath, script, ...args], {

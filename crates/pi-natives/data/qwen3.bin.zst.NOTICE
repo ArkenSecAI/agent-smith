@@ -1,0 +1,18 @@
+Modification notice for qwen3.bin.zst
+====================================
+
+Copyright 2026 Alibaba Cloud
+Licensed under the Apache License, Version 2.0; see LICENSE.qwen3.8.
+
+This is an OMP-transformed Qwen/Qwen3.8-27B tokenizer vocabulary, not the original
+upstream tokenizer.json. ../tools/pack-qwen.ts decodes byte-alphabet vocabulary
+keys, excludes 33 added tokens, preserves 248044 rank slots with 201 unreachable
+entries emptied, and encodes the table as UTOK1 followed by zstd compression.
+These transformations are present in OMP v18.4.8, commit
+717f97f4d22b3d65c4a4eef6a744255d46f4d1a6. This notice was added on 2026-10-10;
+the packed table was not modified or regenerated during that notice remediation.
+
+The qwen3 output name is a family identifier; the source matched during this
+review is Qwen3.8-27B at 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0.
+See README.md for the source URLs, cache hash, comparison method and limitations.
+Keep this notice attached to the transformed table when redistributing it.

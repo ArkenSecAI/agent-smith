@@ -82,7 +82,7 @@ describe("structured extraction", () => {
 	});
 
 	it("uses deterministic heuristic extraction when no LLM is configured", async () => {
-		process.env.MNEMOPI_LLM_ENABLED = "false";
+		process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = "false";
 		const facts = await extractFactsSafe("My name is Ada. I work at Example Corp and I prefer dark mode.");
 		expect(facts).toContain("The user's name is Ada");
 		expect(facts).toContain("The user works at Example Corp");
@@ -99,9 +99,9 @@ describe("structured extraction", () => {
 	});
 
 	it("routes enabled host LLM extraction before remote and keeps temperature zero", async () => {
-		process.env.MNEMOPI_LLM_ENABLED = "true";
-		process.env.MNEMOPI_HOST_LLM_ENABLED = "true";
-		process.env.MNEMOPI_LLM_BASE_URL = "http://remote.invalid/v1";
+		process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_HOST_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL = "http://remote.invalid/v1";
 		let capturedTemperature = -1;
 		setHostLlmBackend(
 			new CallableLlmBackend("fake", (_prompt, opts) => {
@@ -117,9 +117,9 @@ describe("structured extraction", () => {
 	});
 
 	it("strips reasoning wrappers from remote extraction so facts are not reasoning prose", async () => {
-		process.env.MNEMOPI_LLM_ENABLED = "true";
-		process.env.MNEMOPI_HOST_LLM_ENABLED = "false";
-		process.env.MNEMOPI_LLM_BASE_URL = "http://reasoning.invalid/v1";
+		process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_HOST_LLM_ENABLED = "false";
+		process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL = "http://reasoning.invalid/v1";
 		const content =
 			'<think>\nThe user is providing information in English. Let me analyze what qualifies:\n- candidate fact\n</think>\n{"facts":["My preferred shell is zsh"],"instructions":[],"preferences":[],"timelines":[],"kg":[]}';
 		const fetchMock: FetchImpl = async () =>
@@ -134,7 +134,7 @@ describe("structured extraction", () => {
 	});
 
 	it("prefers a configured completion with the extraction-prompt override at temperature zero", async () => {
-		process.env.MNEMOPI_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = "true";
 		let capturedPrompt = "";
 		let capturedTemperature = -1;
 		let capturedTask: MnemopiLlmCompletionTask | undefined;

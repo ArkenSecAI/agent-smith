@@ -1028,12 +1028,12 @@ export const cfgStartupSetupWizard = register({
 export const cfgStartupCheckUpdate = register({
 	id: "startup.checkUpdate",
 	type: "boolean",
-	default: true,
+	default: false,
 	ui: {
 		tab: "interaction",
 		group: "Startup & Updates",
 		label: "Check for Updates",
-		description: "Check for omp updates on startup",
+		description: "Release updates are unavailable in unreleased Agent Smith builds",
 	},
 });
 

@@ -25,7 +25,7 @@ import {
 	MIN_BUN_VERSION,
 	resolveProfileEnv,
 	setProfile,
-	VERSION,
+	VERSION_LABEL,
 } from "@oh-my-pi/pi-utils/dirs";
 
 import { declareWorkerHostEntry, installWorkerInbox, isWorkerHostSelector } from "@oh-my-pi/pi-utils/worker-host";
@@ -96,7 +96,7 @@ async function setFullProcessName(): Promise<void> {
 	setProcessName(APP_NAME);
 }
 
-/** Install PI_PROXY handling before any command implementation can make a provider request. */
+/** Install AGENT_SMITH_PROXY handling before any command implementation can make a provider request. */
 async function installNetworkBootstrap(): Promise<void> {
 	// Latency boundary: proxy socket/error modules are unnecessary before the first frame.
 	const { installGlobalProxyFetch } = await import("@oh-my-pi/pi-ai/utils/proxy");
@@ -466,7 +466,7 @@ async function runIpcSubprocessWorker<In, Out>(
 
 /**
  * Hidden subcommand that boots the ONNX tiny-model worker for one model: a
- * detached process owning that model's socket (`OMP_TINY_WORKER_SOCKET`),
+ * detached process owning that model's socket (`AGENT_SMITH_TINY_WORKER_SOCKET`),
  * shared by every omp process on the machine and exiting on its own when
  * idle. It exists so `onnxruntime-node` (loaded transitively by
  * `@huggingface/transformers`) never runs in an omp address space — its NAPI
@@ -489,22 +489,22 @@ export async function runCli(argv: string[]): Promise<void> {
 		if (extracted.profile !== undefined) {
 			setProfile(extracted.profile);
 		} else {
-			// No explicit --profile: activate any OMP_PROFILE/PI_PROFILE inherited
+			// No explicit --profile: activate any AGENT_SMITH_PROFILE inherited
 			// from the environment. Module-load resolution deliberately swallows an
 			// invalid value to avoid an uncaught throw before this try/catch is in
 			// scope (see `readProfileFromEnvSafe` in dirs.ts), and callers may set
-			// OMP_PROFILE after importing this module (profile aliases/tests). Surfacing
-			// validation here turns `OMP_PROFILE=.. omp --version` into a clean error;
+			// AGENT_SMITH_PROFILE after importing this module (profile aliases/tests). Surfacing
+			// validation here turns `AGENT_SMITH_PROFILE=.. omp --version` into a clean error;
 			// calling setProfile keeps every later path helper on the env-selected
 			// profile instead of the default agent directory.
-			setProfile(resolveProfileEnv(process.env.OMP_PROFILE, process.env.PI_PROFILE));
+			setProfile(resolveProfileEnv(process.env.AGENT_SMITH_PROFILE));
 		}
 		if (extracted.aliasName !== undefined) {
 			// Command boundary: shell/path setup is used only by --alias.
 			const { installProfileAlias, resolveProfileAliasCommandFromProcess } = await import("./cli/profile-alias");
 			const profile = extracted.profile ?? getActiveProfile();
 			if (!profile) {
-				throw new Error("--alias requires --profile <name> or OMP_PROFILE");
+				throw new Error("--alias requires --profile <name> or AGENT_SMITH_PROFILE");
 			}
 			const result = await installProfileAlias({
 				profile,
@@ -570,7 +570,7 @@ export async function runCli(argv: string[]): Promise<void> {
 		// keeps the TUI graph out of worker, subcommand, help, and version launches.
 		// Loading it statically would erase the measured cold-start improvement.
 		const { beginStartupComposer, stopPendingStartupComposer } = await import("./modes/startup-composer");
-		beginStartupComposer({ version: VERSION });
+		beginStartupComposer({ version: VERSION_LABEL });
 		stopStartupComposer = stopPendingStartupComposer;
 	}
 
@@ -604,7 +604,7 @@ export async function runCli(argv: string[]): Promise<void> {
 			return;
 		}
 		runningCommand = resolved.argv[0];
-		await run({ bin: APP_NAME, version: VERSION, argv: resolved.argv, commands, metadataHelp: showHelp });
+		await run({ bin: APP_NAME, version: VERSION_LABEL, argv: resolved.argv, commands, metadataHelp: showHelp });
 	} finally {
 		stopStartupComposer?.();
 	}

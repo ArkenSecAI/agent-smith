@@ -10,7 +10,7 @@ import { Mnemopi } from "@oh-my-pi/pi-mnemopi/core/memory";
 // install hangs each test past the 5s timeout (and starves siblings under
 // parallel CI).
 beforeEach(() => {
-	process.env.MNEMOPI_NO_EMBEDDINGS = "1";
+	process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS = "1";
 });
 
 const roots: string[] = [];
@@ -27,7 +27,7 @@ afterEach(() => {
 		if (root === undefined) break;
 		rmSync(root, { recursive: true, force: true });
 	}
-	delete process.env.MNEMOPI_NO_EMBEDDINGS;
+	delete process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS;
 });
 
 describe("identity memory parity", () => {

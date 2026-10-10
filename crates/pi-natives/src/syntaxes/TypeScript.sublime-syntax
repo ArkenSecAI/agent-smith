@@ -1,5 +1,10 @@
 %YAML 1.2
 ---
+# Adapted from Microsoft's TypeScript-TmLanguage grammar family.
+# Copyright (c) Microsoft Corporation
+# All rights reserved.
+# MIT license: LICENSE.TypeScript-TmLanguage; provenance limits: PROVENANCE.md.
+# Attribution restored for Agent Smith; grammar rules are unchanged.
 # http://www.sublimetext.com/docs/3/syntax.html
 name: TypeScript
 file_extensions:

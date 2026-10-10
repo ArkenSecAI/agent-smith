@@ -829,7 +829,7 @@ export class MnemopiSessionState {
 function createScopedResources(config: MnemopiBackendConfig): MnemopiScopedResources {
 	// Recall feature flags are per memory instance (see `createMemory`) so concurrent
 	// sessions with different settings cannot clobber each other through process-wide
-	// defaults. MNEMOPI_POLYPHONIC_RECALL / MNEMOPI_ENHANCED_RECALL still override them.
+	// defaults. AGENT_SMITH_MEMORY_POLYPHONIC_RECALL / AGENT_SMITH_MEMORY_ENHANCED_RECALL still override them.
 	const banks = resolveScopedBanks(config);
 	const memories = new Map<string, MnemopiScopedMemory>();
 	const open = (bank: string): MnemopiScopedMemory => {

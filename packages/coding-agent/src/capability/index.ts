@@ -47,8 +47,13 @@ let unboundEnabledProviders = new Set<string>();
 const cfgDisabledProviderSet = cfgDisabledProviders.map(ids => new Set(ids));
 const cfgEnabledProviderSet = cfgEnabledProviders.map(ids => new Set(ids));
 
-/** Foreign tools whose user-level (~/...) configs are opt-in */
+/** Foreign configuration providers are opt-in at both user and project level */
 const FOREIGN_USER_PROVIDERS: Record<string, true> = {
+	agents: true,
+	"claude-md": true,
+	cline: true,
+	vscode: true,
+	"mcp-json": true,
 	cursor: true,
 	codex: true,
 	claude: true,
@@ -301,7 +306,14 @@ async function loadImpl<T>(
  */
 function filterProviders<T>(capability: Capability<T>, options: LoadOptions<T>): Provider<T>[] {
 	const disabled = disabledProviders();
-	let providers = (capability.providers as Provider<T>[]).filter(p => !disabled.has(p.id));
+	let providers = (capability.providers as Provider<T>[]).filter(
+		p =>
+			!disabled.has(p.id) &&
+			(options.providers?.includes(p.id) ||
+				options.optInProviders?.includes(p.id) ||
+				p.id === "claude-plugins" ||
+				isUserSourceEnabled(p.id)),
+	);
 
 	if (options.providers) {
 		const allowed = new Set(options.providers);
@@ -332,8 +344,10 @@ export async function loadCapability<T>(
 	const repoRoot = await findRepoRoot(cwd);
 	const ctx: LoadContext = { cwd, home, repoRoot };
 	if (options.agentDir !== undefined) ctx.agentDir = options.agentDir;
-	if (options.providers) ctx.explicitProviders = new Set(options.providers);
-	if (options.includeDisabled) ctx.includeOptOutUserSources = true;
+	if (options.providers || options.optInProviders) {
+		ctx.explicitProviders = new Set([...(options.providers ?? []), ...(options.optInProviders ?? [])]);
+	}
+	// Showing disabled items is not consent to read another application's home.
 	if (options.extensionRoots !== undefined) ctx.extensionRoots = options.extensionRoots;
 	const providers = filterProviders(capability, options);
 
@@ -351,20 +365,19 @@ export function isForeignUserProvider(providerId: string): boolean {
 
 /**
  * Check whether a user-level (~/...) config source is enabled.
- * Native (.omp) and .agents directories are enabled by default.
+ * Native Agent Smith directories are enabled by default.
  * Foreign tool directories (~/.cursor, ~/.codex, ~/.claude, etc.) are opt-in
- * via `enabledProviders`. Project-level (cwd) config is unaffected; see
+ * via `enabledProviders`. The same gate applies to project discovery; see
  * {@link isProviderEnabled} for the whole-provider switch.
  */
 export function isUserSourceEnabled(source: string, ctx?: LoadContext): boolean {
 	const id = source.replace(/^\./, "");
 	if (disabledProviders().has(id)) return false;
 	if (FOREIGN_USER_PROVIDERS[id] !== true) return true;
-	if (ctx?.explicitProviders?.has(id) || ctx?.includeOptOutUserSources) return true;
+	if (ctx?.explicitProviders?.has(id)) return true;
 	const enabled = enabledProviders();
 	if (enabled.has(id) || enabled.has("*") || enabled.has("all")) return true;
 	if (id === "claude-plugins" && enabled.has("claude")) return true;
-	if (id === "claude" && process.env.CLAUDE_CONFIG_DIR?.trim()) return true;
 	return false;
 }
 
@@ -373,7 +386,7 @@ export function enableUserSource(providerId: string): void {
 	setEnabledProviders([...enabledProviders(), providerId]);
 }
 
-/** Opt a foreign provider's `~/` config out (project config keeps loading). */
+/** Opt out of a foreign provider's automatically discovered configuration. */
 export function disableUserSource(providerId: string): void {
 	setEnabledProviders([...enabledProviders()].filter(id => id !== providerId));
 }
@@ -475,7 +488,6 @@ export function getCapabilityInfo(capabilityId: string): CapabilityInfo | undefi
 	const capability = capabilities.get(capabilityId);
 	if (!capability) return undefined;
 
-	const disabled = disabledProviders();
 	return {
 		id: capability.id,
 		displayName: capability.displayName,
@@ -485,7 +497,7 @@ export function getCapabilityInfo(capabilityId: string): CapabilityInfo | undefi
 			displayName: p.displayName,
 			description: p.description,
 			priority: p.priority,
-			enabled: !disabled.has(p.id),
+			enabled: isProviderEnabled(p.id),
 		})),
 	};
 }
@@ -522,7 +534,7 @@ export function getProviderInfo(providerId: string): ProviderInfo | undefined {
 		description: meta.description,
 		priority,
 		capabilities: Array.from(caps),
-		enabled: !disabledProviders().has(providerId),
+		enabled: isProviderEnabled(providerId),
 	};
 }
 

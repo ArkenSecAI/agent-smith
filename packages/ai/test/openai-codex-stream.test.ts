@@ -31,8 +31,8 @@ const { getAgentDir, setAgentDir, TempDir } = piUtils;
 const originalAgentDir = getAgentDir();
 const originalWebSocket = global.WebSocket;
 const originalProxyEnv: Record<string, string | undefined> = {
-	PI_PROXY: Bun.env.PI_PROXY,
-	PI_PROXY_CODEX_PROXY_TEST: Bun.env.PI_PROXY_CODEX_PROXY_TEST,
+	AGENT_SMITH_PROXY: Bun.env.AGENT_SMITH_PROXY,
+	AGENT_SMITH_PROXY_CODEX_PROXY_TEST: Bun.env.AGENT_SMITH_PROXY_CODEX_PROXY_TEST,
 	HTTPS_PROXY: Bun.env.HTTPS_PROXY,
 	https_proxy: Bun.env.https_proxy,
 	ALL_PROXY: Bun.env.ALL_PROXY,
@@ -1701,7 +1701,7 @@ describe("openai-codex streaming", () => {
 
 	it("passes the provider proxy to websocket handshakes", async () => {
 		const proxy = "socks5://127.0.0.1:7890";
-		Bun.env.PI_PROXY_CODEX_PROXY_TEST = proxy;
+		Bun.env.AGENT_SMITH_PROXY_CODEX_PROXY_TEST = proxy;
 		__resetProxyCache();
 		let capturedProxy: string | undefined;
 		class ProxyCaptureWebSocket extends MockWebSocket {
@@ -1727,7 +1727,7 @@ describe("openai-codex streaming", () => {
 			expect(capturedProxy).toBe(proxy);
 		} finally {
 			for (const state of providerSessionState.values()) state.close();
-			delete Bun.env.PI_PROXY_CODEX_PROXY_TEST;
+			delete Bun.env.AGENT_SMITH_PROXY_CODEX_PROXY_TEST;
 		}
 	});
 
@@ -1770,7 +1770,7 @@ describe("openai-codex streaming", () => {
 	});
 
 	it("bypasses configured proxies for NO_PROXY websocket targets", async () => {
-		Bun.env.PI_PROXY_CODEX_PROXY_TEST = "http://127.0.0.1:7890";
+		Bun.env.AGENT_SMITH_PROXY_CODEX_PROXY_TEST = "http://127.0.0.1:7890";
 		Bun.env.NO_PROXY = "chatgpt.com:443";
 		__resetProxyCache();
 		let capturedProxy: string | undefined;

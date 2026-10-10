@@ -7,7 +7,7 @@
  * (including `!command` config indirection) from coding-agent's config layer.
  *
  * Precedence (highest first):
- *   1. `OMP_AUTH_BROKER_URL` / `OMP_AUTH_BROKER_TOKEN` env vars.
+ *   1. `AGENT_SMITH_AUTH_BROKER_URL` / `AGENT_SMITH_AUTH_BROKER_TOKEN` env vars.
  *   2. `auth.broker.url` / `auth.broker.token` in `~/.omp/agent/config.yml`
  *      (hidden from the settings UI; `!command` resolution supported).
  *   3. Token file `~/.omp/auth-broker.token` (paired with URL from env or config).
@@ -56,7 +56,7 @@ export interface EffectiveSettingsScope {
 /**
  * Resolve the settings auth discovery must honor: the explicit instance, else the
  * global instance when it targets the same agent dir (and cwd, when given), else a
- * read-only load so `--config`/`PI_CONFIG_FILES`/project overlays still apply.
+ * read-only load so `--config`/`AGENT_SMITH_CONFIG_FILES`/project overlays still apply.
  */
 async function resolveEffectiveSettings({ settings, cwd, agentDir = getAgentDir() }: EffectiveSettingsScope) {
 	if (settings) return settings;
@@ -103,7 +103,7 @@ let cachedConfigPromise: Promise<AuthBrokerClientConfig | null> | null = null;
  * retried. Concurrent callers share one in-flight resolution.
  */
 export function resolveAuthBrokerConfig(): Promise<AuthBrokerClientConfig | null> {
-	const key = `${process.env.OMP_AUTH_BROKER_URL ?? ""}\u0000${process.env.OMP_AUTH_BROKER_TOKEN ?? ""}\u0000${getAgentDir()}`;
+	const key = `${process.env.AGENT_SMITH_AUTH_BROKER_URL ?? ""}\u0000${process.env.AGENT_SMITH_AUTH_BROKER_TOKEN ?? ""}\u0000${getAgentDir()}`;
 	if (cachedConfigPromise && cachedConfigKey === key) return cachedConfigPromise;
 	const promise = resolveAuthBrokerConfigShared({
 		agentDir: getAgentDir(),
@@ -251,6 +251,6 @@ export async function describeAuthBrokerStartupError(error: unknown): Promise<st
 		"omp is configured to use this broker for credentials and will not fall back to local credentials automatically.\n" +
 		"Start the broker with `omp auth-broker serve`, or disable it with " +
 		"`omp config reset auth.broker.url` and `omp config reset auth.broker.token` " +
-		"(or unset OMP_AUTH_BROKER_URL / OMP_AUTH_BROKER_TOKEN)."
+		"(or unset AGENT_SMITH_AUTH_BROKER_URL / AGENT_SMITH_AUTH_BROKER_TOKEN)."
 	);
 }

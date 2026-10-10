@@ -97,14 +97,14 @@ function normalizeConfig(options: BeamMemoryOptions): BeamConfig {
 function autoMigrateAnnotations(db: Database, dbPath: string | undefined): void {
 	if (dbPath === undefined || dbPath === ":memory:" || !existsSync(dbPath)) return;
 	if (!hasPendingMigration(db)) return;
-	if (process.env.MNEMOPI_AUTO_MIGRATE === "0") {
+	if (process.env.AGENT_SMITH_MEMORY_AUTO_MIGRATE === "0") {
 		const row = db
 			.query(
 				"SELECT COUNT(*) AS count FROM triples WHERE predicate IN ('mentions', 'fact', 'occurred_on', 'has_source')",
 			)
 			.get() as { count: number };
 		console.warn(
-			`MNEMOPI_AUTO_MIGRATE=0: ${row.count} annotation rows pending; run scripts/migrate_triplestore_split.py manually.`,
+			`AGENT_SMITH_MEMORY_AUTO_MIGRATE=0: ${row.count} annotation rows pending; run scripts/migrate_triplestore_split.py manually.`,
 		);
 		return;
 	}

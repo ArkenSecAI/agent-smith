@@ -58,9 +58,9 @@ if "__omp_prelude_loaded__" not in globals():
     _OMP_INTERNAL_URL_RE = re.compile(r"^([a-z][a-z0-9+.-]*)://(.*)$", re.IGNORECASE)
 
     def _omp_url_roots() -> dict:
-        """On-disk roots for internal-URL schemes, keyed by scheme (PI_EVAL_LOCAL_ROOTS)."""
+        """On-disk roots for internal-URL schemes, keyed by scheme (AGENT_SMITH_EVAL_LOCAL_ROOTS)."""
         try:
-            roots = json.loads(os.environ.get("PI_EVAL_LOCAL_ROOTS") or "{}")
+            roots = json.loads(os.environ.get("AGENT_SMITH_EVAL_LOCAL_ROOTS") or "{}")
         except (ValueError, TypeError):
             return {}
         return roots if isinstance(roots, dict) else {}
@@ -90,7 +90,7 @@ if "__omp_prelude_loaded__" not in globals():
         """Map a helper path to a real filesystem Path.
 
         A `scheme://…` whose scheme has an injected on-disk root (via
-        PI_EVAL_LOCAL_ROOTS) is rewritten under that root so it lands where
+        AGENT_SMITH_EVAL_LOCAL_ROOTS) is rewritten under that root so it lands where
         `read scheme://…` resolves — not a literal `scheme:/` directory under
         the cwd (which `Path("scheme://x")` collapses to). Plain paths pass
         through unchanged; any other `scheme://` is rejected."""
@@ -173,12 +173,12 @@ if "__omp_prelude_loaded__" not in globals():
             output('scout_0', offset=10, limit=20)  # Lines 10-29
             output('scout_0', 'reviewer_1')  # Read multiple outputs
         """
-        # Prefer PI_ARTIFACTS_DIR so subagents resolve through the parent's
-        # shared artifacts dir; fall back to deriving from PI_SESSION_FILE
+        # Prefer AGENT_SMITH_ARTIFACTS_DIR so subagents resolve through the parent's
+        # shared artifacts dir; fall back to deriving from AGENT_SMITH_SESSION_FILE
         # for legacy callers / top-level sessions where the two coincide.
-        artifacts_dir = os.environ.get("PI_ARTIFACTS_DIR")
+        artifacts_dir = os.environ.get("AGENT_SMITH_ARTIFACTS_DIR")
         if not artifacts_dir:
-            session_file = os.environ.get("PI_SESSION_FILE")
+            session_file = os.environ.get("AGENT_SMITH_SESSION_FILE")
             if not session_file:
                 _emit_status("output", error="No session file available")
                 raise RuntimeError("No session - output artifacts unavailable")
@@ -372,9 +372,9 @@ if "__omp_prelude_loaded__" not in globals():
         return current
 
     def _tool_proxy_from_env() -> tuple[str, str, str]:
-        base = os.environ.get("PI_TOOL_BRIDGE_URL")
-        token = os.environ.get("PI_TOOL_BRIDGE_TOKEN")
-        session = os.environ.get("PI_TOOL_BRIDGE_SESSION")
+        base = os.environ.get("AGENT_SMITH_TOOL_BRIDGE_URL")
+        token = os.environ.get("AGENT_SMITH_TOOL_BRIDGE_TOKEN")
+        session = os.environ.get("AGENT_SMITH_TOOL_BRIDGE_SESSION")
         if not base or not token or not session:
             raise RuntimeError("tool bridge is unavailable in this kernel")
         return (base.rstrip("/"), token, session)
@@ -688,7 +688,7 @@ if "__omp_prelude_loaded__" not in globals():
             return _ToolCallable(name)
 
         def __repr__(self) -> str:
-            session = os.environ.get("PI_TOOL_BRIDGE_SESSION")
+            session = os.environ.get("AGENT_SMITH_TOOL_BRIDGE_SESSION")
             return (
                 f"<tool proxy session={session}>"
                 if session

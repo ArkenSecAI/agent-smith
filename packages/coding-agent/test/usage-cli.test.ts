@@ -996,7 +996,7 @@ describe("formatUsageHistory", () => {
 });
 
 describe("usage command configuration", () => {
-	it("uses PI_CONFIG_FILES account policies during auth discovery", async () => {
+	it("uses AGENT_SMITH_CONFIG_FILES account policies during auth discovery", async () => {
 		using tempDir = TempDir.createSync("@omp-usage-overlay-");
 		const overlayPath = tempDir.join("overlay.yml");
 		await Promise.all([
@@ -1034,8 +1034,8 @@ describe("usage command configuration", () => {
 			env: {
 				...process.env,
 				NO_COLOR: "1",
-				PI_CODING_AGENT_DIR: tempDir.path(),
-				PI_CONFIG_FILES: overlayPath,
+				AGENT_SMITH_CODING_AGENT_DIR: tempDir.path(),
+				AGENT_SMITH_CONFIG_FILES: overlayPath,
 			},
 		});
 		const [exitCode, output, error] = await Promise.all([

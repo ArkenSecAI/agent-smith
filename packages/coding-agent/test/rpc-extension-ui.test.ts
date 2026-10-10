@@ -64,7 +64,7 @@ await runRpcMode(session, {
 			env: {
 				PATH: Bun.env.PATH,
 				HOME: temp.join("home"),
-				PI_CODING_AGENT_DIR: temp.join("agent"),
+				AGENT_SMITH_CODING_AGENT_DIR: temp.join("agent"),
 				XDG_CONFIG_HOME: temp.join("config"),
 				XDG_DATA_HOME: temp.join("data"),
 				XDG_CACHE_HOME: temp.join("cache"),
@@ -239,7 +239,7 @@ export default function(pi) {
 				env: {
 					PATH: Bun.env.PATH,
 					HOME: temp.join("home"),
-					PI_CODING_AGENT_DIR: temp.join("agent"),
+					AGENT_SMITH_CODING_AGENT_DIR: temp.join("agent"),
 					XDG_CONFIG_HOME: temp.join("config"),
 					XDG_DATA_HOME: temp.join("data"),
 					XDG_CACHE_HOME: temp.join("cache"),

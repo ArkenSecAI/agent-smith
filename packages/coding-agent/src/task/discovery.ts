@@ -1,3 +1,4 @@
+import { CONFIG_DIR_NAME } from "@oh-my-pi/pi-utils/dirs";
 /**
  * Agent discovery from filesystem.
  *
@@ -31,7 +32,7 @@ import { loadBundledAgents, parseAgent } from "./agents";
 import type { AgentSource } from "@oh-my-pi/pi-tui/tools/task";
 import type { AgentDefinition } from "./types";
 
-const TASK_AGENT_CONFIG_SOURCE = ".omp";
+const TASK_AGENT_CONFIG_SOURCE = CONFIG_DIR_NAME;
 
 /** Result of agent discovery */
 export interface DiscoveryResult {

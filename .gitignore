@@ -94,3 +94,8 @@ packages/coding-agent/bench/boot-baseline.json
 /.bazelrc.user
 
 .parity/
+
+# Agent Smith local development artifacts and synthetic state
+/.agent-smith-dev/
+/.agent-smith/
+/.tools/

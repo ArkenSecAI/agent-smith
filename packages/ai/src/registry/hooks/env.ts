@@ -3,24 +3,15 @@
  * than a fixed variable list (Foundry mode, AWS credential chains, Vertex ADC).
  */
 import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
 import { $env, $pickenv } from "@oh-my-pi/pi-utils";
 import { isFoundryEnabled } from "../../utils/foundry";
 import { resolveAwsRegistryApiKey } from "../aws";
 import { AUTHENTICATED_SENTINEL } from "../types";
 import type { EnvHook } from "./types";
 
-let cachedVertexAdcCredentialsExists: boolean | null = null;
-
 function hasVertexAdcCredentials(): boolean {
-	if (cachedVertexAdcCredentialsExists === null) {
-		const gacPath = $env.GOOGLE_APPLICATION_CREDENTIALS;
-		cachedVertexAdcCredentialsExists = fs.existsSync(
-			gacPath ?? path.join(os.homedir(), ".config", "gcloud", "application_default_credentials.json"),
-		);
-	}
-	return cachedVertexAdcCredentialsExists;
+	const selectedPath = $env.GOOGLE_APPLICATION_CREDENTIALS;
+	return !!selectedPath && fs.existsSync(selectedPath);
 }
 
 export const ENV_HOOKS: Record<string, EnvHook> = {
@@ -37,6 +28,8 @@ export const ENV_HOOKS: Record<string, EnvHook> = {
 		if ($env.GOOGLE_CLOUD_API_KEY) return $env.GOOGLE_CLOUD_API_KEY;
 		const hasProject = !!($env.GOOGLE_CLOUD_PROJECT || $env.GCP_PROJECT || $env.GCLOUD_PROJECT);
 		const hasLocation = !!($env.GOOGLE_VERTEX_LOCATION || $env.GOOGLE_CLOUD_LOCATION || $env.VERTEX_LOCATION);
-		return hasVertexAdcCredentials() && hasProject && hasLocation ? AUTHENTICATED_SENTINEL : undefined;
+		return (hasVertexAdcCredentials() || $env.AGENT_SMITH_GOOGLE_METADATA_AUTH === "1") && hasProject && hasLocation
+			? AUTHENTICATED_SENTINEL
+			: undefined;
 	},
 };

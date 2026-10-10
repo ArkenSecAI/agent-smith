@@ -25,10 +25,10 @@ const proxyAddress = proxy.address();
 if (!proxyAddress || typeof proxyAddress === "string") throw new Error("proxy did not bind");
 
 // Only the standard HTTPS_PROXY var is set; the provider-specific override and
-// PI_PROXY are unset, so a fix that only reads PI_PROXY would connect direct and
+// AGENT_SMITH_PROXY are unset, so a fix that only reads AGENT_SMITH_PROXY would connect direct and
 // never reach this proxy.
-delete Bun.env.PI_PROXY;
-delete Bun.env.PI_PROXY_CURSOR;
+delete Bun.env.AGENT_SMITH_PROXY;
+delete Bun.env.AGENT_SMITH_PROXY_CURSOR;
 delete Bun.env.HTTP_PROXY;
 delete Bun.env.http_proxy;
 delete Bun.env.ALL_PROXY;

@@ -8,16 +8,16 @@ let dataDir: string;
 
 beforeEach(() => {
 	dataDir = mkdtempSync(join(tmpdir(), "mnemopi-provider-tools-"));
-	process.env.MNEMOPI_DATA_DIR = dataDir;
-	process.env.MNEMOPI_NO_EMBEDDINGS = "1";
-	delete process.env.MNEMOPI_MCP_BANK;
+	process.env.AGENT_SMITH_MEMORY_DATA_DIR = dataDir;
+	process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS = "1";
+	delete process.env.AGENT_SMITH_MEMORY_MCP_BANK;
 });
 
 afterEach(() => {
 	rmSync(dataDir, { recursive: true, force: true });
-	delete process.env.MNEMOPI_DATA_DIR;
-	delete process.env.MNEMOPI_NO_EMBEDDINGS;
-	delete process.env.MNEMOPI_MCP_BANK;
+	delete process.env.AGENT_SMITH_MEMORY_DATA_DIR;
+	delete process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS;
+	delete process.env.AGENT_SMITH_MEMORY_MCP_BANK;
 });
 
 describe("all provider-compatible MCP tools", () => {

@@ -1,9 +1,9 @@
 {
-	"name": "omp",
+	"name": "agent-smith-development",
 	"private": true,
-	"homepage": "https://omp.sh",
+	"homepage": "https://github.com/ArkenSecAI/agent-smith",
 	"license": "MIT",
-	"author": { "name": "Stencil Labs, Inc.", "url": "https://stencil.so" },
+	"author": { "name": "ArkenSec LLC", "url": "https://github.com/ArkenSecAI" },
 	"workspaces": {
 		"packages": [
 			"packages/*",
@@ -70,17 +70,16 @@
 	},
 	"type": "module",
 	"scripts": {
-		"setup": "bun scripts/setup.ts",
-		"dev": "bun --cwd=packages/coding-agent src/cli.ts",
-		"dev:timing": "PI_TIMING=x bun --cwd=packages/coding-agent --preload ../utils/src/module-timer.ts src/cli.ts",
-		"stats": "bun --cwd=packages/coding-agent src/cli.ts stats",
+		"dev": "bun --no-env-file packages/coding-agent/src/cli.ts",
+		"dev:timing": "PI_TIMING=x bun --no-env-file --preload ./packages/utils/src/module-timer.ts packages/coding-agent/src/cli.ts",
+		"stats": "bun --no-env-file packages/coding-agent/src/cli.ts stats",
 		"collab:web:dev": "bun --cwd=packages/collab-web run dev",
 		"collab:relay": "bun --cwd=packages/collab-web run relay",
 		"collab:mock-host": "bun --cwd=packages/collab-web run mock-host",
 		"collab:web:build": "bun --cwd=packages/collab-web run build",
 		"meta": "bun --cwd=packages/metaharness run dev",
 		"claude:trace": "bun scripts/claude-trace.ts",
-		"build": "bun run --workspaces --if-present build",
+		"build": "bun run smith:build",
 		"build:native": "bun --cwd=packages/natives run build",
 		"test": "bun scripts/ci-test-ts.ts local",
 		"test:ts": "bun scripts/ci-test-ts.ts local-ts",
@@ -116,12 +115,6 @@
 		"ci:test:coding-agent:runtime": "bun scripts/ci-test-ts.ts coding-agent-runtime",
 		"ci:test:coding-agent:native": "bun scripts/ci-test-ts.ts coding-agent-native",
 		"ci:test:coding-agent:heavy": "bun scripts/ci-test-ts.ts coding-agent-heavy",
-		"ci:test:smoke": "bun packages/coding-agent/src/cli.ts --version && bun packages/coding-agent/src/cli.ts --help && bun packages/coding-agent/src/cli.ts stats --help && bun packages/coding-agent/src/cli.ts --smoke-test",
-		"ci:test:install-methods": "bash scripts/install-tests/run-ci.sh",
-		"ci:release:build-binaries": "bun scripts/ci-release-build-binaries.ts",
-		"ci:release:checksums": "bun scripts/ci-release-checksums.ts",
-		"ci:release:publish": "bun scripts/ci-release-publish.ts",
-		"ci:release:publish-native-leaf": "bun scripts/ci-release-publish.ts --native-leaf",
 		"bench:gen-fixtures": "bun --cwd=packages/typescript-edit-benchmark run src/generate.ts --typescript-dir /tmp/typescript-source --count-per-type 8",
 		"stats:sync": "python3 scripts/session-stats/sync.py",
 		"stats:tools": "python3 scripts/session-stats/analyze.py tools",
@@ -146,11 +139,6 @@
 		"robomp:web:build": "bun --cwd=python/robomp/web run build",
 		"lint:py": "ruff check python && ruff format --check python",
 		"fix:py": "ruff check --fix python && ruff format python",
-		"prepublishOnly": "bun run check",
-		"prepare": "bun run gen:tool-views",
-		"publish": "bun run prepublishOnly && npm publish -ws --access public",
-		"publish:dry": "bun run prepublishOnly && npm publish -ws --access public --dry-run",
-		"release": "bun scripts/release.ts",
 		"gen:compat": "bun --cwd=packages/catalog run gen:compat",
 		"gen:models": "bun --cwd=packages/catalog run gen:models",
 		"gen:clippy": "bun scripts/gen-clippy-bazelrc.ts",
@@ -164,7 +152,12 @@
 		"gen:native": "bun --cwd=packages/natives run gen:native",
 		"gen:native:reset": "bun --cwd=packages/natives run gen:native:reset",
 		"gen:glyphs": "bun --cwd=packages/tui run gen:glyphs",
-		"check-spoofed-versions": "bun scripts/check-spoofed-versions.ts"
+		"check-spoofed-versions": "bun scripts/check-spoofed-versions.ts",
+		"smith:prepare": "bun --no-env-file scripts/agent-smith-prepare.ts",
+		"smith:native": "bun --no-env-file scripts/agent-smith-native.ts",
+		"smith:check": "bun --no-env-file scripts/agent-smith-check.ts",
+		"smith:smoke": "bun --no-env-file scripts/agent-smith-smoke.ts",
+		"smith:build": "bun --no-env-file scripts/agent-smith-build.ts"
 	},
 	"dependencies": {
 		"sherpa-onnx": "1.13.2",
@@ -202,9 +195,13 @@
 			"oxfmt"
 		]
 	},
-	"packageManager": "bun@>=1.4",
+	"packageManager": "bun@1.4.2",
 	"patchedDependencies": {
 		"@ark/schema@0.56.2": "patches/@ark%2Fschema@0.56.2.patch",
 		"puppeteer-core@25.3.0": "patches/puppeteer-core@25.3.0.patch"
+	},
+	"description": "ArkenSec Agent Smith development workspace, derived from OMP 18.4.8",
+	"engines": {
+		"bun": "1.4.2"
 	}
 }

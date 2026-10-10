@@ -14,7 +14,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { isPromise } from "node:util/types";
-import { getLogsDir, localDay } from "./dirs";
+import { APP_NAME, getLogsDir, localDay } from "./dirs";
 import { RotatingFileSink } from "./logger/rotating-file";
 import { setStderrRedirectTarget } from "./stderr-guard";
 import { drainModuleLoadEvents } from "./timing-buffer";
@@ -54,8 +54,8 @@ function emitToSinks(level: LogLevel, message: string, context: Record<string, u
 	}
 }
 
-const PROCESS_LOG_PATTERN = /^omp\.(\d{4}-\d{2}-\d{2})\.(\d+)\.log(?:\.(\d+))?$/;
-const PROCESS_AUDIT_PATTERN = /^\.omp\.(\d+)-audit\.json$/;
+const PROCESS_LOG_PATTERN = new RegExp(`^${APP_NAME}\\.(\\d{4}-\\d{2}-\\d{2})\\.(\\d+)\\.log(?:\\.(\\d+))?$`);
+const PROCESS_AUDIT_PATTERN = new RegExp(`^\\.${APP_NAME}\\.(\\d+)-audit\\.json$`);
 const RETAINED_STALE_LOGS_PER_PROCESS_DAY = 1;
 const RETAINED_STALE_AUDIT_FILES = 0;
 const RETAINED_STALE_LOG_DAYS = 5;
@@ -250,11 +250,11 @@ function makeFileTransport(dir?: string): RotatingFileSink {
 	schedulePruneStaleProcessLogs(logsDir);
 	return new RotatingFileSink({
 		directory: logsDir,
-		filenamePrefix: "omp",
+		filenamePrefix: APP_NAME,
 		filenameSuffix: String(process.pid),
 		maxBytes: 10 * 1024 * 1024,
 		maxFiles: 5,
-		auditFile: path.join(logsDir, `.omp.${process.pid}-audit.json`),
+		auditFile: path.join(logsDir, `.${APP_NAME}.${process.pid}-audit.json`),
 		// Keep the stderr guard's fd 2 on the file this sink is writing.
 		onRotate: setStderrRedirectTarget,
 	});

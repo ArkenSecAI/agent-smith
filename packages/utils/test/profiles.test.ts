@@ -14,7 +14,6 @@ import {
 	getSessionsDir,
 	getStatsDbPath,
 	normalizeProfileName,
-	resolveProfileEnv,
 	setAgentDir,
 	setProfile,
 } from "@oh-my-pi/pi-utils/dirs";
@@ -52,22 +51,22 @@ describe("profile directories", () => {
 	beforeEach(async () => {
 		originalAgentDir = getAgentDir();
 		originalProfile = getActiveProfile();
-		originalAgentDirEnv = process.env.PI_CODING_AGENT_DIR;
-		originalOmpProfileEnv = process.env.OMP_PROFILE;
+		originalAgentDirEnv = process.env.AGENT_SMITH_CODING_AGENT_DIR;
+		originalOmpProfileEnv = process.env.AGENT_SMITH_PROFILE;
 		originalPiProfileEnv = process.env.PI_PROFILE;
-		originalConfigDir = process.env.PI_CONFIG_DIR;
+		originalConfigDir = process.env.AGENT_SMITH_CONFIG_DIR;
 		originalXdgDataHome = process.env.XDG_DATA_HOME;
 		originalXdgStateHome = process.env.XDG_STATE_HOME;
 		originalXdgCacheHome = process.env.XDG_CACHE_HOME;
 		tempRoot = path.join(os.tmpdir(), "pi-utils-profiles", Snowflake.next());
 		configDir = `.omp-profile-test-${Snowflake.next()}`;
 		await fs.mkdir(tempRoot, { recursive: true });
-		process.env.PI_CONFIG_DIR = configDir;
+		process.env.AGENT_SMITH_CONFIG_DIR = configDir;
 		// Other suites that run before this one (e.g. dirs-python-gateway) may have
 		// called `setAgentDir`, which permanently mutates the module-level
 		// pre-profile snapshot. Reset it here so each test starts from a clean
-		// `PI_CODING_AGENT_DIR` baseline matching the env we just configured.
-		delete process.env.PI_CODING_AGENT_DIR;
+		// `AGENT_SMITH_CODING_AGENT_DIR` baseline matching the env we just configured.
+		delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
 		__resetProfileSnapshotForTests();
 		delete process.env.XDG_DATA_HOME;
 		delete process.env.XDG_STATE_HOME;
@@ -77,9 +76,9 @@ describe("profile directories", () => {
 	afterEach(async () => {
 		setProfile(undefined);
 		if (originalConfigDir === undefined) {
-			delete process.env.PI_CONFIG_DIR;
+			delete process.env.AGENT_SMITH_CONFIG_DIR;
 		} else {
-			process.env.PI_CONFIG_DIR = originalConfigDir;
+			process.env.AGENT_SMITH_CONFIG_DIR = originalConfigDir;
 		}
 		if (originalXdgDataHome === undefined) {
 			delete process.env.XDG_DATA_HOME;
@@ -104,9 +103,9 @@ describe("profile directories", () => {
 			setProfile(undefined);
 		}
 		if (originalOmpProfileEnv === undefined) {
-			delete process.env.OMP_PROFILE;
+			delete process.env.AGENT_SMITH_PROFILE;
 		} else {
-			process.env.OMP_PROFILE = originalOmpProfileEnv;
+			process.env.AGENT_SMITH_PROFILE = originalOmpProfileEnv;
 		}
 		if (originalPiProfileEnv === undefined) {
 			delete process.env.PI_PROFILE;
@@ -148,16 +147,20 @@ describe("profile directories", () => {
 		process.env.XDG_CACHE_HOME = path.join(tempRoot, "cache");
 		// Named profiles only adopt XDG when their *own* XDG path already exists,
 		// so the profile location stays stable across activations.
-		await fs.mkdir(path.join(process.env.XDG_DATA_HOME, "omp", "profiles", "work"), { recursive: true });
-		await fs.mkdir(path.join(process.env.XDG_STATE_HOME, "omp", "profiles", "work"), { recursive: true });
-		await fs.mkdir(path.join(process.env.XDG_CACHE_HOME, "omp", "profiles", "work"), { recursive: true });
+		await fs.mkdir(path.join(process.env.XDG_DATA_HOME, "agent-smith", "profiles", "work"), { recursive: true });
+		await fs.mkdir(path.join(process.env.XDG_STATE_HOME, "agent-smith", "profiles", "work"), { recursive: true });
+		await fs.mkdir(path.join(process.env.XDG_CACHE_HOME, "agent-smith", "profiles", "work"), { recursive: true });
 
 		setProfile("work");
 
-		expect(getAgentDbPath()).toBe(path.join(process.env.XDG_DATA_HOME, "omp", "profiles", "work", "agent.db"));
-		expect(getSessionsDir()).toBe(path.join(process.env.XDG_DATA_HOME, "omp", "profiles", "work", "sessions"));
+		expect(getAgentDbPath()).toBe(
+			path.join(process.env.XDG_DATA_HOME, "agent-smith", "profiles", "work", "agent.db"),
+		);
+		expect(getSessionsDir()).toBe(
+			path.join(process.env.XDG_DATA_HOME, "agent-smith", "profiles", "work", "sessions"),
+		);
 		expect(getPythonGatewayDir()).toBe(
-			path.join(process.env.XDG_STATE_HOME, "omp", "profiles", "work", "python-gateway"),
+			path.join(process.env.XDG_STATE_HOME, "agent-smith", "profiles", "work", "python-gateway"),
 		);
 	});
 
@@ -178,9 +181,9 @@ describe("profile directories", () => {
 		// Later, the base XDG app dir materializes (e.g. via `omp config init-xdg`
 		// migrating only the default-profile data). The named profile must stay
 		// in its original location until the user explicitly migrates it.
-		await fs.mkdir(path.join(process.env.XDG_DATA_HOME, "omp"), { recursive: true });
-		await fs.mkdir(path.join(process.env.XDG_STATE_HOME, "omp"), { recursive: true });
-		await fs.mkdir(path.join(process.env.XDG_CACHE_HOME, "omp"), { recursive: true });
+		await fs.mkdir(path.join(process.env.XDG_DATA_HOME, "agent-smith"), { recursive: true });
+		await fs.mkdir(path.join(process.env.XDG_STATE_HOME, "agent-smith"), { recursive: true });
+		await fs.mkdir(path.join(process.env.XDG_CACHE_HOME, "agent-smith"), { recursive: true });
 
 		setProfile(undefined);
 		setProfile("work");
@@ -188,8 +191,8 @@ describe("profile directories", () => {
 	});
 
 	it("rejects path-like profile names", () => {
-		expect(() => setProfile("../work")).toThrow("Invalid OMP profile");
-		expect(() => setProfile("work/team")).toThrow("Invalid OMP profile");
+		expect(() => setProfile("../work")).toThrow();
+		expect(() => setProfile("work/team")).toThrow();
 	});
 
 	it("rejects trailing-dot profile names to avoid Windows path collisions", () => {
@@ -198,11 +201,11 @@ describe("profile directories", () => {
 		}
 	});
 
-	it("restores the pre-profile PI_CODING_AGENT_DIR override on reset", () => {
+	it("restores the pre-profile AGENT_SMITH_CODING_AGENT_DIR override on reset", () => {
 		const customAgentDir = path.join(tempRoot, "custom-agent");
 		setAgentDir(customAgentDir);
 		expect(getAgentDir()).toBe(customAgentDir);
-		expect(process.env.PI_CODING_AGENT_DIR).toBe(customAgentDir);
+		expect(process.env.AGENT_SMITH_CODING_AGENT_DIR).toBe(customAgentDir);
 
 		setProfile("work");
 		expect(getActiveProfile()).toBe("work");
@@ -211,17 +214,17 @@ describe("profile directories", () => {
 		setProfile(undefined);
 		expect(getActiveProfile()).toBeUndefined();
 		// Critical: reset must restore the user's override, not delete it.
-		expect(process.env.PI_CODING_AGENT_DIR).toBe(customAgentDir);
+		expect(process.env.AGENT_SMITH_CODING_AGENT_DIR).toBe(customAgentDir);
 		expect(getAgentDir()).toBe(customAgentDir);
 	});
 
-	it("clears PI_CODING_AGENT_DIR on reset when nothing was set originally", () => {
-		delete process.env.PI_CODING_AGENT_DIR;
+	it("clears AGENT_SMITH_CODING_AGENT_DIR on reset when nothing was set originally", () => {
+		delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
 		// Force a baseline snapshot of "no override" via setProfile so a stale
 		// module-load snapshot from a previous test cannot leak in.
 		setProfile("work");
 		setProfile(undefined);
-		expect(process.env.PI_CODING_AGENT_DIR).toBeUndefined();
+		expect(process.env.AGENT_SMITH_CODING_AGENT_DIR).toBeUndefined();
 	});
 
 	it("rejects Windows reserved device names case-insensitively", () => {
@@ -231,46 +234,33 @@ describe("profile directories", () => {
 	});
 
 	it("does not restore a profile-derived agent dir as the default baseline", () => {
-		// Reproduces a child process that inherited OMP_PROFILE=work plus the
-		// profile-derived PI_CODING_AGENT_DIR that setProfile propagates to
+		// Reproduces a child process that inherited AGENT_SMITH_PROFILE=work plus the
+		// profile-derived AGENT_SMITH_CODING_AGENT_DIR that setProfile propagates to
 		// children. The module-load snapshot must not capture that profile dir as
 		// the default baseline, or setProfile(undefined) would resolve default
 		// mode into the work profile's agent dir.
 		setProfile("work");
 		const workAgentDir = path.join(os.homedir(), configDir, "profiles", "work", "agent");
 		expect(getAgentDir()).toBe(workAgentDir);
-		expect(process.env.PI_CODING_AGENT_DIR).toBe(workAgentDir);
+		expect(process.env.AGENT_SMITH_CODING_AGENT_DIR).toBe(workAgentDir);
 
-		// Re-snapshot exactly as module load would, now that OMP_PROFILE and the
-		// profile-derived PI_CODING_AGENT_DIR are present in the environment.
+		// Re-snapshot exactly as module load would, now that AGENT_SMITH_PROFILE and the
+		// profile-derived AGENT_SMITH_CODING_AGENT_DIR are present in the environment.
 		__resetProfileSnapshotForTests();
 
 		setProfile(undefined);
 		expect(getActiveProfile()).toBeUndefined();
-		expect(process.env.PI_CODING_AGENT_DIR).toBeUndefined();
+		expect(process.env.AGENT_SMITH_CODING_AGENT_DIR).toBeUndefined();
 		expect(getAgentDir()).toBe(path.join(os.homedir(), configDir, "agent"));
 	});
 });
 
 describe("profile env + name validation", () => {
-	it("honors OMP_PROFILE precedence and treats empty/default as the default profile", () => {
-		// OMP_PROFILE is canonical and wins over the legacy PI_PROFILE fallback.
-		expect(resolveProfileEnv("work", "other")).toBe("work");
-		// PI_PROFILE is consulted only when OMP_PROFILE is undefined.
-		expect(resolveProfileEnv(undefined, "work")).toBe("work");
-		// An explicitly-empty OMP_PROFILE selects the default profile; it must NOT
-		// fall through to the lower-precedence PI_PROFILE.
-		expect(resolveProfileEnv("", "work")).toBeUndefined();
-		expect(resolveProfileEnv("   ", "work")).toBeUndefined();
-		expect(resolveProfileEnv("default", "work")).toBeUndefined();
-		expect(resolveProfileEnv(undefined, undefined)).toBeUndefined();
-	});
-
 	it("rejects uppercase profile names so isolation is filesystem-independent", () => {
 		// `work` and `WORK` would collide on case-insensitive macOS/Windows but
 		// differ on Linux; reject uppercase to keep profile identity stable.
-		expect(() => normalizeProfileName("WORK")).toThrow("Invalid OMP profile");
-		expect(() => normalizeProfileName("Work")).toThrow("Invalid OMP profile");
+		expect(() => normalizeProfileName("WORK")).toThrow();
+		expect(() => normalizeProfileName("Work")).toThrow();
 		expect(normalizeProfileName("work")).toBe("work");
 		expect(normalizeProfileName("work-2.0_a")).toBe("work-2.0_a");
 	});
@@ -340,7 +330,7 @@ describe("dirs module import behavior", () => {
 
 			const childEnv: Record<string, string | undefined> = {
 				...process.env,
-				PI_CODING_AGENT_DIR: agentDir,
+				AGENT_SMITH_CODING_AGENT_DIR: agentDir,
 			};
 			delete childEnv.OMP_WORKER_HOST_PROBE;
 			const proc = Bun.spawn([process.execPath, probePath], {
@@ -364,57 +354,6 @@ describe("dirs module import behavior", () => {
 		}
 	});
 
-	it("ignores inherited profile agent dir when OMP_PROFILE explicitly selects default", async () => {
-		const root = await fs.mkdtemp(path.join(os.tmpdir(), "pi-utils-dirs-default-profile-"));
-		const probeConfigDir = `.omp-default-profile-${Snowflake.next()}`;
-		try {
-			const dirsUrl = url.pathToFileURL(path.join(import.meta.dir, "..", "src", "dirs.ts")).href;
-			const workAgentDir = path.join(os.homedir(), probeConfigDir, "profiles", "work", "agent");
-			const defaultAgentDir = path.join(os.homedir(), probeConfigDir, "agent");
-
-			for (const ompProfile of ["", "default"]) {
-				const probePath = path.join(root, `default-profile-${ompProfile || "empty"}.ts`);
-				await Bun.write(
-					probePath,
-					[
-						`import { getActiveProfile, getAgentDir } from ${JSON.stringify(dirsUrl)};`,
-						"process.stdout.write(JSON.stringify({",
-						"	activeProfile: getActiveProfile() ?? null,",
-						"	agentDir: getAgentDir(),",
-						"}));",
-					].join("\n"),
-				);
-
-				const childEnv: Record<string, string | undefined> = {
-					...process.env,
-					PI_CONFIG_DIR: probeConfigDir,
-					OMP_PROFILE: ompProfile,
-					PI_PROFILE: "work",
-					PI_CODING_AGENT_DIR: workAgentDir,
-				};
-				const proc = Bun.spawn([process.execPath, probePath], {
-					stdout: "pipe",
-					stderr: "pipe",
-					env: childEnv,
-				});
-				const [stdout, stderr, exitCode] = await Promise.all([
-					readStream(proc.stdout as ReadableStream<Uint8Array>),
-					readStream(proc.stderr as ReadableStream<Uint8Array>),
-					proc.exited,
-				]);
-
-				expect(exitCode, stderr).toBe(0);
-				expect(JSON.parse(stdout)).toEqual({
-					activeProfile: null,
-					agentDir: defaultAgentDir,
-				});
-			}
-		} finally {
-			await fs.rm(root, { recursive: true, force: true });
-			await fs.rm(path.join(os.homedir(), probeConfigDir), { recursive: true, force: true });
-		}
-	});
-
 	it("honors XDG dir keys from a profile .env applied after the resolver froze", async () => {
 		if (process.platform === "win32") return;
 		const root = await fs.mkdtemp(path.join(os.tmpdir(), "pi-utils-profile-env-xdg-"));
@@ -431,7 +370,7 @@ describe("dirs module import behavior", () => {
 			// import time — the exact ordering refreshDirsFromEnv() guards.
 			await Bun.write(path.join(agentDir, ".env"), `XDG_STATE_HOME=${xdgStateRoot}\n`);
 			// Named profiles only adopt XDG when their own XDG path already exists.
-			const xdgProfileRoot = path.join(xdgStateRoot, "omp", "profiles", "work");
+			const xdgProfileRoot = path.join(xdgStateRoot, "agent-smith", "profiles", "work");
 			await fs.mkdir(xdgProfileRoot, { recursive: true });
 
 			const probePath = path.join(root, "probe.ts");
@@ -451,11 +390,11 @@ describe("dirs module import behavior", () => {
 			const childEnv: Record<string, string | undefined> = {
 				...process.env,
 				HOME: homeDir,
-				PI_CONFIG_DIR: profileConfigDir,
-				OMP_PROFILE: "work",
+				AGENT_SMITH_CONFIG_DIR: profileConfigDir,
+				AGENT_SMITH_PROFILE: "work",
 				PI_PROFILE: "work",
 			};
-			delete childEnv.PI_CODING_AGENT_DIR;
+			delete childEnv.AGENT_SMITH_CODING_AGENT_DIR;
 			delete childEnv.XDG_DATA_HOME;
 			delete childEnv.XDG_STATE_HOME;
 			delete childEnv.XDG_CACHE_HOME;

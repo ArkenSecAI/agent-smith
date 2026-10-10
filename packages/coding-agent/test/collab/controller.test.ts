@@ -49,9 +49,9 @@ import {
 } from "@oh-my-pi/pi-coding-agent/modes/settings";
 
 const noRecentSessions = async () => [];
-const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+const originalAgentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 const originalPiProfile = process.env.PI_PROFILE;
-const originalOmpProfile = process.env.OMP_PROFILE;
+const originalOmpProfile = process.env.AGENT_SMITH_PROFILE;
 
 function restoreEnv(key: string, value: string | undefined): void {
 	if (value === undefined) {
@@ -239,9 +239,9 @@ afterEach(async () => {
 	await controller?.shutdown("test cleanup").catch(() => {});
 	uninstallInMemoryRelay();
 	publishSpy?.mockRestore();
-	restoreEnv("PI_CODING_AGENT_DIR", originalAgentDir);
+	restoreEnv("AGENT_SMITH_CODING_AGENT_DIR", originalAgentDir);
 	restoreEnv("PI_PROFILE", originalPiProfile);
-	restoreEnv("OMP_PROFILE", originalOmpProfile);
+	restoreEnv("AGENT_SMITH_PROFILE", originalOmpProfile);
 	utils.__resetDirsFromEnvForTests();
 	await fs.rm(tmp, { recursive: true, force: true });
 });

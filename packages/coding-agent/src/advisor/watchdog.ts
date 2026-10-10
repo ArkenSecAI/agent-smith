@@ -1,3 +1,4 @@
+import { CONFIG_DIR_NAME } from "@oh-my-pi/pi-utils/dirs";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as vcs from "@oh-my-pi/pi-natives/vcs";
@@ -93,7 +94,7 @@ export async function collectConfigCandidates(
 	let current = cwd;
 	while (true) {
 		for (const filename of filenames) {
-			candidates.add(path.resolve(current, ".omp", filename));
+			candidates.add(path.resolve(current, CONFIG_DIR_NAME, filename));
 			candidates.add(path.resolve(current, filename));
 		}
 		if (current === (repoRoot ?? home)) break;
@@ -109,9 +110,9 @@ export async function collectConfigCandidates(
 			const parent = path.dirname(candidate);
 			const baseName = parent.split(path.sep).pop() ?? "";
 			const isUser = userPaths.has(candidate);
-			const ownerDir = baseName === ".omp" ? path.dirname(parent) : parent;
+			const ownerDir = baseName === CONFIG_DIR_NAME ? path.dirname(parent) : parent;
 			const ownerBaseName = ownerDir.split(path.sep).pop() ?? "";
-			if (isUser || !ownerBaseName.startsWith(".") || baseName === ".omp") {
+			if (isUser || !ownerBaseName.startsWith(".") || baseName === CONFIG_DIR_NAME) {
 				const relative = path.relative(cwd, ownerDir);
 				const depth = relative === "" ? 0 : relative.split(path.sep).filter(Boolean).length;
 				items.push({ path: candidate, content, level: isUser ? "user" : "project", depth });

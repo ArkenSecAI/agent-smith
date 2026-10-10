@@ -11,7 +11,11 @@ import { cfgAuthBrokerUrl } from "@oh-my-pi/pi-coding-agent/config/model-setting
 
 const PROVIDER = "live-broker-test";
 const TOKEN = "live-broker-bearer";
-const BROKER_ENV = ["OMP_AUTH_BROKER_URL", "OMP_AUTH_BROKER_TOKEN", "OMP_AUTH_BROKER_SNAPSHOT_TTL_MS"] as const;
+const BROKER_ENV = [
+	"AGENT_SMITH_AUTH_BROKER_URL",
+	"AGENT_SMITH_AUTH_BROKER_TOKEN",
+	"AGENT_SMITH_AUTH_BROKER_SNAPSHOT_TTL_MS",
+] as const;
 
 interface Broker {
 	handle: AuthBrokerServerHandle;
@@ -39,7 +43,7 @@ describe("auth broker settings take effect live", () => {
 			delete process.env[key];
 		}
 		// No snapshot cache: every connection must hit its broker.
-		process.env.OMP_AUTH_BROKER_SNAPSHOT_TTL_MS = "0";
+		process.env.AGENT_SMITH_AUTH_BROKER_SNAPSHOT_TTL_MS = "0";
 	});
 
 	afterEach(async () => {

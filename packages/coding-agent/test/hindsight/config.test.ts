@@ -3,12 +3,12 @@ import { Settings } from "@oh-my-pi/pi-coding-agent/config/settings";
 import { loadHindsightConfig } from "@oh-my-pi/pi-coding-agent/hindsight/config";
 
 const TOUCHED = [
-	"HINDSIGHT_AUTO_RECALL",
-	"HINDSIGHT_AUTO_RETAIN",
-	"HINDSIGHT_DEBUG",
-	"HINDSIGHT_RECALL_MAX_TOKENS",
-	"HINDSIGHT_RETAIN_EVERY_N_TURNS",
-	"HINDSIGHT_REQUEST_TIMEOUT_MS",
+	"AGENT_SMITH_HINDSIGHT_AUTO_RECALL",
+	"AGENT_SMITH_HINDSIGHT_AUTO_RETAIN",
+	"AGENT_SMITH_HINDSIGHT_DEBUG",
+	"AGENT_SMITH_HINDSIGHT_RECALL_MAX_TOKENS",
+	"AGENT_SMITH_HINDSIGHT_RETAIN_EVERY_N_TURNS",
+	"AGENT_SMITH_HINDSIGHT_REQUEST_TIMEOUT_MS",
 ] as const;
 const saved = new Map(TOUCHED.map(name => [name, Bun.env[name]]));
 
@@ -28,9 +28,9 @@ describe("loadHindsightConfig HINDSIGHT_* env parsing", () => {
 
 	it("reads integer variables as a base-10 parseInt prefix", () => {
 		const config = configWith({
-			HINDSIGHT_REQUEST_TIMEOUT_MS: "5000ms",
-			HINDSIGHT_RETAIN_EVERY_N_TURNS: "2.5",
-			HINDSIGHT_RECALL_MAX_TOKENS: "512.7",
+			AGENT_SMITH_HINDSIGHT_REQUEST_TIMEOUT_MS: "5000ms",
+			AGENT_SMITH_HINDSIGHT_RETAIN_EVERY_N_TURNS: "2.5",
+			AGENT_SMITH_HINDSIGHT_RECALL_MAX_TOKENS: "512.7",
 		});
 		expect(config.requestTimeoutMs).toBe(5000);
 		expect(config.retainEveryNTurns).toBe(2);
@@ -39,7 +39,7 @@ describe("loadHindsightConfig HINDSIGHT_* env parsing", () => {
 
 	it("ignores empty or non-numeric integer variables in favor of settings", () => {
 		const config = configWith(
-			{ HINDSIGHT_REQUEST_TIMEOUT_MS: "", HINDSIGHT_RECALL_MAX_TOKENS: "lots" },
+			{ AGENT_SMITH_HINDSIGHT_REQUEST_TIMEOUT_MS: "", AGENT_SMITH_HINDSIGHT_RECALL_MAX_TOKENS: "lots" },
 			{ "hindsight.requestTimeoutMs": 7000, "hindsight.recallMaxTokens": 2048 },
 		);
 		expect(config.requestTimeoutMs).toBe(7000);
@@ -47,13 +47,16 @@ describe("loadHindsightConfig HINDSIGHT_* env parsing", () => {
 	});
 
 	it("treats any non-empty non-truthy boolean value as false", () => {
-		const config = configWith({ HINDSIGHT_AUTO_RECALL: "disabled", HINDSIGHT_AUTO_RETAIN: "n" });
+		const config = configWith({
+			AGENT_SMITH_HINDSIGHT_AUTO_RECALL: "disabled",
+			AGENT_SMITH_HINDSIGHT_AUTO_RETAIN: "n",
+		});
 		expect(config.autoRecall).toBe(false);
 		expect(config.autoRetain).toBe(false);
 	});
 
 	it("reads truthy boolean spellings as true and ignores empty values", () => {
-		const config = configWith({ HINDSIGHT_DEBUG: "y", HINDSIGHT_AUTO_RETAIN: "" });
+		const config = configWith({ AGENT_SMITH_HINDSIGHT_DEBUG: "y", AGENT_SMITH_HINDSIGHT_AUTO_RETAIN: "" });
 		expect(config.debug).toBe(true);
 		expect(config.autoRetain).toBe(true);
 	});

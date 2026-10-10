@@ -16,7 +16,7 @@ describe("omp read skill resources", () => {
 		root = await fs.mkdtemp(path.join(os.tmpdir(), "omp-read-skill-"));
 		projectDir = path.join(root, "project");
 		agentDir = path.join(root, "agent");
-		const skillDir = path.join(projectDir, ".omp", "skills", "standalone-skill");
+		const skillDir = path.join(projectDir, ".agent-smith", "skills", "standalone-skill");
 		await Promise.all([fs.mkdir(skillDir, { recursive: true }), fs.mkdir(agentDir)]);
 		await Bun.write(
 			path.join(skillDir, "SKILL.md"),
@@ -46,7 +46,7 @@ describe("omp read skill resources", () => {
 				HOME: root,
 				USERPROFILE: root,
 				NO_COLOR: "1",
-				PI_CODING_AGENT_DIR: agentDir,
+				AGENT_SMITH_CODING_AGENT_DIR: agentDir,
 			},
 		});
 		const stdout = new Response(proc.stdout).text();

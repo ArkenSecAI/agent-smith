@@ -27,63 +27,36 @@ Key integration points:
 ## Resolution flow (visual)
 
 ```text
-         Generic helper order (`config.ts`)
-┌───────────────────────────────────────┐
-│ 1) ~/.omp/agent, ~/.claude, ...       │
-│ 2) <cwd>/.omp, <cwd>/.claude, ...     │
-└───────────────────────────────────────┘
-                    │
-                    ▼
-        capability providers enumerate items
- (native provider scans project .omp before user .omp;
-  other providers have their own loading rules)
-                    │
-                    ▼
-      provider priority sort + capability dedup
-                    │
-                    ▼
-          subsystem-specific consumption
-   (settings, skills, hooks, tools, extensions)
+app-owned user/project config
+            │
+            ├─ explicit enabledProviders opt-in → selected foreign sources
+            ▼
+capability provider priority + deduplication
+            ▼
+settings / skills / hooks / tools / extensions
 ```
 
 ## 1) Config roots and source order
 
 ## Canonical roots
 
-`src/config.ts` defines a fixed source priority list:
+`src/config.ts` orders native `.agent-smith` before the optional `.claude`, `.codex`, and `.gemini` sources. Foreign sources are disabled by default for **both user and project discovery**. The app-owned `enabledProviders` setting opts selected provider IDs in; `disabledProviders` wins. Explicit API provider selection is also an opt-in. `includeDisabled` is not consent to read foreign state.
 
-1. `.omp` (native)
-2. `.claude`
-3. `.codex`
-4. `.gemini`
+User native configuration uses `getAgentDir()`, normally `~/.agent-smith/agent`. The default-profile override `AGENT_SMITH_CODING_AGENT_DIR` therefore applies to generic helpers as well as settings and native discovery. `AGENT_SMITH_CONFIG_DIR` changes the app root under home. Named profiles ignore the default-profile agent-directory override.
 
-User-level bases:
-
-- OMP native: `~/<PI_CONFIG_DIR>/agent` (normally `~/.omp/agent`; a named profile changes this as described below)
-- Claude's active config directory (`~/.claude` by default; `CLAUDE_CONFIG_DIR` overrides it)
-- `~/.codex`
-- `~/.gemini`
-
-Project-level bases:
-
-- `<cwd>/.omp`
-- `<cwd>/.claude`
-- `<cwd>/.codex`
-- `<cwd>/.gemini`
-
-`CONFIG_DIR_NAME` is `.omp` (`packages/utils/src/dirs.ts`). `PI_CONFIG_DIR` changes the OMP user root used by the generic helpers. `PI_CODING_AGENT_DIR` is different: for the default profile it changes `getAgentDir()` consumers such as native discovery, settings, and runtime state, but it does **not** change the generic `getConfigDirs()` / `findConfigFile()` OMP base. Named profiles ignore `PI_CODING_AGENT_DIR`.
+Project native configuration is `<cwd>/.agent-smith`. When explicitly enabled, foreign user/project roots keep their own formats and names; `CLAUDE_CONFIG_DIR` only affects selected Claude sources. `.omp` and `.pi` are not automatic fallback roots, and Agent Smith does not migrate their settings, accounts or memories.
 
 ## Profiles
 
-A named profile (`omp --profile <name>`, `OMP_PROFILE`, or the legacy fallback `PI_PROFILE`) relocates the OMP user base. `OMP_PROFILE` wins when it is defined, including when it is explicitly empty; `default`, empty, or whitespace selects the default profile. When a profile is active, every OMP-native user-level path written here as `~/.omp/agent/...` normally resolves to `~/.omp/profiles/<name>/agent/...`. `--alias <command>` does not select a profile by itself: paired with `--profile`, it creates a shell shortcut for that profile.
+A named profile (`agent-smith --profile <name>` or `AGENT_SMITH_PROFILE`) relocates the user base to `~/.agent-smith/profiles/<name>/agent`. There is no legacy profile-variable fallback. `default`, empty, or whitespace selects the default profile. `--alias <command>` creates a shortcut only when paired with `--profile`; it does not independently select a profile.
 
-The relocation is uniform across the native provider (`builtin.ts`) and the generic `config.ts` helpers, so it covers slash commands, rules, prompts, instructions, hooks, tools, extensions, settings, skills, and MCP, plus the top-level `SYSTEM.md` / `RULES.md` / `AGENTS.md` files and runtime state (sessions, blobs, `agent.db`). A profile sees only its own OMP config, never the default profile's agent config.
+The relocation is uniform across the native provider (`builtin.ts`) and the generic `config.ts` helpers, so it covers slash commands, rules, prompts, instructions, hooks, tools, extensions, settings, skills, and MCP, plus the top-level `SYSTEM.md` / `RULES.md` / `AGENTS.md` files and runtime state (sessions, blobs, `agent.db`). A profile sees only its own Agent Smith config, never the default profile's agent config.
 
-Keybindings are the one exception: a named profile merges the default profile's `~/.omp/agent/keybindings.*` under its own `~/.omp/profiles/<name>/agent/keybindings.*`, with the profile file overriding per binding ([#4867](https://github.com/can1357/oh-my-pi/issues/4867)). Keybindings describe the terminal/keyboard in front of the user, which doesn't change with the active profile, so user-level remaps keep working in every profile unless the profile explicitly overrides them. The inherited file is read-only for the profile process — legacy-format migration of the default profile's file only happens when the default profile itself runs.
+Keybindings are the one exception: a named profile merges the default profile's `~/.agent-smith/agent/keybindings.*` under its own `~/.agent-smith/profiles/<name>/agent/keybindings.*`, with the profile file overriding per binding ([#4867](https://github.com/can1357/oh-my-pi/issues/4867)). Keybindings describe the terminal/keyboard in front of the user, which doesn't change with the active profile, so user-level remaps keep working in every profile unless the profile explicitly overrides them. The inherited file is read-only for the profile process — legacy-format migration of the default profile's file only happens when the default profile itself runs.
 
-On macOS and Linux, an existing `$XDG_DATA_HOME/omp`, `$XDG_STATE_HOME/omp`, or `$XDG_CACHE_HOME/omp` can relocate the corresponding data, state, or cache paths. For a named profile, OMP uses an XDG category only when that category already contains `omp/profiles/<name>`; otherwise that category remains under `~/.omp/profiles/<name>`. Run `omp config init-xdg` before relying on XDG paths.
+On macOS and Linux, an existing `$XDG_DATA_HOME/agent-smith`, `$XDG_STATE_HOME/agent-smith`, or `$XDG_CACHE_HOME/agent-smith` can relocate the corresponding data, state, or cache paths. For a named profile, Agent Smith uses an XDG category only when that category already contains `agent-smith/profiles/<name>`; otherwise that category remains under `~/.agent-smith/profiles/<name>`. Run `agent-smith config init-xdg` before relying on XDG paths.
 
-The other source bases are not profile-scoped and load identically under every profile: the external-tool bases (`~/.claude`, `~/.codex`, `~/.gemini`) belong to those tools, and the project-level bases (`<cwd>/.omp`, `<cwd>/.claude`, ...) are keyed to the working directory. Throughout this document, read `~/.omp/agent` as shorthand for the active profile's agent directory unless an environment override or XDG path is being discussed.
+The other source bases are not profile-scoped and load identically under every profile: the external-tool bases (`~/.claude`, `~/.codex`, `~/.gemini`) belong to those tools, and the project-level bases (`<cwd>/.agent-smith`, `<cwd>/.claude`, ...) are keyed to the working directory. Throughout this document, read `~/.agent-smith/agent` as shorthand for the active profile's agent directory unless an environment override or XDG path is being discussed.
 
 ## Important constraint
 
@@ -109,7 +82,7 @@ Options:
 
 This API is used for directory-based config lookups (commands, hooks, tools, agents, etc.).
 
-Disabled foreign user sources (`isUserSourceEnabled`) are omitted from the user entries; project entries are not filtered by this helper. Claude user paths honor `CLAUDE_CONFIG_DIR` (trimmed and resolved relative to the process working directory).
+Disabled foreign sources (`isUserSourceEnabled`) are omitted from **both** user and project entries. Selected Claude user paths honor `CLAUDE_CONFIG_DIR` (trimmed and resolved relative to the process working directory).
 
 ## `findConfigFile(subpath, options)` / `findConfigFileWithMeta(...)`
 
@@ -117,7 +90,7 @@ Searches for the first existing file across ordered bases, returns first match (
 
 ## `findAllNearestProjectConfigDirs(subpath, cwd)`
 
-Walks parent directories upward and returns the **nearest existing directory per source base** (`.omp`, `.claude`, `.codex`, `.gemini`), then sorts results by source priority.
+Walks parent directories upward and returns the **nearest existing directory per enabled source base**, then sorts results by source priority. By default, only `.agent-smith` participates.
 
 Use this when project config should be inherited from ancestor directories (monorepo/nested workspace behavior).
 
@@ -157,7 +130,7 @@ Each setting is declared once with `register({ id, type, default, env?, protocol
 
 - `cfgX.get(scope)` — effective value; `scope` is a `Settings` instance or anything carrying one (`AgentSession`, `ToolSession`). Reads are memoized per scope.
 - `cfgX.set(scope, v)` — writes the **global** layer and queues a background save; values the definition's type rejects throw.
-- `cfgX.unset(scope)` — removes the key from the global layer (what `omp config reset` and clearing a settings-panel text field do), so later default changes still apply.
+- `cfgX.unset(scope)` — removes the key from the global layer (what `agent-smith config reset` and clearing a settings-panel text field do), so later default changes still apply.
 - `cfgX.setEntry(scope, key, v)` / `cfgX.setMember(scope, item, { member })` — write one entry of a record setting (`undefined` removes it) or add/remove one item of a list setting in the global layer; the save changes only that entry or item in `config.yml`, so entries another layer (a `--config` overlay) supplies never land there.
 - `cfgX.override(scope, v)` / `cfgX.clearOverride(scope)` — runtime-only override, never persisted.
 - `cfgX.map(fn)` / `combine({...}, fn)` — memoized derived values; `.listen(scope, cb)` observes changes of a handle or derivation.
@@ -172,32 +145,32 @@ Effective precedence, highest first:
 
 1. Environment variable declared on the definition (`env: "NAME"`), parsed by the setting's type; unparseable text counts as unset. Booleans follow `parseFlag`: empty is unset, `1`/`y`/`true`/`yes`/`on` (lower or upper case) is true, any other text is false
 2. Runtime overrides: in-memory, non-persistent
-3. Config overlays: `PI_CONFIG_FILES` (platform path-list), followed by repeated `omp --config <path>` files; all are loaded as `config.yml`-style YAML for this process only
+3. Config overlays: `AGENT_SMITH_CONFIG_FILES` (platform path-list), followed by repeated `agent-smith --config <path>` files; all are loaded as `config.yml`-style YAML for this process only
 4. Project settings: discovered via the settings capability (`settings.json` and `config.yml` from providers)
-5. Global settings: the first present file among `~/.omp/agent/config.yml` and `config.yaml`
+5. Global settings: the first present file among `~/.agent-smith/agent/config.yml` and `config.yaml`
 6. Definition default
 
-A definition may instead declare `env: { name, fallback: true }`: that variable only replaces the default, and any layer configuring a non-null value wins over it (used by `SEARXNG_BASIC_*`). `fallback: "blank"` also lets the variable win over a configured empty or whitespace string (used by `SEARXNG_ENDPOINT`, `SEARXNG_TOKEN`, and `MNEMOPI_EMBEDDING_MODEL`).
+A definition may instead declare `env: { name, fallback: true }`: that variable only replaces the default, and any layer configuring a non-null value wins over it (used by `SEARXNG_BASIC_*`). `fallback: "blank"` also lets the variable win over a configured empty or whitespace string (used by `SEARXNG_ENDPOINT`, `SEARXNG_TOKEN`, and `AGENT_SMITH_MEMORY_EMBEDDING_MODEL`).
 
-Within the overlay list, later files override earlier files (`PI_CONFIG_FILES` entries load before `--config` files). Overlay paths are resolved relative to the active project directory (after `~` expansion).
+Within the overlay list, later files override earlier files (`AGENT_SMITH_CONFIG_FILES` entries load before `--config` files). Overlay paths are resolved relative to the active project directory (after `~` expansion).
 
 Definitions with `protocolDefault: ["rpc", "acp"]` make RPC/ACP hosts start from the definition default: at startup `applyProtocolDefaults` (`src/main.ts`) pins the default as a soft runtime override unless the value is already configured. The pin is released by a `cfgX.set`/`cfgX.unset`/`cfgX.setEntry`/`cfgX.setMember` of that setting (settings panel, agents hub, `cfg://`), by a reload that finds a persisted layer configuring it (a `config.yml` edit picked up by the RPC file watcher), and by a re-scope or clone into a project that configures it (an ACP session's own project config).
 
 Subagents receive `parent.overlay(overrides)`: reads fall through to the parent live, while the overrides and any later writes stay in the child and are never persisted.
 
-Generic setting-handle writes target the global layer; config overlays are read-only. Model roles have explicit project-write APIs: `setProjectModelRole()` / `clearProjectModelRole()` update the project layer and persist only the changed roles to `<cwd>/.omp/config.yml`. If an existing runtime override would shadow the role, setting a project role temporarily replaces it; clearing removes that runtime slot. The original override is captured for restoration when changing project scope.
+Generic setting-handle writes target the global layer; config overlays are read-only. Model roles have explicit project-write APIs: `setProjectModelRole()` / `clearProjectModelRole()` update the project layer and persist only the changed roles to `<cwd>/.agent-smith/config.yml`. If an existing runtime override would shadow the role, setting a project role temporarily replaces it; clearing removes that runtime slot. The original override is captured for restoration when changing project scope.
 
 ### Settings load failures
 
 - Missing global/project YAML is treated as empty configuration.
 - Invalid global or native-project YAML is moved to a unique `.broken-<timestamp>-<pid>-<uuid>` sibling under a file lock, then startup fails with the original and backup paths. An unreadable file fails without being moved.
-- Every `PI_CONFIG_FILES` / `--config` overlay is strict: missing files, invalid YAML, and non-mapping document roots are hard errors. Overlay files are not quarantined.
+- Every `AGENT_SMITH_CONFIG_FILES` / `--config` overlay is strict: missing files, invalid YAML, and non-mapping document roots are hard errors. Overlay files are not quarantined.
 
 ## Migration behavior still active
 
 On startup, if neither global `config.yml` nor `config.yaml` exists:
 
-1. Migrate from `~/.omp/agent/settings.json` (renamed to `.bak` on success)
+1. Migrate from `~/.agent-smith/agent/settings.json` (renamed to `.bak` on success)
 2. Merge with legacy DB settings from `agent.db` (DB values win conflicts)
 3. Write merged result to `config.yml`
 
@@ -216,8 +189,8 @@ Most non-core config loading flows through the capability registry (`src/capabil
 
 Providers are sorted by numeric priority (higher first). Full set:
 
-- Native OMP (`builtin.ts`): `100`
-- OMP plugins (`omp-plugins`): `90`
+- Native Agent Smith (`builtin.ts`): `100`
+- Agent Smith plugins (`agent-smith-plugins`): `90`
 - Claude: `80`
 - Agent Plugins standard (`agent-plugins`): `75`
 - Codex / agents / Claude plugins marketplace: `70`
@@ -234,8 +207,8 @@ Providers are sorted by numeric priority (higher first). Full set:
 ```text
 Provider precedence (higher wins)
 
-native (.omp)           priority 100
-omp-plugins             priority  90
+native (.agent-smith)           priority 100
+agent-smith-plugins             priority  90
 claude                  priority  80
 agent-plugins           priority  75
 codex / agents /
@@ -270,24 +243,24 @@ Relevant keys:
 
 ---
 
-## 6) Native `.omp` provider behavior (`packages/coding-agent/src/discovery/builtin.ts`)
+## 6) Native `.agent-smith` provider behavior (`packages/coding-agent/src/discovery/builtin.ts`)
 
 Native provider (`id: native`) reads native config from:
 
-- project: `<cwd>/.omp/...`
-- user: `~/.omp/agent/...`
+- project: `<cwd>/.agent-smith/...`
+- user: `~/.agent-smith/agent/...`
 
 ### Directory admission rules
 
 - Slash commands, directory rules, prompts, instructions, hooks, tools, extensions, extension modules, and settings use a project/user root only when the root directory exists and is non-empty.
-- Skills scan `<ancestor>/.omp/skills` for each ancestor from the current working directory up to the repo root/home boundary, plus `~/.omp/agent/skills`, without requiring the root `.omp` directory itself to be non-empty.
-- `SYSTEM.md`, `SYSTEM_TEMPLATE.md`, `RULES.md`, and `.omp/AGENTS.md` read user-level files directly and use the nearest non-empty ancestor `.omp` directory for project files. Project system-prompt entries load before user entries. `RULES.md` becomes an always-apply sticky rule. See [`docs/system-prompt-customization.md`](./system-prompt-customization.md) for the full `SYSTEM.md` / `APPEND_SYSTEM.md` contract.
-- MCP does not use the non-empty-root admission helper. It reads project `.omp/mcp.json` then `.omp/.mcp.json`, followed by user `mcp.json` then `.mcp.json`, directly.
+- Skills scan `<ancestor>/.agent-smith/skills` for each ancestor from the current working directory up to the repo root/home boundary, plus `~/.agent-smith/agent/skills`, without requiring the root `.agent-smith` directory itself to be non-empty.
+- `SYSTEM.md`, `SYSTEM_TEMPLATE.md`, `RULES.md`, and `.agent-smith/AGENTS.md` read user-level files directly and use the nearest non-empty ancestor `.agent-smith` directory for project files. Project system-prompt entries load before user entries. `RULES.md` becomes an always-apply sticky rule. See [`docs/system-prompt-customization.md`](./system-prompt-customization.md) for the full `SYSTEM.md` / `APPEND_SYSTEM.md` contract.
+- MCP does not use the non-empty-root admission helper. It reads project `.agent-smith/mcp.json` then `.agent-smith/.mcp.json`, followed by user `mcp.json` then `.mcp.json`, directly.
 
 ### Scope-specific loading
 
-- Skills: `<ancestor>/.omp/skills/*/SKILL.md` and `~/.omp/agent/skills/*/SKILL.md`
-- Managed skills: `~/.omp/agent/managed-skills/*/SKILL.md`, through a separate priority-5 provider; authored skills from any other provider win name collisions. Discovery is unconditional; `autolearn.enabled` gates writing/nudging, not loading.
+- Skills: `<ancestor>/.agent-smith/skills/*/SKILL.md` and `~/.agent-smith/agent/skills/*/SKILL.md`
+- Managed skills: `~/.agent-smith/agent/managed-skills/*/SKILL.md`, through a separate priority-5 provider; authored skills from any other provider win name collisions. Discovery is unconditional; `autolearn.enabled` gates writing/nudging, not loading.
 - Slash commands: `commands/*.md`
 - Rules: `rules/*.{md,mdc}` plus top-level `RULES.md`
 - Prompts: `prompts/*.md`
@@ -297,17 +270,17 @@ Native provider (`id: native`) reads native config from:
 - Extension modules: discovered under `extensions/` (+ legacy `settings.json.extensions` string array)
 - Extensions: `extensions/<name>/gemini-extension.json`
 - Settings capability: `settings.json`, then `config.yml`
-- Context files: `.omp/AGENTS.md`; standalone ancestor `AGENTS.md` files are loaded separately by the low-priority `agents-md` provider
+- Context files: `.agent-smith/AGENTS.md`; standalone ancestor `AGENTS.md` files are loaded separately by the low-priority `agents-md` provider
 
 ### Nearest-project lookup nuance
 
-For `SYSTEM.md`, `SYSTEM_TEMPLATE.md`, `RULES.md`, and `.omp/AGENTS.md`, the native provider walks upward to the nearest non-empty project `.omp` directory.
+For `SYSTEM.md`, `SYSTEM_TEMPLATE.md`, `RULES.md`, and `.agent-smith/AGENTS.md`, the native provider walks upward to the nearest non-empty project `.agent-smith` directory.
 
 ## 7) How major subsystems consume config
 
 ## Settings subsystem
 
-- `Settings.init()` loads the global YAML file, discovered project settings, `PI_CONFIG_FILES` / `--config` overlays, and runtime overrides in the precedence described above.
+- `Settings.init()` loads the global YAML file, discovered project settings, `AGENT_SMITH_CONFIG_FILES` / `--config` overlays, and runtime overrides in the precedence described above.
 - Only capability items with `level === "project"` are merged into the project layer.
 
 ### Session title prompt override
@@ -315,12 +288,12 @@ For `SYSTEM.md`, `SYSTEM_TEMPLATE.md`, `RULES.md`, and `.omp/AGENTS.md`, the nat
 Create `TITLE_SYSTEM.md` in any generic config base:
 
 ```text
-# ~/.omp/agent/TITLE_SYSTEM.md
+# ~/.agent-smith/agent/TITLE_SYSTEM.md
 Generate a session name using lowercase `<type>:<primary-objective>`.
 ```
 
 - Missing `TITLE_SYSTEM.md` keeps the bundled title prompts.
-- Discovery checks the current project directory bases first (`<cwd>/.omp`, `.claude`, `.codex`, `.gemini`), then the user bases in the generic helper order. Unlike native `SYSTEM.md`, project title discovery does **not** walk ancestor directories.
+- Discovery checks the current project directory bases first (`<cwd>/.agent-smith`, `.claude`, `.codex`, `.gemini`), then the user bases in the generic helper order. Unlike native `SYSTEM.md`, project title discovery does **not** walk ancestor directories.
 - The override replaces only the automatic session-title generation system prompt; normal `SYSTEM.md` / `APPEND_SYSTEM.md` prompt customization is unaffected.
 - The online path asks the title model to wrap the title in `<title>...</title>` and parses it leniently from text (a plain sentence, a truncated/unclosed tag, or a stray `{"title": "..."}` JSON echo all still work). A `TITLE_SYSTEM.md` override gets the wrap-in-`<title>` instruction appended after it. The local tiny-title path keeps the `<title>...</title>` prefill/stop wrapper and uses this file as its system turn.
 
@@ -358,7 +331,7 @@ Use this mental model:
 
 ### Settings-specific caveat
 
-Settings capability items are not deduplicated; `Settings.#loadProjectSettings()` deep-merges project items in returned order, so later items override earlier ones. Providers are visited from highest to lowest priority, which means lower-priority provider settings can override higher-priority settings. Within the native provider, project `config.yml` follows and overrides `settings.json`. Native `.omp/config.yml` model roles are then reapplied as the authoritative project model-role layer.
+Settings capability items are not deduplicated; `Settings.#loadProjectSettings()` deep-merges project items in returned order, so later items override earlier ones. Providers are visited from highest to lowest priority, which means lower-priority provider settings can override higher-priority settings. Within the native provider, project `config.yml` follows and overrides `settings.json`. Native `.agent-smith/config.yml` model roles are then reapplied as the authoritative project model-role layer.
 
 ---
 

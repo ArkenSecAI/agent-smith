@@ -8,11 +8,11 @@ interface OmpCommand {
 	shell: boolean;
 }
 
-const DEFAULT_CMD = process.platform === "win32" ? "omp.cmd" : "omp";
+const DEFAULT_CMD = process.platform === "win32" ? "agent-smith.cmd" : "agent-smith";
 const DEFAULT_SHELL = process.platform === "win32";
 
 export function resolveOmpCommand(): OmpCommand {
-	const envCmd = $env.PI_SUBPROCESS_CMD;
+	const envCmd = $env.AGENT_SMITH_SUBPROCESS_CMD;
 	if (envCmd?.trim()) {
 		return { cmd: envCmd, args: [], shell: DEFAULT_SHELL };
 	}

@@ -46,12 +46,12 @@ export interface MnemopiOptions {
 	readonly proactiveLinking?: boolean;
 	/**
 	 * Route `recallEnhanced` through polyphonic recall for this instance. Unset
-	 * defers to `configureRecallFeatures`; `MNEMOPI_POLYPHONIC_RECALL` wins when set.
+	 * defers to `configureRecallFeatures`; `AGENT_SMITH_MEMORY_POLYPHONIC_RECALL` wins when set.
 	 */
 	readonly polyphonicRecall?: boolean;
 	/**
 	 * Cache `recallEnhanced` results for this instance. Unset defers to
-	 * `configureRecallFeatures`; `MNEMOPI_ENHANCED_RECALL` wins when set.
+	 * `configureRecallFeatures`; `AGENT_SMITH_MEMORY_ENHANCED_RECALL` wins when set.
 	 */
 	readonly enhancedRecall?: boolean;
 	/** Escalate best-effort failure logs (embedding pipeline) from debug to warn. */

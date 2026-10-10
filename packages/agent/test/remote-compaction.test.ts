@@ -2916,8 +2916,8 @@ describe("Amazon Bedrock compaction request preparation", () => {
 			provider: "compaction-proxy-test",
 			baseUrl: runtimeUrl,
 		});
-		const previous = Bun.env.PI_PROXY_COMPACTION_PROXY_TEST;
-		Bun.env.PI_PROXY_COMPACTION_PROXY_TEST = "http://proxy.example.test:8080";
+		const previous = Bun.env.AGENT_SMITH_PROXY_COMPACTION_PROXY_TEST;
+		Bun.env.AGENT_SMITH_PROXY_COMPACTION_PROXY_TEST = "http://proxy.example.test:8080";
 		__resetProxyCache();
 		const proxies: unknown[] = [];
 		const fetchMock: FetchImpl = async (input, init) => {
@@ -2936,8 +2936,8 @@ describe("Amazon Bedrock compaction request preparation", () => {
 				{ fetch: fetchMock },
 			);
 		} finally {
-			if (previous === undefined) delete Bun.env.PI_PROXY_COMPACTION_PROXY_TEST;
-			else Bun.env.PI_PROXY_COMPACTION_PROXY_TEST = previous;
+			if (previous === undefined) delete Bun.env.AGENT_SMITH_PROXY_COMPACTION_PROXY_TEST;
+			else Bun.env.AGENT_SMITH_PROXY_COMPACTION_PROXY_TEST = previous;
 			__resetProxyCache();
 		}
 

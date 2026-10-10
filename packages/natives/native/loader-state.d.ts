@@ -1,3 +1,6 @@
+/** App-owned, profile-independent native extraction/staging directory. */
+export function getNativesDir(): string;
+
 export interface EmbeddedAddonFile {
 	variant: "modern" | "baseline" | "default";
 	filename: string;

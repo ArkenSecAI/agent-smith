@@ -8,8 +8,8 @@ describe("issue #5879: legacy provider compatibility", () => {
 		const projectDir = TempDir.createSync("@issue-5879-");
 		const freshAgentDir = projectDir.join("fresh", "agent");
 		const originalDirEnv: Record<string, string | undefined> = {
-			PI_CODING_AGENT_DIR: process.env.PI_CODING_AGENT_DIR,
-			OMP_PROFILE: process.env.OMP_PROFILE,
+			AGENT_SMITH_CODING_AGENT_DIR: process.env.AGENT_SMITH_CODING_AGENT_DIR,
+			AGENT_SMITH_PROFILE: process.env.AGENT_SMITH_PROFILE,
 			PI_PROFILE: process.env.PI_PROFILE,
 		};
 		const extensionPath = path.join(projectDir.path(), "pi-provider-like-plugin", "index.ts");

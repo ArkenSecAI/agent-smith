@@ -6,7 +6,7 @@ import { clearCache as clearFsCache } from "@oh-my-pi/pi-coding-agent/capability
 import { disableUserSource, enableProvider, loadCapability } from "@oh-my-pi/pi-coding-agent/capability";
 import {
 	clearClaudePluginRootsCache,
-	listClaudePluginRoots,
+	listClaudePluginRoots as listPluginRoots,
 	parseClaudePluginsRegistry,
 } from "@oh-my-pi/pi-coding-agent/discovery/helpers";
 import type { Skill } from "@oh-my-pi/pi-coding-agent/capability/skill";
@@ -46,6 +46,15 @@ function restoreEnvValue(key: string, value: string | undefined): void {
 	Bun.env[key] = value;
 }
 
+function listClaudePluginRoots(home: string, cwd: string = home) {
+	return listPluginRoots(home, cwd, {
+		cwd,
+		home,
+		repoRoot: null,
+		explicitProviders: new Set(["claude-plugins"]),
+	});
+}
+
 describe("listClaudePluginRoots", () => {
 	let tempDir: string;
 	let testAgentDir: string;
@@ -59,8 +68,8 @@ describe("listClaudePluginRoots", () => {
 		clearClaudePluginRootsCache();
 		clearFsCache();
 		originalHome = process.env.HOME;
-		originalAgentDirEnv = process.env.PI_CODING_AGENT_DIR;
-		originalOmpProfileEnv = process.env.OMP_PROFILE;
+		originalAgentDirEnv = process.env.AGENT_SMITH_CODING_AGENT_DIR;
+		originalOmpProfileEnv = process.env.AGENT_SMITH_PROFILE;
 		originalPiProfileEnv = process.env.PI_PROFILE;
 		originalClaudeConfigDir = process.env.CLAUDE_CONFIG_DIR;
 		delete process.env.CLAUDE_CONFIG_DIR;
@@ -69,7 +78,7 @@ describe("listClaudePluginRoots", () => {
 		process.env.HOME = tempDir;
 		vi.spyOn(os, "homedir").mockReturnValue(tempDir);
 		// Point the agent dir at a temp dir so user-scope discovery (native MCP
-		// config, skills, etc.) cannot read the real ~/.omp/agent profile.
+		// config, skills, etc.) cannot read the real ~/.agent-smith/agent profile.
 		setAgentDir(testAgentDir);
 		enableProvider("claude-plugins");
 		disableUserSource("claude-plugins");
@@ -83,9 +92,9 @@ describe("listClaudePluginRoots", () => {
 		// setAgentDir() clears the profile env vars and snapshots the agent dir,
 		// so restore every env var it can touch before rebuilding the resolver.
 		restoreEnvValue("HOME", originalHome);
-		restoreEnvValue("OMP_PROFILE", originalOmpProfileEnv);
+		restoreEnvValue("AGENT_SMITH_PROFILE", originalOmpProfileEnv);
 		restoreEnvValue("PI_PROFILE", originalPiProfileEnv);
-		restoreEnvValue("PI_CODING_AGENT_DIR", originalAgentDirEnv);
+		restoreEnvValue("AGENT_SMITH_CODING_AGENT_DIR", originalAgentDirEnv);
 		restoreEnvValue("CLAUDE_CONFIG_DIR", originalClaudeConfigDir);
 		enableProvider("claude-plugins");
 		disableUserSource("claude-plugins");
@@ -469,7 +478,7 @@ describe("listClaudePluginRoots", () => {
 			[firstHome, "first@market"],
 			[secondHome, "second@market"],
 		] as const) {
-			const pluginsDir = path.join(home, ".omp", "plugins");
+			const pluginsDir = path.join(home, ".agent-smith", "plugins");
 			await fs.mkdir(pluginsDir, { recursive: true });
 			await fs.writeFile(
 				path.join(pluginsDir, "installed_plugins.json"),
@@ -505,7 +514,7 @@ describe("listClaudePluginRoots", () => {
 		const marketRoot = path.join(tempDir, ".claude", "plugins", "cache", "test-market");
 		const pluginARoot = path.join(marketRoot, "plugin-a", "1.0.0");
 		const pluginBRoot = path.join(marketRoot, "plugin-b", "1.0.0");
-		const ompRegistryPath = path.join(tempDir, ".omp", "plugins", "installed_plugins.json");
+		const ompRegistryPath = path.join(tempDir, ".agent-smith", "plugins", "installed_plugins.json");
 
 		await Promise.all([
 			fs.mkdir(path.join(pluginARoot, "skills", "shared-skill"), { recursive: true }),
@@ -547,7 +556,7 @@ describe("listClaudePluginRoots", () => {
 	test("loads OMP user skills without opting into foreign Claude skills", async () => {
 		const ompPluginPath = path.join(tempDir, "plugins", "omp-owned");
 		const claudePluginPath = path.join(tempDir, "plugins", "claude-owned");
-		const ompRegistryPath = path.join(tempDir, ".omp", "plugins", "installed_plugins.json");
+		const ompRegistryPath = path.join(tempDir, ".agent-smith", "plugins", "installed_plugins.json");
 		const claudeRegistryPath = path.join(tempDir, ".claude", "plugins", "installed_plugins.json");
 		await Promise.all([
 			fs.mkdir(path.join(ompPluginPath, "skills", "omp-demo"), { recursive: true }),
@@ -597,7 +606,7 @@ describe("listClaudePluginRoots", () => {
 		// rides SourceMeta, so the foreign gate applies only to claude-origin roots.
 		const ompPluginPath = path.join(tempDir, "plugins", "omp-owned");
 		const claudePluginPath = path.join(tempDir, "plugins", "claude-owned");
-		const ompRegistryPath = path.join(tempDir, ".omp", "plugins", "installed_plugins.json");
+		const ompRegistryPath = path.join(tempDir, ".agent-smith", "plugins", "installed_plugins.json");
 		const claudeRegistryPath = path.join(tempDir, ".claude", "plugins", "installed_plugins.json");
 		await Promise.all([
 			fs.mkdir(path.join(ompPluginPath, "skills", "omp-demo"), { recursive: true }),
@@ -643,16 +652,12 @@ describe("listClaudePluginRoots", () => {
 		expect(skills.map(s => s.name)).not.toContain("claude-demo");
 	});
 
-	test("dashboard marks omp-origin plugin capabilities active without enabling the Claude source (#12776)", async () => {
-		// Regression (#12776): the loader exempts ~/.omp/plugins marketplace roots
-		// (origin !== "claude") from the foreign user opt-in gate, but the
-		// /extensions dashboard's resolveState re-dropped them as "user-opt-in".
-		// The omp-origin skill AND rule must render active; the claude-origin skill
-		// must stay opt-in disabled. The rule proves origin now rides the
-		// non-skill _source built by loadFilesFromDir, not just skills.
+	test("dashboard keeps app-owned plugin capabilities active without inspecting foreign registries", async () => {
+		// App-owned skills and rules remain active without foreign-source consent.
+		// Dashboard inclusion of disabled extensions must not grant that consent.
 		const ompPluginPath = path.join(tempDir, "plugins", "omp-owned");
 		const claudePluginPath = path.join(tempDir, "plugins", "claude-owned");
-		const ompRegistryPath = path.join(tempDir, ".omp", "plugins", "installed_plugins.json");
+		const ompRegistryPath = path.join(tempDir, ".agent-smith", "plugins", "installed_plugins.json");
 		const claudeRegistryPath = path.join(tempDir, ".claude", "plugins", "installed_plugins.json");
 		await Promise.all([
 			fs.mkdir(path.join(ompPluginPath, "skills", "omp-demo"), { recursive: true }),
@@ -698,15 +703,13 @@ describe("listClaudePluginRoots", () => {
 
 		expect(ompSkill?.state).toBe("active");
 		expect(ompRule?.state).toBe("active");
-		// The foreign ~/.claude marketplace plugin still requires the opt-in.
-		expect(claudeSkill?.state).toBe("disabled");
-		expect(claudeSkill?.disabledReason).toBe("user-opt-in");
+		expect(claudeSkill).toBeUndefined();
 	});
 
 	for (const catalogDir of [".claude-plugin", ".omp-plugin"]) {
 		test(`marketplace-root ${catalogDir} entry limits shared skills to declared paths`, async () => {
 			const pluginPath = path.join(tempDir, "plugins", "anthropic-skills");
-			const registryPath = path.join(tempDir, ".omp", "plugins", "installed_plugins.json");
+			const registryPath = path.join(tempDir, ".agent-smith", "plugins", "installed_plugins.json");
 			await Promise.all([
 				fs.mkdir(path.join(pluginPath, "skills", "xlsx"), { recursive: true }),
 				fs.mkdir(path.join(pluginPath, "skills", "skill-creator"), { recursive: true }),

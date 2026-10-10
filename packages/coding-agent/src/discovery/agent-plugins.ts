@@ -59,7 +59,7 @@ interface CandidateRoot {
  */
 async function listCandidateRoots(ctx: LoadContext): Promise<CandidateRoot[]> {
 	const [marketplace, extensionRoots] = await Promise.all([
-		listClaudePluginRoots(ctx.home, ctx.cwd),
+		listClaudePluginRoots(ctx.home, ctx.cwd, ctx),
 		listOmpExtensionRoots(ctx),
 	]);
 	const seen = new Set<string>();

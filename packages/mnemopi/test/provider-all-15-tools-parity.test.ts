@@ -8,18 +8,18 @@ let dataDir: string;
 
 beforeEach(() => {
 	dataDir = mkdtempSync(join(tmpdir(), "mnemopi-ts-provider-parity-"));
-	process.env.MNEMOPI_DATA_DIR = dataDir;
-	process.env.MNEMOPI_NO_EMBEDDINGS = "1";
-	delete process.env.MNEMOPI_MCP_BANK;
-	delete process.env.MNEMOPI_SHARED_SURFACE_DB;
+	process.env.AGENT_SMITH_MEMORY_DATA_DIR = dataDir;
+	process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS = "1";
+	delete process.env.AGENT_SMITH_MEMORY_MCP_BANK;
+	delete process.env.AGENT_SMITH_MEMORY_SHARED_SURFACE_DB;
 });
 
 afterEach(() => {
 	rmSync(dataDir, { recursive: true, force: true });
-	delete process.env.MNEMOPI_DATA_DIR;
-	delete process.env.MNEMOPI_NO_EMBEDDINGS;
-	delete process.env.MNEMOPI_MCP_BANK;
-	delete process.env.MNEMOPI_SHARED_SURFACE_DB;
+	delete process.env.AGENT_SMITH_MEMORY_DATA_DIR;
+	delete process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS;
+	delete process.env.AGENT_SMITH_MEMORY_MCP_BANK;
+	delete process.env.AGENT_SMITH_MEMORY_SHARED_SURFACE_DB;
 });
 
 describe("provider all-tools parity", () => {

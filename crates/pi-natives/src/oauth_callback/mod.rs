@@ -767,7 +767,7 @@ fn environment_home(env: &BTreeMap<String, String>) -> Option<PathBuf> {
 
 fn storage_root(home: &Path, scheme: &str) -> PathBuf {
 	home
-		.join(".omp")
+		.join(".agent-smith")
 		.join("oauth")
 		.join("native")
 		.join(platform_name())

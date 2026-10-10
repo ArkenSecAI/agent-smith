@@ -47,19 +47,19 @@ export const cfgSkillsEnableClaudeUser = register({ id: "skills.enableClaudeUser
 export const cfgSkillsEnableClaudeProject = register({
 	id: "skills.enableClaudeProject",
 	type: "boolean",
-	default: true,
+	default: false,
 });
 
 export const cfgSkillsEnablePiUser = register({ id: "skills.enablePiUser", type: "boolean", default: true });
 
 export const cfgSkillsEnablePiProject = register({ id: "skills.enablePiProject", type: "boolean", default: true });
 
-export const cfgSkillsEnableAgentsUser = register({ id: "skills.enableAgentsUser", type: "boolean", default: true });
+export const cfgSkillsEnableAgentsUser = register({ id: "skills.enableAgentsUser", type: "boolean", default: false });
 
 export const cfgSkillsEnableAgentsProject = register({
 	id: "skills.enableAgentsProject",
 	type: "boolean",
-	default: true,
+	default: false,
 });
 
 export const cfgSkillsCustomDirectories = register({
@@ -115,7 +115,7 @@ export const cfgCommandsEnableClaudeUser = register({
 export const cfgCommandsEnableClaudeProject = register({
 	id: "commands.enableClaudeProject",
 	type: "boolean",
-	default: true,
+	default: false,
 	ui: {
 		tab: "tasks",
 		group: "Commands & Skills",
@@ -139,7 +139,7 @@ export const cfgCommandsEnableOpencodeUser = register({
 export const cfgCommandsEnableOpencodeProject = register({
 	id: "commands.enableOpencodeProject",
 	type: "boolean",
-	default: true,
+	default: false,
 	ui: {
 		tab: "tasks",
 		group: "Commands & Skills",

@@ -124,6 +124,7 @@ export function getUserPath(ctx: LoadContext, source: SourceId, subpath: string)
  * Get project-level path for a source (cwd only).
  */
 export function getProjectPath(ctx: LoadContext, source: SourceId, subpath: string): string | null {
+	if (!isUserSourceEnabled(source, ctx)) return null;
 	const paths = SOURCE_PATHS[source];
 	if (!paths.projectDir) return null;
 
@@ -1154,6 +1155,7 @@ export function registerPluginCacheInvalidator(invalidator: () => void): void {
 export async function listClaudePluginRoots(
 	home: string,
 	cwd?: string,
+	ctx?: LoadContext,
 ): Promise<{ roots: ClaudePluginRoot[]; warnings: string[] }> {
 	const claudeConfigDir = resolveClaudePaths(home).configDir;
 	const ompRegistryPath = path.join(getPluginsDir(home), "installed_plugins.json");
@@ -1162,8 +1164,11 @@ export async function listClaudePluginRoots(
 	const activeClaudeProjectPath = projectRoot ? await canonicalClaudeProjectPath(projectRoot) : null;
 	const canonicalCwd = cwd ? await canonicalClaudeProjectPath(cwd) : null;
 	const settingsDirs = [...new Set([activeClaudeProjectPath, canonicalCwd].filter((d): d is string => !!d))];
-	const enabledOverrides = await readClaudeEnabledPlugins(claudeConfigDir, settingsDirs);
-	const cacheKey = `${claudeConfigDir}:${ompRegistryPath}:${resolvedProjectPath ?? ""}:${activeClaudeProjectPath ?? ""}:${canonicalCwd ?? ""}:${enabledOverrides.sources.join("|")}`;
+	const includeForeign = isUserSourceEnabled("claude-plugins", ctx) || isUserSourceEnabled("claude", ctx);
+	const enabledOverrides = includeForeign
+		? await readClaudeEnabledPlugins(claudeConfigDir, settingsDirs)
+		: { enabled: new Map<string, boolean>(), sources: [] };
+	const cacheKey = `${includeForeign}:${claudeConfigDir}:${ompRegistryPath}:${resolvedProjectPath ?? ""}:${activeClaudeProjectPath ?? ""}:${canonicalCwd ?? ""}:${enabledOverrides.sources.join("|")}`;
 	const cached = pluginRootsCache.get(cacheKey);
 	if (cached) return cached;
 
@@ -1174,7 +1179,7 @@ export async function listClaudePluginRoots(
 
 	// ── Claude Code registry ──────────────────────────────────────────────────
 	const registryPath = path.join(claudeConfigDir, "plugins", "installed_plugins.json");
-	const content = await readFile(registryPath);
+	const content = includeForeign ? await readFile(registryPath) : null;
 
 	if (content) {
 		const registry = parseClaudePluginsRegistry(content);

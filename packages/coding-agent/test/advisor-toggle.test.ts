@@ -37,9 +37,9 @@ describe("AgentSession advisor toggle", () => {
 	let model: Model;
 	let replacementModel: Model;
 
-	const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+	const originalAgentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 	const originalPiProfile = process.env.PI_PROFILE;
-	const originalOmpProfile = process.env.OMP_PROFILE;
+	const originalOmpProfile = process.env.AGENT_SMITH_PROFILE;
 
 	beforeAll(() => {
 		authStorage = createInMemoryAuthStorage();
@@ -57,9 +57,9 @@ describe("AgentSession advisor toggle", () => {
 
 	afterAll(() => {
 		authStorage.close();
-		restoreEnv("PI_CODING_AGENT_DIR", originalAgentDir);
+		restoreEnv("AGENT_SMITH_CODING_AGENT_DIR", originalAgentDir);
 		restoreEnv("PI_PROFILE", originalPiProfile);
-		restoreEnv("OMP_PROFILE", originalOmpProfile);
+		restoreEnv("AGENT_SMITH_PROFILE", originalOmpProfile);
 		__resetDirsFromEnvForTests();
 	});
 
@@ -95,9 +95,9 @@ describe("AgentSession advisor toggle", () => {
 		try {
 			await session?.dispose();
 		} finally {
-			restoreEnv("PI_CODING_AGENT_DIR", originalAgentDir);
+			restoreEnv("AGENT_SMITH_CODING_AGENT_DIR", originalAgentDir);
 			restoreEnv("PI_PROFILE", originalPiProfile);
-			restoreEnv("OMP_PROFILE", originalOmpProfile);
+			restoreEnv("AGENT_SMITH_PROFILE", originalOmpProfile);
 			__resetDirsFromEnvForTests();
 			try {
 				await tempDir?.remove();

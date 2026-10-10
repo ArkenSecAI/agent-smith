@@ -70,7 +70,7 @@ function pushSettings(overrides: Record<string, unknown> = {}): Settings {
 	return Settings.isolated({
 		"dev.autoqa": true,
 		// Consent is the push opt-in; `granted` is what `resolvePushConfig`
-		// gates on (or `PI_AUTO_QA_PUSH=1` for headless overrides).
+		// gates on (or `AGENT_SMITH_AUTO_QA_PUSH=1` for headless overrides).
 		"dev.autoqaConsent": "granted",
 		"dev.autoqaPush.endpoint": "https://qa.example.com/grievances",
 		...overrides,
@@ -81,10 +81,10 @@ let originalPiAutoQa: string | undefined;
 
 function restoreAutoQaEnv(): void {
 	if (originalPiAutoQa === undefined) {
-		delete Bun.env.PI_AUTO_QA;
+		delete Bun.env.AGENT_SMITH_AUTO_QA;
 		return;
 	}
-	Bun.env.PI_AUTO_QA = originalPiAutoQa;
+	Bun.env.AGENT_SMITH_AUTO_QA = originalPiAutoQa;
 }
 
 describe("flushGrievances", () => {
@@ -92,8 +92,8 @@ describe("flushGrievances", () => {
 
 	beforeEach(() => {
 		__resetAutoQaFlushStateForTests();
-		originalPiAutoQa = Bun.env.PI_AUTO_QA;
-		delete Bun.env.PI_AUTO_QA;
+		originalPiAutoQa = Bun.env.AGENT_SMITH_AUTO_QA;
+		delete Bun.env.AGENT_SMITH_AUTO_QA;
 		db = openTempDb();
 	});
 
@@ -104,14 +104,14 @@ describe("flushGrievances", () => {
 		db.close();
 	});
 
-	it("lets PI_AUTO_QA=false disable auto QA when the setting is enabled", () => {
-		Bun.env.PI_AUTO_QA = "0";
+	it("lets AGENT_SMITH_AUTO_QA=false disable auto QA when the setting is enabled", () => {
+		Bun.env.AGENT_SMITH_AUTO_QA = "0";
 
 		expect(isAutoQaEnabled(Settings.isolated({ "dev.autoqa": true }))).toBe(false);
 	});
 
-	it("lets PI_AUTO_QA=true enable auto QA when the setting is disabled", () => {
-		Bun.env.PI_AUTO_QA = "1";
+	it("lets AGENT_SMITH_AUTO_QA=true enable auto QA when the setting is disabled", () => {
+		Bun.env.AGENT_SMITH_AUTO_QA = "1";
 
 		expect(isAutoQaEnabled(Settings.isolated({ "dev.autoqa": false }))).toBe(true);
 	});
@@ -457,7 +457,7 @@ describe("dispatchReportIssueDevice", () => {
 	}
 
 	it("records a grievance from `<tool>: <report>` text", async () => {
-		Bun.env.PI_AUTO_QA = "1";
+		Bun.env.AGENT_SMITH_AUTO_QA = "1";
 		const db = openTempDb();
 		const openSpy = vi.spyOn(reportIssue, "openAutoQaDb").mockReturnValue(db);
 		try {
@@ -481,7 +481,7 @@ describe("dispatchReportIssueDevice", () => {
 	});
 
 	it("accepts the two-line fallback body format", async () => {
-		Bun.env.PI_AUTO_QA = "1";
+		Bun.env.AGENT_SMITH_AUTO_QA = "1";
 		const db = openTempDb();
 		const openSpy = vi.spyOn(reportIssue, "openAutoQaDb").mockReturnValue(db);
 		try {
@@ -497,7 +497,7 @@ describe("dispatchReportIssueDevice", () => {
 	});
 
 	it("clamps a prose first line so the stored tool stays within the collector limit", async () => {
-		Bun.env.PI_AUTO_QA = "1";
+		Bun.env.AGENT_SMITH_AUTO_QA = "1";
 		const db = openTempDb();
 		const openSpy = vi.spyOn(reportIssue, "openAutoQaDb").mockReturnValue(db);
 		try {
@@ -518,9 +518,9 @@ describe("dispatchReportIssueDevice", () => {
 	});
 
 	it("writes nothing while consent is unresolved", async () => {
-		Bun.env.PI_AUTO_QA = "1";
-		const originalPush = Bun.env.PI_AUTO_QA_PUSH;
-		delete Bun.env.PI_AUTO_QA_PUSH;
+		Bun.env.AGENT_SMITH_AUTO_QA = "1";
+		const originalPush = Bun.env.AGENT_SMITH_AUTO_QA_PUSH;
+		delete Bun.env.AGENT_SMITH_AUTO_QA_PUSH;
 		const db = openTempDb();
 		const openSpy = vi.spyOn(reportIssue, "openAutoQaDb").mockReturnValue(db);
 		try {
@@ -532,8 +532,8 @@ describe("dispatchReportIssueDevice", () => {
 			await settlePipeline();
 			expect(selectIds(db)).toHaveLength(0);
 		} finally {
-			if (originalPush === undefined) delete Bun.env.PI_AUTO_QA_PUSH;
-			else Bun.env.PI_AUTO_QA_PUSH = originalPush;
+			if (originalPush === undefined) delete Bun.env.AGENT_SMITH_AUTO_QA_PUSH;
+			else Bun.env.AGENT_SMITH_AUTO_QA_PUSH = originalPush;
 			openSpy.mockRestore();
 			db.close();
 		}

@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { CONFIG_DIR_NAME, getConfigAgentDirName, getProjectDir } from "@oh-my-pi/pi-utils";
+import { CONFIG_DIR_NAME, getAgentDir, getProjectDir } from "@oh-my-pi/pi-utils";
 import { isUserSourceEnabled } from "./capability";
 import { resolveClaudePaths } from "./config/claude-paths";
 import { expandTilde } from "./tools/path-utils";
@@ -9,7 +9,7 @@ import { expandTilde } from "./tools/path-utils";
 export * from "./config/config-file";
 
 const priorityList = [
-	{ dir: CONFIG_DIR_NAME, globalAgentDir: getConfigAgentDirName },
+	{ dir: CONFIG_DIR_NAME, globalAgentDir: getAgentDir },
 	{ dir: ".claude" },
 	{ dir: ".codex" },
 	{ dir: ".gemini" },
@@ -43,7 +43,7 @@ export function walkUpForPackageDir(startDir: string): string | undefined {
 /**
  * Get the base directory for resolving optional package assets (docs, examples, CHANGELOG.md).
  *
- * Honors the `PI_PACKAGE_DIR` override (useful for Nix/Guix store paths);
+ * Honors the `AGENT_SMITH_PACKAGE_DIR` override (useful for Nix/Guix store paths);
  * otherwise walks up from `import.meta.dir` looking for a `package.json`.
  * Returns `undefined` when no owning package is locatable — notably inside
  * `bun --compile` binaries where `import.meta.dir` resolves to `/$bunfs/root`
@@ -55,7 +55,7 @@ export function walkUpForPackageDir(startDir: string): string | undefined {
  * project's `CHANGELOG.md` rendered as omp's startup changelog).
  */
 export function getPackageDir(): string | undefined {
-	const envDir = process.env.PI_PACKAGE_DIR;
+	const envDir = process.env.AGENT_SMITH_PACKAGE_DIR;
 	if (envDir) {
 		return expandTilde(envDir);
 	}
@@ -83,7 +83,7 @@ export function getChangelogPath(): string | undefined {
  */
 const USER_CONFIG_BASES = priorityList.map(({ dir, globalAgentDir }) => ({
 	base: () =>
-		dir === ".claude" ? resolveClaudePaths().configDir : path.join(os.homedir(), globalAgentDir?.() ?? dir),
+		dir === ".claude" ? resolveClaudePaths().configDir : (globalAgentDir?.() ?? path.join(os.homedir(), dir)),
 	name: dir,
 }));
 
@@ -145,6 +145,7 @@ export function getConfigDirs(subpath: string, options: GetConfigDirsOptions = {
 	// Project-level directories
 	if (project) {
 		for (const { base, name } of PROJECT_CONFIG_BASES) {
+			if (!isUserSourceEnabled(name)) continue;
 			const resolvedPath = path.resolve(cwd, base, subpath);
 			if (!existingOnly || fs.existsSync(resolvedPath)) {
 				results.push({ path: resolvedPath, source: name, level: "project" });
@@ -223,6 +224,7 @@ export function findAllNearestProjectConfigDirs(subpath: string, cwd: string = g
 
 	while (foundBases.size < PROJECT_CONFIG_BASES.length) {
 		for (const { base, name } of PROJECT_CONFIG_BASES) {
+			if (!isUserSourceEnabled(name)) continue;
 			if (foundBases.has(name)) continue;
 
 			const candidate = path.join(currentDir, base, subpath);

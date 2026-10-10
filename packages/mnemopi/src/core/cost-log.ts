@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
-import * as os from "node:os";
 import * as path from "node:path";
+import { dataDir } from "../config";
 import { openDatabase } from "../db";
-export const DEFAULT_LOG_DIR = path.join(os.homedir(), ".mnemopi", "data");
+export const DEFAULT_LOG_DIR = dataDir();
 export const DEFAULT_LOG_DB = path.join(DEFAULT_LOG_DIR, "cost_log.db");
 
 export interface CostStats {
@@ -20,8 +20,8 @@ type AggregateRow = {
 };
 
 export function getConn(dbPath?: string): Database {
-	const path = dbPath ?? DEFAULT_LOG_DB;
-	return openDatabase(path, { pragmas: false });
+	const dbFile = dbPath ?? path.join(dataDir(), "cost_log.db");
+	return openDatabase(dbFile, { pragmas: false });
 }
 
 export function initCostLog(dbPath?: string): void {

@@ -37,8 +37,8 @@ import {
 } from "./helpers";
 
 const PROVIDER_ID = "native";
-const DISPLAY_NAME = "OMP";
-const DESCRIPTION = "Native OMP configuration from ~/.omp and .omp/";
+const DISPLAY_NAME = "ArkenSec Agent Smith";
+const DESCRIPTION = "Native Agent Smith configuration from ~/.agent-smith and .agent-smith/";
 const PRIORITY = 100;
 
 const PATHS = SOURCE_PATHS.native;

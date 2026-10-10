@@ -39,7 +39,7 @@ describe("openRpcSession", () => {
 	let root: string;
 	let cwd: string;
 	let threadDir: string;
-	const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+	const originalAgentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 
 	beforeEach(async () => {
 		root = await fs.mkdtemp(path.join(os.tmpdir(), "omp-rpc-open-session-"));
@@ -53,7 +53,7 @@ describe("openRpcSession", () => {
 		if (originalAgentDir) setAgentDir(originalAgentDir);
 		else {
 			setAgentDir(path.join(getConfigRootDir(), "agent"));
-			delete process.env.PI_CODING_AGENT_DIR;
+			delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
 		}
 		await fs.rm(root, { recursive: true, force: true });
 	});

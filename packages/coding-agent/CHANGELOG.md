@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Established the unreleased ArkenSec Agent Smith application identity and `agent-smith` command, with separate `.agent-smith` state and `AGENT_SMITH_*` overrides.
+- Stopped automatic adoption of foreign configuration, plugin registries, account stores and memory endpoints. Foreign discovery requires app-owned consent, including project sources and dashboard loads.
+- Disabled the inherited self-updater for this unreleased fork. Use the maintained local source-build and synthetic-smoke commands; no supported installer or VM-backed security boundary is claimed.
+
+### Fixed
+
+- Kept native crash logs, addon extraction and OAuth callback state in the Agent Smith namespace without legacy OMP recovery or state migration.
+
 ## [18.4.6] - 2026-10-01
 
 ### Added

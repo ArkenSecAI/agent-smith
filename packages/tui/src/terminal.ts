@@ -810,7 +810,7 @@ export class ProcessTerminal implements Terminal {
 	// chunking (#safeWrite). Live-detected by default; tests inject a fixed
 	// value so WSL env does not change behavior. See {@link ProcessTerminalOptions}.
 	readonly #conpty: boolean;
-	#writeLogPath = $env.PI_TUI_WRITE_LOG || "";
+	#writeLogPath = $env.AGENT_SMITH_TUI_WRITE_LOG || "";
 	#stdoutErrorCleanup?: () => void;
 	#stdoutErrorHandler = (err: Error) => {
 		this.#markTerminalDisconnected("stdout failed", err);

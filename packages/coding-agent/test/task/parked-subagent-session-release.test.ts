@@ -28,7 +28,7 @@ const MOCK_API_SOURCE = "test/parked-subagent-session-release";
 // it fires; collection is polled past that window.
 const COLLECT_DEADLINE_MS = 8_000;
 
-const ENV_KEYS = ["HOME", "PI_CODING_AGENT_DIR", "OMP_PROFILE", "PI_PROFILE"] as const;
+const ENV_KEYS = ["HOME", "AGENT_SMITH_CODING_AGENT_DIR", "AGENT_SMITH_PROFILE", "PI_PROFILE"] as const;
 let savedEnv: Record<string, string | undefined> = {};
 let root: string;
 
@@ -49,7 +49,7 @@ beforeEach(async () => {
 	await fs.mkdir(home, { recursive: true });
 	restoreEnvValue("HOME", home);
 	vi.spyOn(os, "homedir").mockReturnValue(home);
-	setAgentDir(path.join(home, ".omp", "agent"));
+	setAgentDir(path.join(home, ".agent-smith", "agent"));
 	AgentRegistry.resetGlobalForTests();
 	AgentLifecycleManager.resetGlobalForTests();
 	registerMockApi(MOCK_API_SOURCE);

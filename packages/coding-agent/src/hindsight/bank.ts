@@ -8,7 +8,7 @@
  *                              tag and recall filters on it but still surfaces
  *                              untagged ("global") memories alongside.
  *
- * The base bank id is `bankIdPrefix-bankId` (default `omp`). Per-project mode
+ * The base bank id is `bankIdPrefix-bankId` (default `agent-smith`). Per-project mode
  * appends `-<project>`; tagged mode leaves the bank untouched and uses tags.
  *
  * Bank existence is idempotent at module level — a banksSet keeps track of
@@ -22,11 +22,11 @@
 
 import * as path from "node:path";
 import * as vcs from "@oh-my-pi/pi-natives/vcs";
-import { logger } from "@oh-my-pi/pi-utils";
+import { APP_NAME, logger } from "@oh-my-pi/pi-utils";
 import type { HindsightApi } from "./client";
 import type { HindsightConfig } from "./config";
 
-const DEFAULT_BANK_NAME = "omp";
+const DEFAULT_BANK_NAME = APP_NAME;
 const PROJECT_TAG_PREFIX = "project:";
 const UNKNOWN_PROJECT = "unknown";
 const MISSION_SET_CAP = 10_000;

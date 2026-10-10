@@ -59,7 +59,7 @@ describe("nativeLibraryPathOverlay", () => {
 	it("appends the advertised dirs after an inherited LD_LIBRARY_PATH", () => {
 		expect(
 			nativeLibraryPathOverlay(
-				{ LD_LIBRARY_PATH: "/inherited", OMP_NATIVE_LIBRARY_PATH: "/store/gcc/lib" },
+				{ LD_LIBRARY_PATH: "/inherited", AGENT_SMITH_NATIVE_LIBRARY_PATH: "/store/gcc/lib" },
 				"linux",
 			),
 		).toEqual({ LD_LIBRARY_PATH: "/inherited:/store/gcc/lib" });
@@ -67,19 +67,19 @@ describe("nativeLibraryPathOverlay", () => {
 
 	it("uses the advertised dirs alone when nothing is inherited", () => {
 		expect(
-			nativeLibraryPathOverlay({ OMP_NATIVE_LIBRARY_PATH: "/store/gcc/lib:/store/libgcc/lib" }, "linux"),
+			nativeLibraryPathOverlay({ AGENT_SMITH_NATIVE_LIBRARY_PATH: "/store/gcc/lib:/store/libgcc/lib" }, "linux"),
 		).toEqual({ LD_LIBRARY_PATH: "/store/gcc/lib:/store/libgcc/lib" });
 	});
 
 	it("stays out of the env on non-Linux platforms", () => {
-		const env = { OMP_NATIVE_LIBRARY_PATH: "/store/gcc/lib" };
+		const env = { AGENT_SMITH_NATIVE_LIBRARY_PATH: "/store/gcc/lib" };
 		expect(nativeLibraryPathOverlay(env, "darwin")).toEqual({});
 		expect(nativeLibraryPathOverlay(env, "win32")).toEqual({});
 	});
 
 	it("stays out of the env on Linux when no dirs are advertised", () => {
 		expect(nativeLibraryPathOverlay({ LD_LIBRARY_PATH: "/inherited" }, "linux")).toEqual({});
-		expect(nativeLibraryPathOverlay({ OMP_NATIVE_LIBRARY_PATH: "" }, "linux")).toEqual({});
+		expect(nativeLibraryPathOverlay({ AGENT_SMITH_NATIVE_LIBRARY_PATH: "" }, "linux")).toEqual({});
 	});
 });
 

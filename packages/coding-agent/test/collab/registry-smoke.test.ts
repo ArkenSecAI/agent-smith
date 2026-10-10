@@ -136,10 +136,10 @@ describe("collab host registry (two-process smoke)", () => {
 			OMP_SMOKE_MARKER: marker,
 			OMP_SMOKE_INSTANCE_ID: instanceId,
 		};
-		delete env.PI_CONFIG_DIR;
+		delete env.AGENT_SMITH_CONFIG_DIR;
 		delete env.PI_PROFILE;
-		delete env.OMP_PROFILE;
-		delete env.PI_CODING_AGENT_DIR;
+		delete env.AGENT_SMITH_PROFILE;
+		delete env.AGENT_SMITH_CODING_AGENT_DIR;
 
 		const { child, stderr } = spawnHelper([], env);
 		const ready = await readUntil(child.stdout, "READY", READY_TIMEOUT_MS);
@@ -165,7 +165,7 @@ describe("collab host registry (two-process smoke)", () => {
 		const listed = await runCli(["list", "--json"]);
 		expect({ code: listed.code, stderr: listed.stderr }).toEqual({ code: 0, stderr: "" });
 		const listJson: CollabListJsonOutput = JSON.parse(listed.stdout);
-		const hosts = await listCollabHosts({ dir: path.join(home, ".omp", "run", "collab-hosts") });
+		const hosts = await listCollabHosts({ dir: path.join(home, ".agent-smith", "run", "collab-hosts") });
 		expect(listJson).toEqual({ version: COLLAB_REGISTRY_VERSION, hosts });
 		expect(listJson.hosts).toHaveLength(1);
 		expect(listJson.hosts[0]).toMatchObject({ instanceId, pid: child.pid });

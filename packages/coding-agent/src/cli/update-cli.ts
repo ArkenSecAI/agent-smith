@@ -2121,6 +2121,9 @@ export async function runUpdateCommand(opts: {
 	check: boolean;
 	channel?: UpdateChannel;
 }): Promise<void> {
+	if (VERSION.includes("unreleased")) {
+		throw new Error("ArkenSec Agent Smith is unreleased; updates require a reviewed source build.");
+	}
 	console.log(chalk.dim(`Current version: ${VERSION}`));
 	const persistedChannel = readPersistedChannel() ?? "stable";
 	const channel = opts.channel ?? persistedChannel;

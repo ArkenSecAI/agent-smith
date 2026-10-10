@@ -15,10 +15,10 @@ import type { BlobBrokerSavingsStatus } from "./savings";
 import type { DestinationRuntimeConfig } from "./uploader-runtime";
 
 /** Environment key carrying the control socket path the worker listens on. */
-export const BLOB_BROKER_SOCKET_ENV = "OMP_BLOB_BROKER_SOCKET";
+export const BLOB_BROKER_SOCKET_ENV = "AGENT_SMITH_BLOB_BROKER_SOCKET";
 
 /** Environment key carrying the JSON {@link BlobBrokerWorkerConfig}. */
-export const BLOB_BROKER_CONFIG_ENV = "OMP_BLOB_BROKER_CONFIG";
+export const BLOB_BROKER_CONFIG_ENV = "AGENT_SMITH_BLOB_BROKER_CONFIG";
 
 /** Stable broker daemon name for the shared blob broker. */
 export const BLOB_BROKER_DAEMON_NAME = "omp.blob.broker";

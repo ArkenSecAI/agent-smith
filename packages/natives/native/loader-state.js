@@ -56,12 +56,17 @@ function startupMarker(text) {
 	}
 }
 
-function getNativesDir() {
-	const xdgDataHome = process.env.XDG_DATA_HOME;
-	if (xdgDataHome && fs.existsSync(path.join(xdgDataHome, "omp"))) {
-		return path.join(xdgDataHome, "omp", "natives");
+/** Native cache is app-owned and profile-independent, including before CLI bootstrap. */
+export function getNativesDir() {
+	const xdgCacheHome = process.env.XDG_CACHE_HOME;
+	if (
+		(process.platform === "linux" || process.platform === "darwin") &&
+		xdgCacheHome &&
+		fs.existsSync(path.join(xdgCacheHome, "agent-smith"))
+	) {
+		return path.join(xdgCacheHome, "agent-smith", "natives");
 	}
-	return path.join(os.homedir(), ".omp", "natives");
+	return path.join(os.homedir(), process.env.AGENT_SMITH_CONFIG_DIR || ".agent-smith", "natives");
 }
 
 function resolveLeafPackageDir(platformTag) {
@@ -298,7 +303,7 @@ function runCommand(command, args) {
 }
 
 function getVariantOverride() {
-	const value = process.env.PI_NATIVE_VARIANT;
+	const value = process.env.AGENT_SMITH_NATIVE_VARIANT;
 	if (!value) return null;
 	if (value === "modern" || value === "baseline") return value;
 	return null;
@@ -828,17 +833,8 @@ function installNativeTokioRuntime(bindings) {
 function buildHelpMessage(ctx) {
 	if (ctx.isCompiledBinary) {
 		const expectedPaths = ctx.addonFilenames.map(filename => `  ${path.join(ctx.versionedDir, filename)}`).join("\n");
-		const downloadHints = ctx.addonFilenames
-			.map(filename => {
-				const downloadUrl = `https://github.com/can1357/oh-my-pi/releases/latest/download/${filename}`;
-				const targetPath = path.join(ctx.versionedDir, filename);
-				return `  curl -fsSL "${downloadUrl}" -o "${targetPath}"`;
-			})
-			.join("\n");
-		return (
-			`The compiled binary should extract one of:\n${expectedPaths}\n\n` +
-			`If missing, delete ${ctx.versionedDir} and re-run, or download manually:\n${downloadHints}`
-		);
+		return `The compiled binary should extract one of:\n${expectedPaths}\n\n` +
+			"Agent Smith is unreleased. Rebuild the native assets from the pinned source checkout.";
 	}
 	return (
 		"If installed via npm/bun, try reinstalling: bun install @oh-my-pi/pi-natives\n" +
@@ -866,8 +862,8 @@ export function initLoaderContext(overrides = {}) {
 	const versionedDir = path.join(nativesDir, packageVersion);
 	const userDataDir =
 		platform === "win32"
-			? path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"), "omp")
-			: path.join(os.homedir(), ".local", "bin");
+			? path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"), "agent-smith")
+			: path.join(os.homedir(), ".local", "share", "agent-smith", "bin");
 
 	const isCompiledBinary =
 		overrides.isCompiledBinary ??

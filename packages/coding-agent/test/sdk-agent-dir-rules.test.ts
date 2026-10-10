@@ -11,8 +11,8 @@ import { SessionManager } from "@oh-my-pi/pi-coding-agent/session/session-manage
 import { __resetDirsFromEnvForTests, setAgentDir, TempDir } from "@oh-my-pi/pi-utils";
 
 const originalEnv = {
-	PI_CODING_AGENT_DIR: process.env.PI_CODING_AGENT_DIR,
-	OMP_PROFILE: process.env.OMP_PROFILE,
+	AGENT_SMITH_CODING_AGENT_DIR: process.env.AGENT_SMITH_CODING_AGENT_DIR,
+	AGENT_SMITH_PROFILE: process.env.AGENT_SMITH_PROFILE,
 	PI_PROFILE: process.env.PI_PROFILE,
 };
 

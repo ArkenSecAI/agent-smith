@@ -62,18 +62,18 @@ function insertWorking(beam: BeamMemoryState, id: string, content: string): void
 	);
 }
 
-const previousPolyphonic = process.env.MNEMOPI_POLYPHONIC_RECALL;
+const previousPolyphonic = process.env.AGENT_SMITH_MEMORY_POLYPHONIC_RECALL;
 
 afterEach(() => {
-	if (previousPolyphonic === undefined) delete process.env.MNEMOPI_POLYPHONIC_RECALL;
-	else process.env.MNEMOPI_POLYPHONIC_RECALL = previousPolyphonic;
+	if (previousPolyphonic === undefined) delete process.env.AGENT_SMITH_MEMORY_POLYPHONIC_RECALL;
+	else process.env.AGENT_SMITH_MEMORY_POLYPHONIC_RECALL = previousPolyphonic;
 });
 
 describe("orchestrateRecall", () => {
 	it("delegates to the Beam linear recall surface when the polyphonic gate is off", async () => {
 		const beam = fakeBeam();
 		try {
-			process.env.MNEMOPI_POLYPHONIC_RECALL = "0";
+			process.env.AGENT_SMITH_MEMORY_POLYPHONIC_RECALL = "0";
 			const results = await orchestrateRecall(beam, "needle", 7);
 			expect(results).toEqual([{ id: "linear", content: "needle:7", score: 1 }]);
 			expect(beam.linearCalls).toBe(1);
@@ -86,7 +86,7 @@ describe("orchestrateRecall", () => {
 	it("delegates to enhanced recall when requested on the non-polyphonic path", async () => {
 		const beam = fakeBeam();
 		try {
-			delete process.env.MNEMOPI_POLYPHONIC_RECALL;
+			delete process.env.AGENT_SMITH_MEMORY_POLYPHONIC_RECALL;
 			const results = await orchestrateRecall(beam, "needle", 3, { enhanced: true });
 			expect(results).toEqual([{ id: "enhanced", content: "needle:3", score: 2 }]);
 			expect(beam.linearCalls).toBe(0);
@@ -107,7 +107,7 @@ describe("orchestrateRecall", () => {
 				[new Date().toISOString(), JSON.stringify(["Alice"])],
 			);
 			beam.caches.polyphonicEngine = engine;
-			process.env.MNEMOPI_POLYPHONIC_RECALL = "1";
+			process.env.AGENT_SMITH_MEMORY_POLYPHONIC_RECALL = "1";
 			const results = await orchestrateRecall(beam, "Alice", 5);
 			expect(beam.linearCalls).toBe(0);
 			expect(beam.enhancedCalls).toBe(0);
@@ -121,7 +121,7 @@ describe("orchestrateRecall", () => {
 	it("forceLinear bypasses the env gate for A/B callers", async () => {
 		const beam = fakeBeam();
 		try {
-			process.env.MNEMOPI_POLYPHONIC_RECALL = "1";
+			process.env.AGENT_SMITH_MEMORY_POLYPHONIC_RECALL = "1";
 			const results = await orchestrateRecall(beam, "needle", 2, { forceLinear: true });
 			expect(results[0]?.id).toBe("linear");
 			expect(beam.linearCalls).toBe(1);

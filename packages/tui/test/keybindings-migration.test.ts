@@ -237,16 +237,16 @@ describe("KeybindingsManager.create", () => {
 	});
 
 	it("merges default user keybindings when create uses the active profile with no arguments (#4867)", async () => {
-		const originalConfigDir = process.env.PI_CONFIG_DIR;
-		const originalAgentDirEnv = process.env.PI_CODING_AGENT_DIR;
-		const originalOmpProfile = process.env.OMP_PROFILE;
+		const originalConfigDir = process.env.AGENT_SMITH_CONFIG_DIR;
+		const originalAgentDirEnv = process.env.AGENT_SMITH_CODING_AGENT_DIR;
+		const originalOmpProfile = process.env.AGENT_SMITH_PROFILE;
 		const originalPiProfile = process.env.PI_PROFILE;
 		const configRootDir = await fs.mkdtemp(path.join(os.tmpdir(), "pi-keybindings-active-profile-"));
 
 		try {
-			process.env.PI_CONFIG_DIR = path.relative(os.homedir(), configRootDir);
-			restoreEnvValue("PI_CODING_AGENT_DIR", originalAgentDirEnv);
-			restoreEnvValue("OMP_PROFILE", originalOmpProfile);
+			process.env.AGENT_SMITH_CONFIG_DIR = path.relative(os.homedir(), configRootDir);
+			restoreEnvValue("AGENT_SMITH_CODING_AGENT_DIR", originalAgentDirEnv);
+			restoreEnvValue("AGENT_SMITH_PROFILE", originalOmpProfile);
 			restoreEnvValue("PI_PROFILE", originalPiProfile);
 			__resetDirsFromEnvForTests();
 
@@ -270,9 +270,9 @@ describe("KeybindingsManager.create", () => {
 			expect(manager.getKeys("app.session.fork")).toEqual(["alt+f"]);
 			expect(manager.getKeys("app.clipboard.copyLine")).toEqual(["alt+l"]);
 		} finally {
-			restoreEnvValue("PI_CONFIG_DIR", originalConfigDir);
-			restoreEnvValue("PI_CODING_AGENT_DIR", originalAgentDirEnv);
-			restoreEnvValue("OMP_PROFILE", originalOmpProfile);
+			restoreEnvValue("AGENT_SMITH_CONFIG_DIR", originalConfigDir);
+			restoreEnvValue("AGENT_SMITH_CODING_AGENT_DIR", originalAgentDirEnv);
+			restoreEnvValue("AGENT_SMITH_PROFILE", originalOmpProfile);
 			restoreEnvValue("PI_PROFILE", originalPiProfile);
 			__resetDirsFromEnvForTests();
 			await removeWithRetries(configRootDir);

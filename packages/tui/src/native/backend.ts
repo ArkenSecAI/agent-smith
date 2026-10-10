@@ -76,7 +76,7 @@ export interface NativeHost {
 export interface NativeBackendOptions {
 	/** Keep the reference document and recent frames for debugging. */
 	readonly mirror?: boolean;
-	/** Append every TSP message to this JSONL file. Defaults to `PI_TUI_TSP_RECORD`. */
+	/** Append every TSP message to this JSONL file. Defaults to `AGENT_SMITH_TUI_TSP_RECORD`. */
 	readonly recordPath?: string;
 	/** Log the `rows` fallback count per frame. Defaults to `PI_TUI_NATIVE_STATS=1`. */
 	readonly stats?: boolean;
@@ -251,7 +251,7 @@ export class NativeBackend {
 		this.#credits = TSP_DEFAULT_CREDITS;
 		this.#applyHello(hello);
 		this.#mirror = options.mirror === true;
-		this.#recordPath = options.recordPath ?? (Bun.env.PI_TUI_TSP_RECORD || undefined);
+		this.#recordPath = options.recordPath ?? (Bun.env.AGENT_SMITH_TUI_TSP_RECORD || undefined);
 		this.#stats = options.stats ?? Bun.env.PI_TUI_NATIVE_STATS === "1";
 		this.#scheduler = options.scheduler ?? DEFAULT_SCHEDULER;
 		this.#inline = this.#newSurface("inline");

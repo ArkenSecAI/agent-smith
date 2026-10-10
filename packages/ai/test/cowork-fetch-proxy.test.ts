@@ -6,7 +6,7 @@ import { coworkFetch } from "@oh-my-pi/pi-ai/providers/cowork-fetch";
  * `agent.createConnection` / `options.createConnection`. A CONNECT tunnel handed
  * to it is dropped and the request dials the provider directly, so a configured
  * proxy has to take the request off this transport entirely — otherwise every
- * `PI_PROXY` setting is a silent no-op for Anthropic inference.
+ * `AGENT_SMITH_PROXY` setting is a silent no-op for Anthropic inference.
  */
 describe("coworkFetch proxy handling", () => {
 	const nativeFetch = globalThis.fetch;

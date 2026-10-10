@@ -64,7 +64,7 @@ function spawnRpcChild(options: { root: string; sessionDir: string }) {
 				NO_COLOR: "1",
 				XDG_DATA_HOME: options.root,
 				XDG_CONFIG_HOME: options.root,
-				PI_CODING_AGENT_DIR: agentDir,
+				AGENT_SMITH_CODING_AGENT_DIR: agentDir,
 			},
 			stdin: "pipe",
 			stdout: fifo,

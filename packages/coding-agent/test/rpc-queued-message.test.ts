@@ -15,7 +15,7 @@ describe("RPC queued-message editing", () => {
 		client = new RpcClient({
 			command: [process.execPath, path.join(import.meta.dir, "fixtures", "queued-message-rpc-agent.ts")],
 			cwd: directory,
-			env: { PI_CODING_AGENT_DIR: directory, PI_NO_TITLE: "1" },
+			env: { AGENT_SMITH_CODING_AGENT_DIR: directory, PI_NO_TITLE: "1" },
 		});
 	});
 

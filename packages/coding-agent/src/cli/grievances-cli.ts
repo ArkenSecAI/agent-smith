@@ -242,7 +242,7 @@ export async function pushGrievances(options: PushGrievancesOptions): Promise<vo
 		if (result.skipped) {
 			console.log(
 				chalk.yellow(
-					"Push skipped — no endpoint configured. Set `dev.autoqaPush.endpoint` or `PI_AUTO_QA_PUSH_URL`.",
+					"Push skipped — no endpoint configured. Set `dev.autoqaPush.endpoint` or `AGENT_SMITH_AUTO_QA_PUSH_URL`.",
 				),
 			);
 			return;

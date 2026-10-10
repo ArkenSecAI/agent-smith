@@ -49,15 +49,15 @@ const DISABLE_ALL_BUILTIN_SKILLS = {
 
 // Every provider resolves user-level roots from `os.homedir()` (HOME on POSIX,
 // USERPROFILE on Windows) and the agent dir; point both at an empty temp home
-// so real `~/.omp/plugins`, `~/.claude/plugins`, and `~/.agents/skills`
+// so real `~/.agent-smith/plugins`, `~/.claude/plugins`, and `~/.agents/skills`
 // installs never leak into these tests. On POSIX, Bun fixes `os.homedir()` at
 // process start, so setting HOME alone is not enough; spy on it as well.
 const isolatedEnvKeys = [
 	"HOME",
 	"USERPROFILE",
 	"CLAUDE_CONFIG_DIR",
-	"PI_CODING_AGENT_DIR",
-	"OMP_PROFILE",
+	"AGENT_SMITH_CODING_AGENT_DIR",
+	"AGENT_SMITH_PROFILE",
 	"PI_PROFILE",
 ] as const;
 const originalEnv: Record<string, string | undefined> = Object.fromEntries(
@@ -77,7 +77,7 @@ beforeAll(async () => {
 	}
 	delete process.env.CLAUDE_CONFIG_DIR;
 	delete Bun.env.CLAUDE_CONFIG_DIR;
-	setAgentDir(path.join(isolatedHome, ".omp", "agent"));
+	setAgentDir(path.join(isolatedHome, ".agent-smith", "agent"));
 });
 
 beforeEach(() => {
@@ -218,7 +218,7 @@ describe("skills", () => {
 					enableClaudeProject: false,
 					enablePiUser: false,
 					enablePiProject: false,
-					// enableAgentsUser/enableAgentsProject left at their default-true value
+					enableAgentsUser: true,
 					cwd: tempCwd,
 				});
 				expect(skills.some(s => s.name === "user-agents-skill" && s.source === "agents:user")).toBe(true);
@@ -257,6 +257,7 @@ describe("skills", () => {
 						enableClaudeProject: false,
 						enablePiUser: false,
 						enablePiProject: false,
+						enableAgentsUser: true,
 						cwd: tempCwd,
 					});
 					const skill = skills.find(s => s.name === "wsl-host-skill");

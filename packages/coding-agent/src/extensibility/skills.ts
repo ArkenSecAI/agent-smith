@@ -292,11 +292,11 @@ export async function loadSkills(options: LoadSkillsOptions = {}): Promise<LoadS
 		enabled = true,
 		enableCodexUser = false,
 		enableClaudeUser = false,
-		enableClaudeProject = true,
+		enableClaudeProject = false,
 		enablePiUser = true,
 		enablePiProject = true,
-		enableAgentsUser = true,
-		enableAgentsProject = true,
+		enableAgentsUser = false,
+		enableAgentsProject = false,
 		customDirectories = [],
 		ignoredSkills = [],
 		includeSkills = [],
@@ -316,11 +316,11 @@ export async function loadSkills(options: LoadSkillsOptions = {}): Promise<LoadS
 		if (provider === MANAGED_SKILLS_PROVIDER_ID) return true;
 		if (provider === "codex" && level === "user") return enableCodexUser || isUserSourceEnabled("codex");
 		if (provider === "claude" && level === "user") return enableClaudeUser || isUserSourceEnabled("claude");
-		if (provider === "claude" && level === "project") return enableClaudeProject;
+		if (provider === "claude" && level === "project") return enableClaudeProject || isUserSourceEnabled("claude");
 		if (provider === "native" && level === "user") return enablePiUser;
 		if (provider === "native" && level === "project") return enablePiProject;
-		if (provider === "agents" && level === "user") return enableAgentsUser;
-		if (provider === "agents" && level === "project") return enableAgentsProject;
+		if (provider === "agents" && level === "user") return enableAgentsUser || isUserSourceEnabled("agents");
+		if (provider === "agents" && level === "project") return enableAgentsProject || isUserSourceEnabled("agents");
 		// User-scope claude-plugins skills carry the root's origin (#10743). omp's
 		// own installs (`omp` registry, `--plugin-dir`) are not the foreign
 		// ~/.claude/plugins tree, so the foreign opt-in gate applies only to
@@ -333,8 +333,13 @@ export async function loadSkills(options: LoadSkillsOptions = {}): Promise<LoadS
 	}
 
 	// Use capability API to load all skills
+	const optInProviders: string[] = [];
+	if (enableCodexUser) optInProviders.push("codex");
+	if (enableClaudeUser || enableClaudeProject) optInProviders.push("claude");
+	if (enableAgentsUser || enableAgentsProject) optInProviders.push("agents");
 	const result = await loadCapability<CapabilitySkill>(skillCapability.id, {
 		cwd,
+		optInProviders,
 		disabledExtensions,
 		extensionRoots,
 	});

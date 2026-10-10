@@ -97,10 +97,10 @@ describe("reconcileEmbeddingModel on store open", () => {
 		}
 	});
 
-	it("does not wipe when embeddings are disabled via the MNEMOPI_NO_EMBEDDINGS env", () => {
+	it("does not wipe when embeddings are disabled via the AGENT_SMITH_MEMORY_NO_EMBEDDINGS env", () => {
 		const { db } = seedDb(OLD_MODEL);
-		const previous = process.env.MNEMOPI_NO_EMBEDDINGS;
-		process.env.MNEMOPI_NO_EMBEDDINGS = "1";
+		const previous = process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS;
+		process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS = "1";
 		let memory: Mnemopi | undefined;
 		try {
 			// The model differs, but with embeddings disabled the rebuild would
@@ -114,9 +114,9 @@ describe("reconcileEmbeddingModel on store open", () => {
 			expect(ep.v).not.toBeNull();
 		} finally {
 			if (previous === undefined) {
-				delete process.env.MNEMOPI_NO_EMBEDDINGS;
+				delete process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS;
 			} else {
-				process.env.MNEMOPI_NO_EMBEDDINGS = previous;
+				process.env.AGENT_SMITH_MEMORY_NO_EMBEDDINGS = previous;
 			}
 			memory?.close();
 			db.close();

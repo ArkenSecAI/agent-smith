@@ -18,12 +18,12 @@ import {
 	type MnemopiLlmCompletion,
 } from "./runtime-options";
 
-const ENV_MODEL_REPO = process.env.MNEMOPI_LLM_REPO ?? "";
+const ENV_MODEL_REPO = process.env.AGENT_SMITH_MEMORY_LLM_REPO ?? "";
 export interface RemoteLlmOptions {
 	fetch?: FetchImpl;
 }
 
-const ENV_MODEL_FILE = process.env.MNEMOPI_LLM_FILE ?? "";
+const ENV_MODEL_FILE = process.env.AGENT_SMITH_MEMORY_LLM_FILE ?? "";
 export const DEFAULT_MODEL_REPO =
 	ENV_MODEL_REPO !== "" && ENV_MODEL_FILE !== "" ? ENV_MODEL_REPO : "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF";
 export const DEFAULT_MODEL_FILE =
@@ -74,7 +74,7 @@ function llmEnabled(): boolean {
 	if (activeCustomCompletion() !== undefined || activePiAiModel() !== undefined) {
 		return true;
 	}
-	return envBool("MNEMOPI_LLM_ENABLED", true);
+	return envBool("AGENT_SMITH_MEMORY_LLM_ENABLED", true);
 }
 
 function llmMaxTokens(): number {
@@ -82,11 +82,11 @@ function llmMaxTokens(): number {
 	if (active?.maxTokens !== undefined) {
 		return active.maxTokens;
 	}
-	return envInt("MNEMOPI_LLM_MAX_TOKENS", 2048);
+	return envInt("AGENT_SMITH_MEMORY_LLM_MAX_TOKENS", 2048);
 }
 
 function llmContextTokens(): number {
-	return envInt("MNEMOPI_LLM_N_CTX", 2048);
+	return envInt("AGENT_SMITH_MEMORY_LLM_N_CTX", 2048);
 }
 
 function hostLlmEnabled(): boolean {
@@ -97,11 +97,11 @@ function hostLlmEnabled(): boolean {
 	if (active?.baseUrl !== undefined || (typeof active?.model === "string" && active.model !== "")) {
 		return false;
 	}
-	return envBool("MNEMOPI_HOST_LLM_ENABLED", false);
+	return envBool("AGENT_SMITH_MEMORY_HOST_LLM_ENABLED", false);
 }
 
 function hostLlmContextTokens(): number {
-	return envInt("MNEMOPI_HOST_LLM_N_CTX", 32000);
+	return envInt("AGENT_SMITH_MEMORY_HOST_LLM_N_CTX", 32000);
 }
 
 function llmBaseUrl(): string {
@@ -109,7 +109,7 @@ function llmBaseUrl(): string {
 	if (active?.baseUrl !== undefined) {
 		return stripTrailingSlash(active.baseUrl);
 	}
-	return stripTrailingSlash(env("MNEMOPI_LLM_BASE_URL"));
+	return stripTrailingSlash(env("AGENT_SMITH_MEMORY_LLM_BASE_URL"));
 }
 
 function llmModelName(): string {
@@ -117,7 +117,7 @@ function llmModelName(): string {
 	if (typeof model === "string") {
 		return model;
 	}
-	return env("MNEMOPI_LLM_MODEL") || "local";
+	return env("AGENT_SMITH_MEMORY_LLM_MODEL") || "local";
 }
 
 function llmApiKey(): ApiKey {
@@ -125,11 +125,11 @@ function llmApiKey(): ApiKey {
 	if (active?.apiKey !== undefined) {
 		return active.apiKey;
 	}
-	return env("MNEMOPI_LLM_API_KEY");
+	return env("AGENT_SMITH_MEMORY_LLM_API_KEY");
 }
 
 function sleepPrompt(): string {
-	return env("MNEMOPI_SLEEP_PROMPT").trim();
+	return env("AGENT_SMITH_MEMORY_SLEEP_PROMPT").trim();
 }
 
 function memoryLines(memories: readonly string[]): string {
@@ -248,8 +248,8 @@ async function tryHostLlm(prompt: string, maxTokens: number, temperature: number
 		maxTokens,
 		temperature,
 		timeout: 15,
-		provider: env("MNEMOPI_HOST_LLM_PROVIDER").trim() || null,
-		model: env("MNEMOPI_HOST_LLM_MODEL").trim() || null,
+		provider: env("AGENT_SMITH_MEMORY_HOST_LLM_PROVIDER").trim() || null,
+		model: env("AGENT_SMITH_MEMORY_HOST_LLM_MODEL").trim() || null,
 	});
 	const text = typeof raw === "string" ? raw.trim() : "";
 	return [true, text === "" ? null : text];
@@ -418,7 +418,7 @@ async function summarizeChunk(
 		return null;
 	}
 
-	if (llmEnabled() && llmBaseUrl() !== "" && !envBool("MNEMOPI_FORCE_LOCAL", false)) {
+	if (llmEnabled() && llmBaseUrl() !== "" && !envBool("AGENT_SMITH_MEMORY_FORCE_LOCAL", false)) {
 		const raw = await callRemoteLlm(prompt, 0.3, options);
 		if (raw !== null) {
 			const cleaned = cleanOutput(raw);
@@ -475,7 +475,7 @@ export async function complete(
 	if (attempted) {
 		return hostText;
 	}
-	if (llmEnabled() && llmBaseUrl() !== "" && !envBool("MNEMOPI_FORCE_LOCAL", false)) {
+	if (llmEnabled() && llmBaseUrl() !== "" && !envBool("AGENT_SMITH_MEMORY_FORCE_LOCAL", false)) {
 		const remote = await callRemoteLlm(prompt, temperature, options);
 		return remote === null ? null : cleanOutput(remote) || null;
 	}

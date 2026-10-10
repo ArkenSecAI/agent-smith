@@ -1,15 +1,12 @@
 /**
- * Perplexity login via legacy macOS session borrowing, host-managed browser SSO,
+ * Perplexity login via host-managed browser SSO,
  * or HTTP email OTP (including authenticator challenges).
  */
-import * as os from "node:os";
-import { $env } from "@oh-my-pi/pi-utils";
-import { $, Cookie, CookieMap } from "bun";
+import { Cookie, CookieMap } from "bun";
 import * as AIError from "../../error";
 import type { OAuthController, OAuthCredentials } from "./types";
 
 const API_VERSION = "2.18";
-const NATIVE_APP_BUNDLE = "ai.perplexity.mac";
 const APP_USER_AGENT = "Perplexity/641 CFNetwork/1568 Darwin/25.2.0";
 
 function serializeCookies(cookies: CookieMap): string {
@@ -65,25 +62,6 @@ function jwtToCredentials(jwt: string, email?: string): OAuthCredentials {
 		expires: getJwtExpiry(jwt),
 		email,
 	};
-}
-
-// ---------------------------------------------------------------------------
-// Desktop app extraction
-// ---------------------------------------------------------------------------
-
-/** Read the legacy ai.perplexity.mac app's session; newer Mac apps use a restricted Keychain. */
-async function extractFromNativeApp(): Promise<string | null> {
-	if (os.platform() !== "darwin") return null;
-
-	try {
-		const result = await $`defaults read ${NATIVE_APP_BUNDLE} authToken`.quiet().nothrow();
-		if (result.exitCode !== 0) return null;
-		const token = result.text().trim();
-		if (!token || token === "(null)") return null;
-		return token;
-	} catch {
-		return null;
-	}
 }
 
 // ---------------------------------------------------------------------------
@@ -333,20 +311,10 @@ async function browserSsoLogin(ctrl: OAuthController): Promise<OAuthCredentials>
 // Public API
 // ---------------------------------------------------------------------------
 
-/** Prefer legacy app borrowing, then offer browser SSO when the host supports it. */
+/** Offer a deliberate browser or email login without borrowing desktop credentials. */
 export async function loginPerplexity(ctrl: OAuthController): Promise<OAuthCredentials> {
 	if (!ctrl.onPrompt) throw new AIError.OnPromptRequiredError("Perplexity");
 	if (ctrl.signal?.aborted) throw new AIError.LoginCancelledError();
-
-	if (!$env.PI_AUTH_NO_BORROW) {
-		ctrl.onProgress?.("Checking for Perplexity desktop app...");
-		const nativeJwt = await extractFromNativeApp();
-		if (ctrl.signal?.aborted) throw new AIError.LoginCancelledError();
-		if (nativeJwt) {
-			ctrl.onProgress?.("Found Perplexity JWT from native app");
-			return jwtToCredentials(nativeJwt);
-		}
-	}
 
 	if (ctrl.onBrowserSession) {
 		const method = (

@@ -18,19 +18,19 @@ import {
 } from "@oh-my-pi/pi-utils";
 
 const originalProjectDir = getProjectDir();
-const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+const originalAgentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 const fallbackAgentDir = path.join(getConfigRootDir(), "agent");
 
 function restoreAgentDir(): void {
 	if (originalAgentDir) {
 		setAgentDir(originalAgentDir);
-		process.env.PI_CODING_AGENT_DIR = originalAgentDir;
-		Bun.env.PI_CODING_AGENT_DIR = originalAgentDir;
+		process.env.AGENT_SMITH_CODING_AGENT_DIR = originalAgentDir;
+		Bun.env.AGENT_SMITH_CODING_AGENT_DIR = originalAgentDir;
 		return;
 	}
 	setAgentDir(fallbackAgentDir);
-	delete process.env.PI_CODING_AGENT_DIR;
-	delete Bun.env.PI_CODING_AGENT_DIR;
+	delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
+	delete Bun.env.AGENT_SMITH_CODING_AGENT_DIR;
 }
 
 async function writeConfig(

@@ -255,7 +255,7 @@ async function sendCoworkRequest(
  * and Bun's shim ignores both `agent.createConnection` and
  * `options.createConnection`: a CONNECT tunnel handed to it is silently
  * discarded and the request dials the provider directly. That turned every
- * `PI_PROXY` / `HTTPS_PROXY` setting into a no-op for Anthropic inference —
+ * `AGENT_SMITH_PROXY` / `HTTPS_PROXY` setting into a no-op for Anthropic inference —
  * the proxy looked configured, the traffic left on the default route, and a
  * region-blocked egress answered `403 Request not allowed`. Bun's own `fetch`
  * honors `init.proxy`, so a configured proxy wins over the Cowork profile.

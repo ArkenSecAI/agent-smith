@@ -1,0 +1,22 @@
+Modification notice for qwen3.8.tokenizer.json
+=============================================
+
+Copyright 2026 Alibaba Cloud
+Licensed under the Apache License, Version 2.0; see ../../data/LICENSE.qwen3.8.
+
+This file was changed in the OMP cache: JSON whitespace was compacted and
+model.vocab object keys were reordered. The complete parsed JSON can reconstruct
+the publisher's exact file by sorting model.vocab by token ID and serializing
+with Python json.dumps(ensure_ascii=False, indent=2), without a final newline.
+That reconstructed file matches the SHA-256 published for tokenizer.json at:
+https://huggingface.co/Qwen/Qwen3.8-27B/blob/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0/tokenizer.json
+
+Publisher SHA-256:
+0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3
+Retained cache SHA-256:
+ae50d65939a34a089eaf1e541c15c8a7d866079a5fe9a1d35454e0aa88577753
+
+The modification is present in OMP v18.4.8, commit
+717f97f4d22b3d65c4a4eef6a744255d46f4d1a6. This notice was added on 2026-10-10;
+the cache was not modified during that notice remediation. Keep this notice
+attached to the cached JSON when redistributing it.

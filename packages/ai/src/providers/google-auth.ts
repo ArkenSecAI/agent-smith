@@ -5,16 +5,13 @@
  * Sources, in priority order:
  *   1. `GOOGLE_APPLICATION_CREDENTIALS` env → file with `type: "service_account"` (RS256 JWT exchange)
  *     or `type: "authorized_user"` (refresh-token exchange).
- *   2. `~/.config/gcloud/application_default_credentials.json` (user ADC, same authorized_user flow).
- *   3. GCE / Cloud Run metadata server (`metadata.google.internal`).
+ *   2. GCE / Cloud Run metadata, explicitly enabled with AGENT_SMITH_GOOGLE_METADATA_AUTH=1.
  *
  * Tokens are cached per source key and refreshed `GOOGLE_VERTEX_REFRESH_SKEW_MS` before expiry
  * (default 60s). Concurrent callers waiting on a refresh share the same in-flight promise.
  */
 
 import { Buffer } from "node:buffer";
-import * as os from "node:os";
-import * as path from "node:path";
 import { $envpos, isEnoent, logger } from "@oh-my-pi/pi-utils";
 import * as AIError from "../error";
 import type { FetchImpl } from "../types";
@@ -66,10 +63,6 @@ function getRefreshSkewMs(): number {
 	return $envpos("GOOGLE_VERTEX_REFRESH_SKEW_MS", 60_000);
 }
 
-function userAdcPath(): string {
-	return path.join(os.homedir(), ".config", "gcloud", "application_default_credentials.json");
-}
-
 async function readJsonFile<T>(filePath: string): Promise<T | undefined> {
 	try {
 		return (await Bun.file(filePath).json()) as T;
@@ -88,9 +81,6 @@ async function loadAdcCredentials(): Promise<{ source: string; creds: AdcFileCre
 		}
 		return { source: `gac:${gacPath}`, creds };
 	}
-	const userPath = userAdcPath();
-	const creds = await readJsonFile<AdcFileCredentials>(userPath);
-	if (creds) return { source: `user:${userPath}`, creds };
 	return undefined;
 }
 
@@ -261,11 +251,12 @@ async function resolveAccessTokenUncached(
 		}
 		return { source: adc.source, token };
 	}
-	const metadata = await fetchMetadataToken(signal, fetchImpl);
+	const metadata =
+		Bun.env.AGENT_SMITH_GOOGLE_METADATA_AUTH === "1" ? await fetchMetadataToken(signal, fetchImpl) : undefined;
 	if (metadata) return { source: "metadata", token: metadata };
 	throw new AIError.MissingApiKeyError(
 		undefined,
-		"Vertex AI requires Application Default Credentials. Set GOOGLE_APPLICATION_CREDENTIALS, run `gcloud auth application-default login`, or run on a GCE/Cloud Run instance with a service account.",
+		"Vertex AI requires Application Default Credentials. Set GOOGLE_APPLICATION_CREDENTIALS to a deliberately selected file, or opt in to instance credentials with AGENT_SMITH_GOOGLE_METADATA_AUTH=1.",
 	);
 }
 

@@ -9,7 +9,7 @@ import type { SimpleStreamOptions } from "@oh-my-pi/pi-ai";
 import { CacheWarmer, getPromptCacheTtlMs } from "../src/session/cache-warmer";
 
 const originalAgentDir = getAgentDir();
-const originalAgentDirEnv = process.env.PI_CODING_AGENT_DIR;
+const originalAgentDirEnv = process.env.AGENT_SMITH_CODING_AGENT_DIR;
 
 let tempDir: TempDir;
 let authStorage: AuthStorage;
@@ -26,8 +26,8 @@ describe("ModelRegistry default custom models config", () => {
 	afterEach(async () => {
 		authStorage.close();
 		setAgentDir(originalAgentDir);
-		if (originalAgentDirEnv === undefined) delete process.env.PI_CODING_AGENT_DIR;
-		else process.env.PI_CODING_AGENT_DIR = originalAgentDirEnv;
+		if (originalAgentDirEnv === undefined) delete process.env.AGENT_SMITH_CODING_AGENT_DIR;
+		else process.env.AGENT_SMITH_CODING_AGENT_DIR = originalAgentDirEnv;
 		await tempDir.remove().catch(() => {});
 	});
 

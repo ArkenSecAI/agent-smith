@@ -204,20 +204,20 @@ export function embeddingsDisabled(): boolean {
 	if (active?.disabled !== undefined) {
 		return active.disabled;
 	}
-	return $flag("MNEMOPI_NO_EMBEDDINGS");
+	return $flag("AGENT_SMITH_MEMORY_NO_EMBEDDINGS");
 }
 
 /**
  * Resolved per-input character cap for {@link embed}.
  *
  * Reads (in order): the active runtime scope's `embeddings.maxInputChars`, then
- * `MNEMOPI_EMBEDDING_MAX_INPUT_CHARS`, then the bundled `8192` default. `0`
+ * `AGENT_SMITH_MEMORY_EMBEDDING_MAX_INPUT_CHARS`, then the bundled `8192` default. `0`
  * disables the cap entirely.
  */
 function effectiveMaxInputChars(): number {
 	const override = activeEmbeddingOptions()?.maxInputChars;
 	if (override !== undefined) return Math.max(0, Math.trunc(override));
-	const envValue = Number.parseInt($env.MNEMOPI_EMBEDDING_MAX_INPUT_CHARS ?? "", 10);
+	const envValue = Number.parseInt($env.AGENT_SMITH_MEMORY_EMBEDDING_MAX_INPUT_CHARS ?? "", 10);
 	if (Number.isFinite(envValue) && envValue >= 0) return envValue;
 	return 8192;
 }
@@ -285,7 +285,7 @@ function embeddingApiKey(): ApiKey {
 	if (active?.apiKey !== undefined) {
 		return active.apiKey;
 	}
-	return $env.MNEMOPI_EMBEDDING_API_KEY || $env.OPENROUTER_API_KEY || $env.OPENAI_API_KEY || "";
+	return $env.AGENT_SMITH_MEMORY_EMBEDDING_API_KEY || $env.OPENROUTER_API_KEY || $env.OPENAI_API_KEY || "";
 }
 
 /** A resolver always counts as configured; a static key only when non-empty. */
@@ -298,7 +298,7 @@ function embeddingBaseUrl(): string {
 	if (active?.apiUrl !== undefined) {
 		return active.apiUrl;
 	}
-	return $env.MNEMOPI_EMBEDDING_API_URL || $env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1";
+	return $env.AGENT_SMITH_MEMORY_EMBEDDING_API_URL || $env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1";
 }
 
 function defaultModel(): string {
@@ -306,14 +306,14 @@ function defaultModel(): string {
 	if (active?.model !== undefined) {
 		return active.model;
 	}
-	return $env.MNEMOPI_EMBEDDING_MODEL || "BAAI/bge-small-en-v1.5";
+	return $env.AGENT_SMITH_MEMORY_EMBEDDING_MODEL || "BAAI/bge-small-en-v1.5";
 }
 
 /**
  * Resolve the embedding model name for the currently active runtime scope.
  *
  * Reads (in order): the active provider's `model` from `withMnemopiRuntimeOptions`,
- * the `MNEMOPI_EMBEDDING_MODEL` env var, then the bundled fastembed default. Stored
+ * the `AGENT_SMITH_MEMORY_EMBEDDING_MODEL` env var, then the bundled fastembed default. Stored
  * alongside each row in `memory_embeddings.model` so migrations can re-embed when
  * the active model changes.
  */
@@ -330,11 +330,11 @@ export function isApiModel(modelName: string): boolean {
 		return true;
 	}
 	const active = activeEmbeddingOptions();
-	const baseUrl = active?.apiUrl ?? ($env.MNEMOPI_EMBEDDING_API_URL || $env.OPENROUTER_BASE_URL);
+	const baseUrl = active?.apiUrl ?? ($env.AGENT_SMITH_MEMORY_EMBEDDING_API_URL || $env.OPENROUTER_BASE_URL);
 	if (baseUrl !== undefined && baseUrl !== "" && !hostMatchesUrl(baseUrl, "openrouter")) {
 		return true;
 	}
-	return $flag("MNEMOPI_EMBEDDINGS_VIA_API");
+	return $flag("AGENT_SMITH_MEMORY_EMBEDDINGS_VIA_API");
 }
 
 const MODEL_DIMS: Record<string, number> = {
@@ -357,7 +357,7 @@ const MODEL_DIMS: Record<string, number> = {
 	"jina-embeddings-v5-omni-small": 1024,
 };
 export function embeddingDimFor(modelName: string): number {
-	const override = Number.parseInt($env.MNEMOPI_EMBEDDING_DIM ?? "", 10);
+	const override = Number.parseInt($env.AGENT_SMITH_MEMORY_EMBEDDING_DIM ?? "", 10);
 	if (Number.isFinite(override)) {
 		return override;
 	}
@@ -531,7 +531,7 @@ export async function available(): Promise<boolean> {
 		return providerAvailable(providerOverride);
 	}
 	if (isApiModel(defaultModel())) {
-		const baseUrl = active?.apiUrl ?? ($env.MNEMOPI_EMBEDDING_API_URL || $env.OPENROUTER_BASE_URL);
+		const baseUrl = active?.apiUrl ?? ($env.AGENT_SMITH_MEMORY_EMBEDDING_API_URL || $env.OPENROUTER_BASE_URL);
 		if (baseUrl !== undefined && baseUrl !== "" && !hostMatchesUrl(baseUrl, "openrouter")) {
 			return true;
 		}

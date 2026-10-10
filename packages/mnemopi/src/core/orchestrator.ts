@@ -36,7 +36,7 @@ function toLinearRecallOptions(options: OrchestrateRecallOptions): RecallOptions
 
 /**
  * Pick the recall path for one query. Polyphonic recall runs when forced or when
- * the gate is on for this beam (`MNEMOPI_POLYPHONIC_RECALL`, then the beam's
+ * the gate is on for this beam (`AGENT_SMITH_MEMORY_POLYPHONIC_RECALL`, then the beam's
  * `polyphonicRecall` config, then the process-wide default); otherwise the beam's
  * linear `recall` / `recallEnhanced` surface answers.
  */

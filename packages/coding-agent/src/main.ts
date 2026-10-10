@@ -17,6 +17,7 @@ import {
 	normalizePathForComparison,
 	setProjectDir,
 	VERSION,
+	VERSION_LABEL,
 } from "@oh-my-pi/pi-utils/dirs";
 import { $env, isBunTestRuntime, setInteractiveHost } from "@oh-my-pi/pi-utils/env";
 import * as logger from "@oh-my-pi/pi-utils/logger";
@@ -224,7 +225,7 @@ export function writeStartupNotice(parsedArgs: Pick<Args, "mode">, text: string)
 }
 
 async function checkForNewVersion(currentVersion: string): Promise<string | undefined> {
-	if (!cfgStartupCheckUpdate.get(settings)) {
+	if (VERSION.includes("unreleased") || !cfgStartupCheckUpdate.get(settings)) {
 		return;
 	}
 	try {
@@ -1691,7 +1692,7 @@ export async function runRootCommand(
 		const notifs: (InteractiveModeNotify | null)[] = [];
 
 		if (parsedArgs.version) {
-			writeStartupNotice(parsedArgs, `${VERSION}\n`);
+			writeStartupNotice(parsedArgs, `${VERSION_LABEL}\n`);
 			process.exit(0);
 		}
 
@@ -1792,7 +1793,7 @@ export async function runRootCommand(
 			stopPendingStartupComposer();
 		}
 		// Account routing must use the effective settings, including `--config` and
-		// `PI_CONFIG_FILES` overlays, rather than independently re-reading only the
+		// `AGENT_SMITH_CONFIG_FILES` overlays, rather than independently re-reading only the
 		// main config file during auth discovery.
 		const settingsPromise = deps.settings
 			? Promise.resolve(deps.settings)
@@ -1852,9 +1853,9 @@ export async function runRootCommand(
 		logger.time("initializeWithSettings", initializeWithSettings, settingsInstance);
 
 		// Apply model role overrides from CLI args or env vars (ephemeral, not persisted)
-		const smolModel = parsedArgs.smol ?? $env.PI_SMOL_MODEL;
-		const slowModel = parsedArgs.slow ?? $env.PI_SLOW_MODEL;
-		const planModel = parsedArgs.plan ?? $env.PI_PLAN_MODEL;
+		const smolModel = parsedArgs.smol ?? $env.AGENT_SMITH_SMOL_MODEL;
+		const slowModel = parsedArgs.slow ?? $env.AGENT_SMITH_SLOW_MODEL;
+		const planModel = parsedArgs.plan ?? $env.AGENT_SMITH_PLAN_MODEL;
 		if (smolModel || slowModel || planModel) {
 			settingsInstance.overrideModelRoles({
 				smol: smolModel,
@@ -2505,7 +2506,7 @@ export async function runRootCommand(
 					logger.endTiming();
 					await runInteractiveMode(
 						session,
-						VERSION,
+						VERSION_LABEL,
 						startupChangelog,
 						notifs,
 						versionCheckPromise,

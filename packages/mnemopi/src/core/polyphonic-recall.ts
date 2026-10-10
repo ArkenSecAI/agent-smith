@@ -141,7 +141,7 @@ export const GRAPH_VOICE_MAX_RESULTS = 64;
 const GRAPH_VOICE_MIN_EDGE_WEIGHT = 0.3;
 
 /**
- * Polyphonic recall gate: `MNEMOPI_POLYPHONIC_RECALL` wins when set, then the
+ * Polyphonic recall gate: `AGENT_SMITH_MEMORY_POLYPHONIC_RECALL` wins when set, then the
  * per-instance `configured` flag, then the process-wide default.
  */
 export function polyphonicRecallIsEnabled(env: Env = process.env, configured?: boolean): boolean {
@@ -320,7 +320,7 @@ export class PolyphonicRecallEngine {
 
 	/** The standard recall ranking for the same query, fused as one more voice. */
 	hybridVoice(baseline: readonly RecallResult[], options: PolyphonicCallOptions = {}): VoiceRecallResult[] {
-		if (envDisabled("MNEMOPI_VOICE_HYBRID")) return [];
+		if (envDisabled("AGENT_SMITH_MEMORY_VOICE_HYBRID")) return [];
 		const results: VoiceRecallResult[] = [];
 		const seen = new Set<string>();
 		for (const result of baseline) {
@@ -342,7 +342,7 @@ export class PolyphonicRecallEngine {
 		queryEmbedding: readonly number[] | Float32Array | null,
 		options: PolyphonicCallOptions = {},
 	): VoiceRecallResult[] {
-		if (envDisabled("MNEMOPI_VOICE_VECTOR") || queryEmbedding === null) return [];
+		if (envDisabled("AGENT_SMITH_MEMORY_VOICE_VECTOR") || queryEmbedding === null) return [];
 		const queryUnit = normalizeVector(queryEmbedding);
 		if (queryUnit === null) return [];
 		const now = new Date().toISOString();
@@ -408,7 +408,7 @@ export class PolyphonicRecallEngine {
 	 * same bounded work as sparse ones.
 	 */
 	graphVoice(query: string): VoiceRecallResult[] {
-		if (envDisabled("MNEMOPI_VOICE_GRAPH")) return [];
+		if (envDisabled("AGENT_SMITH_MEMORY_VOICE_GRAPH")) return [];
 		const seeds = new Map<string, VoiceRecallResult>();
 		const addSeed = (hit: VoiceRecallResult): void => {
 			const existing = seeds.get(hit.memoryId);
@@ -468,7 +468,7 @@ export class PolyphonicRecallEngine {
 		return results;
 	}
 	factVoice(query: string): VoiceRecallResult[] {
-		if (envDisabled("MNEMOPI_VOICE_FACT")) return [];
+		if (envDisabled("AGENT_SMITH_MEMORY_VOICE_FACT")) return [];
 		const byId = new Map<string, VoiceRecallResult>();
 		for (const fact of this.consolidator.getConsolidatedFactsBySubjects(factSubjectCandidates(query), 0.5)) {
 			for (const source of fact.sources) {
@@ -493,7 +493,7 @@ export class PolyphonicRecallEngine {
 		return [...byId.values()].sort((a, b) => b.score - a.score || a.memoryId.localeCompare(b.memoryId));
 	}
 	temporalVoice(query: string, options: PolyphonicCallOptions = {}): VoiceRecallResult[] {
-		if (envDisabled("MNEMOPI_VOICE_TEMPORAL") || !looksTemporal(query)) return [];
+		if (envDisabled("AGENT_SMITH_MEMORY_VOICE_TEMPORAL") || !looksTemporal(query)) return [];
 		const anchor = anchorTime(options.queryTime);
 		const anchorMs = anchor ?? Date.now();
 		const windowStart = new Date(anchorMs - TEMPORAL_WINDOW_MS).toISOString();

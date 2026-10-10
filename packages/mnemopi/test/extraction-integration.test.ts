@@ -26,8 +26,8 @@ afterEach(() => {
 
 describe("extraction integration", () => {
 	it("uses a fake OpenAI-compatible remote endpoint for extractFacts", async () => {
-		process.env.MNEMOPI_LLM_ENABLED = "true";
-		process.env.MNEMOPI_LLM_BASE_URL = "http://fake-remote/v1";
+		process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = "true";
+		process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL = "http://fake-remote/v1";
 		let payloadJson = "";
 		const fetchMock: FetchImpl = async (_input, init) => {
 			payloadJson = String(init?.body);

@@ -95,8 +95,8 @@ describe("remember(extract) wires the LLM fact extractor", () => {
 	});
 
 	it("uses a runtime-configured remote LLM in background extraction", async () => {
-		const previousEnabled = process.env.MNEMOPI_LLM_ENABLED;
-		const previousBaseUrl = process.env.MNEMOPI_LLM_BASE_URL;
+		const previousEnabled = process.env.AGENT_SMITH_MEMORY_LLM_ENABLED;
+		const previousBaseUrl = process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL;
 		let requestedUrl = "";
 		let requestedBody = "";
 		const fetchMock: typeof fetch = Object.assign(
@@ -116,8 +116,8 @@ describe("remember(extract) wires the LLM fact extractor", () => {
 		);
 		const fetchSpy = spyOn(globalThis, "fetch").mockImplementation(fetchMock);
 		try {
-			process.env.MNEMOPI_LLM_ENABLED = "true";
-			delete process.env.MNEMOPI_LLM_BASE_URL;
+			process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = "true";
+			delete process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL;
 			const memory = new Mnemopi({
 				sessionId: "extract-remote-runtime",
 				dbPath: ":memory:",
@@ -141,10 +141,10 @@ describe("remember(extract) wires the LLM fact extractor", () => {
 			).toBe(true);
 		} finally {
 			fetchSpy.mockRestore();
-			if (previousEnabled === undefined) delete process.env.MNEMOPI_LLM_ENABLED;
-			else process.env.MNEMOPI_LLM_ENABLED = previousEnabled;
-			if (previousBaseUrl === undefined) delete process.env.MNEMOPI_LLM_BASE_URL;
-			else process.env.MNEMOPI_LLM_BASE_URL = previousBaseUrl;
+			if (previousEnabled === undefined) delete process.env.AGENT_SMITH_MEMORY_LLM_ENABLED;
+			else process.env.AGENT_SMITH_MEMORY_LLM_ENABLED = previousEnabled;
+			if (previousBaseUrl === undefined) delete process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL;
+			else process.env.AGENT_SMITH_MEMORY_LLM_BASE_URL = previousBaseUrl;
 		}
 	});
 

@@ -99,7 +99,7 @@ function isReadonlyMap(
 }
 
 export function getVecType(env: NodeJS.ProcessEnv = process.env): VecType {
-	const value = (env.MNEMOPI_VEC_TYPE ?? "int8").trim().toLowerCase();
+	const value = (env.AGENT_SMITH_MEMORY_VEC_TYPE ?? "int8").trim().toLowerCase();
 	if (value === "float32" || value === "int8" || value === "bit") {
 		return value;
 	}
