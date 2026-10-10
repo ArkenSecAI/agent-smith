@@ -34,8 +34,9 @@ deepseek-v3.tokenizer.json, deepseek-v4.tokenizer.json:
 
 glm-5.tokenizer.json:
   Full JSON content matches pinned zai-org/GLM-5 (Z.ai), except formatting/
-  object-key order. The model card declares license: mit, but the snapshot
-  supplies no complete component copyright/license notice. No grant is invented.
+  object-key order. ../../data/LICENSE.glm5 retains the publisher's verbatim
+  license: mit declaration and standard MIT permission/warranty terms.
+  The publisher snapshot supplied no copyright line; no holder/year is invented.
 
 ctok_v3.bin, ctok_v4_7.bin:
   Generated ctok vocabulary data; preserve ../../data/LICENSE.ctok unchanged.

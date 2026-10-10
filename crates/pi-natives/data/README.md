@@ -30,7 +30,7 @@ they were inspected, not run or independently validated by regenerating outputs.
 | `tokenization_kimi.py` | Retained Python source; its split expression is recorded in `families.json`. It imports K3 support (`encoding_k3`); `pack-kimi.ts` does not read it. | Exact bytes match the same K3 snapshot. K3 notice retained; the cited Xenova fragment's separate grant remains unestablished. |
 | `deepseek-v4.tokenizer.json` | `deepseek3.bin.zst`; `pack-deepseek.ts` decodes 128000 byte-alphabet entries, empties sentinel ranks 0–2, excludes 1283 added tokens, then UTOK1 and zstd -19. | Full JSON content matches pinned **DeepSeek-V4-Pro**, ignoring object-key order/formatting only. [DeepSeek MIT](LICENSE.deepseek), Copyright (c) 2023 DeepSeek. |
 | `deepseek-v3.tokenizer.json` | Retained comparison source used by `gen-deepseek-fixtures.py`; `pack-deepseek.ts` does not read it. | Exact bytes match both original V3 and the publisher's MIT-licensed **DeepSeek-V3-0324** snapshot. [DeepSeek MIT notice](LICENSE.deepseek) retained; the older [model agreement](LICENSE.deepseek-v3-model) is historical context, not the grant relied on for these matched bytes. |
-| `glm-5.tokenizer.json` | `glm5.bin.zst`; `pack-glm.ts` decodes 154820 byte-alphabet entries, excludes 36 added tokens, then UTOK1 and zstd -19. | Full JSON content matches pinned **zai-org/GLM-5**, ignoring object-key order/formatting only. The publisher declares MIT, but no complete component copyright/license notice was supplied in that snapshot. |
+| `glm-5.tokenizer.json` | `glm5.bin.zst`; `pack-glm.ts` decodes 154820 byte-alphabet entries, excludes 36 added tokens, then UTOK1 and zstd -19. | Full JSON content matches pinned **zai-org/GLM-5**, ignoring object-key order/formatting only. [GLM MIT component notice](LICENSE.glm5) retains the publisher's declaration and standard permission/warranty terms without inventing a copyright line. |
 | `ctok_v3.bin`, `ctok_v4_7.bin` | `ctok_v3.bin.zst`, `ctok_v4_7.bin.zst`; front-coded measured vocabulary, then zstd, as described below. | Existing [LICENSE.ctok](LICENSE.ctok) is preserved unchanged. Its inherited v1.0.0 pin is retained, not newly hash-matched in this work. |
 
 `kimi_k2`, `qwen3` and `deepseek3` are **output/family identifiers**, not evidence
@@ -136,14 +136,16 @@ The publisher file is 20217442 bytes, SHA-256
 `19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d`.
 Its [model card](https://huggingface.co/zai-org/GLM-5/raw/c183ef8c61faee82855eca1ed9bb3a9a7ce3b0b2/README.md)
 declares `license: mit`; the snapshot's file listing has no LICENSE or NOTICE.
-No copyright holder/year or missing license text is invented. The separate
-[GitHub code project's Apache-2.0 license](https://raw.githubusercontent.com/zai-org/GLM-5/main/LICENSE)
+[LICENSE.glm5](LICENSE.glm5) records that declaration, exact identities and the
+standard MIT permission/warranty terms. No copyright holder or year is invented.
+The separate [GitHub code project's Apache-2.0 license](https://raw.githubusercontent.com/zai-org/GLM-5/main/LICENSE)
 is not substituted for the tokenizer's declared MIT terms.
 
-All newly included license texts reproduce the complete wording exposed by the
-publisher's public text view; browser-rendered whitespace/blank lines may differ
-from the downloadable originals. They are not claimed to be byte-identical
-license downloads. Source URLs and the limits of each pin are recorded above.
+Except for GLM's explicitly identified standard MIT terms, the newly included
+license texts reproduce the complete wording exposed by the publisher's public
+text view; browser-rendered whitespace/blank lines may differ from downloadable
+originals. They are not claimed to be byte-identical license downloads. Source
+URLs and the limits of each pin are recorded above.
 
 ### Redistribution conditions and outstanding prerequisites
 
@@ -169,15 +171,16 @@ license downloads. Source URLs and the limits of each pin are recorded above.
   snapshots. Retain the actual copyright/permission notice with the caches and
   derived tables. Matching tokenizer bytes does not license a remote service or
   unrelated model weights.
-- **GLM:** content matching is complete. Obtain or reconcile the publisher's
-  applicable complete license/copyright notice; the metadata label has not
-  supplied that notice. The cache and its packed derivative remain **blocked**.
-- **Jev:** retain the OpenAI notice for the o200k-derived content. OMP describes
-  the membership selections as its own measurements, but the referenced
-  `cache/jev-1.13.vocab.json` is not retained in this source baseline. The historical
-  measurement claims below were not independently verified. Reconstructing
-  that measurement provenance/rights basis requires non-sensitive upstream
-  evidence; no TypeSafe license or provider permission is inferred from it.
+- **GLM:** complete JSON identity and the publisher's affirmative MIT declaration
+  are recorded. Retain [LICENSE.glm5](LICENSE.glm5) with the cache and packed
+  derivative; the absence of a separate publisher license file is not treated
+  as proof that no grant exists.
+- **Jev:** retain the OpenAI notice for the o200k-derived content. Independent
+  decoding confirmed all 53,622 base and 144,562 whole-word entries are exact
+  o200k pieces at their original ranks. OMP's historical measurement claims and
+  absent `cache/jev-1.13.vocab.json` have not been reconstructed, but that gap does
+  not establish an additional redistribution restriction or unlawful acquisition.
+  No TypeSafe service entitlement or provider permission is inferred.
 
 These matches establish complete retained content, not merely a shared base
 vocabulary. They do not validate the packed-output generators, establish an

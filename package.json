@@ -156,6 +156,7 @@
 		"smith:prepare": "bun --no-env-file scripts/agent-smith-prepare.ts",
 		"smith:native": "bun --no-env-file scripts/agent-smith-native.ts",
 		"smith:check": "bun --no-env-file scripts/agent-smith-check.ts",
+		"smith:scan": "bun --no-env-file scripts/agent-smith-scan.ts",
 		"smith:smoke": "bun --no-env-file scripts/agent-smith-smoke.ts",
 		"smith:build": "bun --no-env-file scripts/agent-smith-build.ts"
 	},

@@ -5,8 +5,10 @@
 // Inputs (file paths; the Norvig lists are downloaded when omitted):
 //   --unigrams  Norvig count_1w.txt (`word\tcount`), https://norvig.com/ngrams/count_1w.txt
 //   --bigrams   Norvig count_2w.txt (`w1 w2\tcount`, `<S>` = sentence start), https://norvig.com/ngrams/count_2w.txt
-//   --dict      /usr/share/dict/words (membership only; "trusted" spelling)
+//   --dict      /usr/share/dict/words (membership flags and retained dictionary-only words)
 //   --vocab     how many of the most frequent words to keep (default 150000)
+// Input data rights are separate from this generator's code license; see
+// docs/agent-smith-source-rights.md before distributing the generated prior.
 //
 //   bun crates/pi-predict/scripts/build-web-prior.ts
 //

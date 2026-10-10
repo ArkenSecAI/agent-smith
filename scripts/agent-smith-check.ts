@@ -8,7 +8,15 @@ async function main(): Promise<void> {
 	const context = await fixture("check");
 	await bun(["run", "check:ts"], context, ROOT, 900_000);
 	await bun(["run", "--bun", "tsgo", "-p", "tsconfig.tools.json", "--noEmit"], context, ROOT, 900_000);
-	await bun(["test", "scripts/agent-smith-common.test.ts"], context);
+	await bun(
+		[
+			"test",
+			"scripts/agent-smith-common.test.ts",
+			"scripts/agent-smith-scan.test.ts",
+			"scripts/agent-smith-scan-decoder.test.ts",
+		],
+		context,
+	);
 	for (const tests of [
 		["packages/ai/test/agent-smith-credentials.test.ts"],
 		["packages/mnemopi/test/triples-data-dir.test.ts"],

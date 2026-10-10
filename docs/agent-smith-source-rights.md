@@ -20,6 +20,7 @@ The initial recursive Git-tree inventory contains **8,470 entries**, all regular
 | Browser relay extension assets | `packages/coding-agent/src/tools/browser/relay/extension-assets/LICENSE.txt` | Retain upstream MIT text; not a license to redistribute arbitrary browsers, codecs, accounts or captured content. |
 | Reconstructed protocol schemas | [`proto/PROVENANCE.md`](../packages/ai/src/providers/devin/proto/PROVENANCE.md), Apache-2.0, component notices and restored headers | Reconcile 19 identifiable open-component schemas; do not extend those grants to the 33 provider-specific `exa` schemas or invent their extraction history. |
 | Embedded syntax grammars | [`syntaxes/PROVENANCE.md`](../crates/pi-natives/src/syntaxes/PROVENANCE.md), grammar licenses and notices | Restore Julia/TypeScript notices, preserve Mermaid/Nix terms and distinguish upstream comparison pins from import history. |
+| Web-prior counts and dictionary data | `crates/pi-predict/data/web-prior.bin.zst` and its retained generator | Preserve the data unchanged; resolve the actual count-data and dictionary redistribution basis below. Norvig's code license is not automatically a data grant. |
 | Resolved JS/Rust/Bazel dependencies and generated native code | `bun.lock`, `Cargo.lock`, `MODULE.bazel.lock`, package/vendor licenses and `THIRD-PARTY-NOTICES.txt` | Preserve lock/integrity records and per-component notices. The aggregate is inherited release material, not an independently regenerated Agent Smith binary SBOM. |
 
 The upstream `THIRD-PARTY-NOTICES.txt` aggregate is retained unmodified. It expressly does not replace package-level licenses and includes licenses with conditions beyond MIT. A root MIT declaration does not override per-file/package terms. Source references are not proof that a particular binary contains exactly those components.
@@ -32,25 +33,43 @@ The restored notices and successful source matches do **not** clear the whole
 inherited source tree. Publication remains blocked pending independent review and
 an established basis for the following retained material:
 
-- The 33 reconstructed Codeium/Windsurf `exa` schemas: source artifact/version,
-  reconstruction chain and license, permission or documented independent legal
-  basis. Imported open-component licenses do not grant rights in them.
-- GLM-5 tokenizer content is matched and the publisher declares MIT, but the
-  pinned model snapshot supplies no complete component copyright/license notice.
-  The separate GitHub code project's Apache license is not a substitute.
+- The 33 reconstructed Codeium/Windsurf `exa` schemas and derived
+  `packages/catalog/src/discovery/devin-proto.ts`: original source artifact/version,
+  reconstruction chain and permission or a documented independent distribution
+  basis. Imported open-component licenses do not grant rights in them; reverse
+  engineering alone proves neither permission nor illegality.
+- `crates/pi-predict/data/web-prior.bin.zst` incorporates Norvig-derived counts
+  and **192,511 dictionary-only words**, not merely membership flags. Its Git blob
+  is `cbc0b8da7be850ad04d790ca4443ae82a779d3da`; SHA-256 is
+  `d930584e1f9585103367d3d0485d9a96afd50f961dcdedb708407c2045999d1d`.
+  Establish the actual dictionary package/version and notices, plus a grant or
+  documented independent basis for the incorporated count data and word list.
+  [Norvig's primary page](https://www.norvig.com/ngrams/) expressly licenses
+  **code** under MIT and separately describes Google/LDC data origins. Neither
+  that code grant nor `/usr/share/dict/words` identifies the required data basis.
+  This is an evidence gap, not a finding that individual words/counts are
+  necessarily copyrightable.
 - K3's cached Python exactly matches its custom-licensed publisher source and
-  preserves a Xenova gist citation; the cited fragment's separate grant is not
-  established. No determination of copyrightability or a legal exception is made.
-- Jev's inherited measured selections cite an absent intermediate vocabulary.
-  OpenAI notices cover the underlying o200k content; measurement provenance and
-  any separate rights basis have not been reconstructed.
+  preserves a [Xenova gist citation](https://gist.github.com/xenova/a452a6474428de0182b17605a98631ee)
+  for a small byte-mapping expression. Resolve that narrow fragment through
+  permission or a documented assessment that permission is unnecessary.
+  Neither its size nor the absence of a separate license decides that question.
 
 The original DeepSeek V3 code/model-license ambiguity is resolved for the retained
 tokenizer: its exact bytes also match the publisher's MIT-licensed V3-0324 release.
-Open-component schema notice fetch gaps have been reconciled through public
-sources; historical extraction versions remain unknown, not fabricated.
-These are source-specific findings, separate from private reporting, secret-scan,
-engineering review and future binary/service authorization.
+GLM's full JSON match and affirmative publisher MIT declaration are retained with
+standard permission/warranty terms in
+[`LICENSE.glm5`](../crates/pi-natives/data/LICENSE.glm5), without an invented
+copyright holder/year. The ten reconstructed Cockroach/App Engine Apache schemas
+now carry individual modification comments and links to the corpus provenance and
+license. Historical extraction versions remain unknown, not fabricated.
+
+Independent decoding confirmed that every retained Jev entry is an exact o200k
+piece at its original rank: 53,622 base and 144,562 whole-word entries. OpenAI
+notices cover that content. Unverified historical measurement claims do not
+establish an additional source-redistribution restriction or unlawful acquisition.
+These findings are separate from private reporting, secret-scan, engineering
+review and future binary/service authorization.
 
 ## Runtime and native artifact seam
 

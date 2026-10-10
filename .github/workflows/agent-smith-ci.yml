@@ -19,48 +19,55 @@ env:
   GIT_CONFIG_COUNT: '1'
   GIT_CONFIG_KEY_0: core.autocrlf
   GIT_CONFIG_VALUE_0: 'false'
+  GIT_NO_REPLACE_OBJECTS: '1'
 
 jobs:
   secrets:
     name: Gitleaks 8.30.1
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - name: Provision verified Gitleaks CLI
         shell: pwsh
         run: ./scripts/agent-smith-ci-tools.ps1 -Tool gitleaks
-      - name: Scan history and checkout with default rules
+      - uses: ./.github/actions/agent-smith-bun
+      - name: Verify source head and current fast-forward target
+        id: source
         shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          scan_config="$RUNNER_TEMP/agent-smith-gitleaks.toml"
-          ignore_file="$RUNNER_TEMP/agent-smith-empty-ignore"
-          printf '[extend]\nuseDefault = true\n' > "$scan_config"
-          : > "$ignore_file"
-          unset GITLEAKS_CONFIG GITLEAKS_CONFIG_TOML GITLEAKS_LICENSE
-          history_status=0
-          checkout_status=0
-          # Gitleaks can exit zero after a decoder error. At error-only log level,
-          # any stderr is a failed scan, independently of the findings exit code.
-          history_errors="$RUNNER_TEMP/agent-smith-history-errors.log"
-          checkout_errors="$RUNNER_TEMP/agent-smith-checkout-errors.log"
-          gitleaks git --no-banner --no-color --log-level error --redact --ignore-gitleaks-allow --max-archive-depth=2 --max-decode-depth=2 --config "$scan_config" --gitleaks-ignore-path "$ignore_file" --log-opts='--full-history --all --diff-merges=first-parent' --report-format=json --report-path="$RUNNER_TEMP/agent-smith-history-findings.json" . 2>"$history_errors" || history_status=$?
-          gitleaks dir --no-banner --no-color --log-level error --redact --ignore-gitleaks-allow --max-archive-depth=2 --max-decode-depth=2 --config "$scan_config" --gitleaks-ignore-path "$ignore_file" --report-format=json --report-path="$RUNNER_TEMP/agent-smith-checkout-findings.json" . 2>"$checkout_errors" || checkout_status=$?
-          cat "$history_errors" "$checkout_errors"
-          printf 'History exit: %s; checkout exit: %s\n' "$history_status" "$checkout_status"
-          test "$history_status" -eq 0 && test "$checkout_status" -eq 0 && test ! -s "$history_errors" && test ! -s "$checkout_errors"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git rev-parse --is-shallow-repository)" = false
+          git merge-base --is-ancestor 717f97f4d22b3d65c4a4eef6a744255d46f4d1a6 "$SOURCE_SHA"
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            git fetch --no-tags --no-recurse-submodules "https://github.com/${GITHUB_REPOSITORY}.git" '+refs/heads/main:refs/remotes/smith-target/main'
+            target_base=$(git rev-parse refs/remotes/smith-target/main)
+            git merge-base --is-ancestor "$target_base" "$SOURCE_SHA"
+            printf 'target-base=%s\n' "$target_base" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Scan immutable history, historical binary versions and source tree
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TARGET_BASE: ${{ steps.source.outputs.target-base }}
+        run: |
+          set -euo pipefail
+          args=(--candidate "$SOURCE_SHA" --output "$RUNNER_TEMP/agent-smith-scan")
+          if [ -n "$TARGET_BASE" ]; then args+=(--target-base "$TARGET_BASE"); fi
+          bun --no-env-file run smith:scan -- "${args[@]}"
       - name: Retain redacted scan evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: agent-smith-scan-${{ github.sha }}
-          path: |
-            ${{ runner.temp }}/agent-smith-*-findings.json
-            ${{ runner.temp }}/agent-smith-*-errors.log
+          name: agent-smith-scan-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/agent-smith-scan/
           if-no-files-found: error
           retention-days: 7
 
@@ -85,7 +92,22 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
       - uses: ./.github/actions/agent-smith-bun
+      - name: Verify source head and current fast-forward target
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git rev-parse --is-shallow-repository)" = false
+          git merge-base --is-ancestor 717f97f4d22b3d65c4a4eef6a744255d46f4d1a6 "$SOURCE_SHA"
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            git fetch --no-tags --no-recurse-submodules "https://github.com/${GITHUB_REPOSITORY}.git" '+refs/heads/main:refs/remotes/smith-target/main'
+            target_base=$(git rev-parse refs/remotes/smith-target/main)
+            git merge-base --is-ancestor "$target_base" "$SOURCE_SHA"
+          fi
       - name: Provision pinned source-native toolchain (runner only)
         env:
           RUSTUP_HOME: ${{ runner.temp }}/agent-smith-rustup
