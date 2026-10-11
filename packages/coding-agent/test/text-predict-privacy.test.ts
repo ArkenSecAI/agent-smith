@@ -17,6 +17,7 @@ import {
 	textPredictDaemon,
 } from "../src/predict/protocol";
 import { connectJsonlSocket, LineParser, writeJsonLine } from "../src/tiny/jsonl-socket";
+import { createHash } from "node:crypto";
 
 interface ClientResult {
 	ok: boolean;
@@ -302,12 +303,35 @@ describe("Agent Smith predictor privacy", () => {
 			const first = textPredictDaemon(root, agentDir);
 			const second = textPredictDaemon(root, path.join(home, "other-profile"));
 			expect(first.name.length).toBeLessThanOrEqual(48);
+			expect(first.name).toMatch(/^text-predict\.[A-Za-z0-9_-]{22}$/);
+			const key = first.name.slice("text-predict.".length);
+			const bytes = Buffer.from(key, "base64url");
+			expect(bytes.byteLength).toBe(16);
+			expect(bytes.toString("base64url")).toBe(key);
+			expect(bytes).toEqual(
+				createHash("sha256")
+					.update(`${TEXT_PREDICT_GENERATION}\0${path.resolve(agentDir)}`)
+					.digest()
+					.subarray(0, 16),
+			);
+			if (process.platform === "win32") expect(first.endpoint.endsWith(`-${key}`)).toBe(true);
+			else expect(path.basename(first.endpoint)).toBe(`${key}.sock`);
 			expect(first.name).not.toBe(second.name);
 			expect(first.endpoint).not.toBe(second.endpoint);
 			expect(textPredictDaemon(root, path.join(agentDir, "..", "agent"))).toEqual(first);
 		} finally {
 			legacyHash.mockRestore();
 		}
+	});
+
+	it.skipIf(process.platform === "win32")("retains all identity bits within a 103-byte Unix endpoint", () => {
+		const runtime = "/tmp/agent-smith-runtime/".padEnd(75, "r");
+		const { name, endpoint: longEndpoint } = textPredictDaemon(runtime, agentDir);
+		expect(Buffer.byteLength(runtime)).toBe(75);
+		expect(Buffer.byteLength(longEndpoint)).toBe(103);
+		expect(path.dirname(longEndpoint)).toBe(runtime);
+		expect(Buffer.from(path.basename(longEndpoint, ".sock"), "base64url")).toHaveLength(16);
+		expect(path.basename(longEndpoint, ".sock")).toBe(name.slice("text-predict.".length));
 	});
 
 	it("fresh engines ignore foreign prompts, learn only new own rows, and persist on shutdown", async () => {

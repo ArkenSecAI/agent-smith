@@ -43,12 +43,12 @@ export function textPredictReadyBanner(endpoint: string): string {
  * from selecting another profile's broker record or socket.
  */
 export function textPredictDaemon(runtimeDir: string, agentDir: string): { name: string; endpoint: string } {
-	const key = new Bun.CryptoHasher("sha256")
+	const digest = new Bun.CryptoHasher("sha256")
 		.update(TEXT_PREDICT_GENERATION)
 		.update("\0")
 		.update(path.resolve(agentDir))
-		.digest("hex")
-		.slice(0, 32);
+		.digest();
+	const key = Buffer.from(digest.buffer, digest.byteOffset, 16).toString("base64url");
 	const endpoint =
 		process.platform === "win32"
 			? `\\\\.\\pipe\\agent-smith-text-predict-${Bun.hash.wyhash(runtimeDir).toString(16)}-${key}`

@@ -417,8 +417,8 @@ class DaemonBroker {
 	readonly #records = new Map<string, ManagedDaemon>();
 	/** Reserve names only until their prepared records are published. */
 	readonly #startingNames = new Set<string>();
-	/** Shutdown owns the complete starts, including preparation and readiness. */
-	readonly #pendingStarts = new Set<Promise<DaemonRpcResult>>();
+	/** Shutdown owns starts through preparation, readiness and response delivery. */
+	readonly #pendingStarts = new Set<Promise<void>>();
 	readonly #clients = new Set<net.Socket>();
 	readonly #ownerSockets = new Map<string, { socket: net.Socket; subscriptionId: string | undefined }>();
 	readonly #completionSubscriptions = new Map<string, string | undefined>();
@@ -465,13 +465,7 @@ class DaemonBroker {
 		this.#shuttingDown = true;
 		clearTimeout(this.#idleTimer);
 		this.#idleTimer = undefined;
-		for (const starting of this.#pendingStarts) {
-			try {
-				await starting;
-			} catch {
-				// The request handler reports its failure; shutdown still owns the drain.
-			}
-		}
+		for (const starting of this.#pendingStarts) await starting;
 		for (const record of this.#records.values()) {
 			const detached = record.spec.detached && !record.stopRequested && record.snapshot.pid !== undefined;
 			if (!detached && !terminalState(record.snapshot.state)) await this.#stopRecord(record, 2_000);
@@ -538,6 +532,8 @@ class DaemonBroker {
 
 	async #handleLine(socket: net.Socket, line: string, onAuthenticated: () => void): Promise<void> {
 		let id = "unknown";
+		let starting: PromiseWithResolvers<void> | undefined;
+		let response: string;
 		try {
 			const decoded: unknown = JSON.parse(line);
 			// Correlate before validating: an operation this broker cannot parse (a newer omp
@@ -547,6 +543,10 @@ class DaemonBroker {
 			const request = parseDaemonWireRequest(decoded);
 			if (request.token !== this.#token) throw new Error("Daemon broker authentication failed");
 			onAuthenticated();
+			if (request.operation.op === "start" && !this.#shuttingDown) {
+				starting = Promise.withResolvers<void>();
+				this.#pendingStarts.add(starting.promise);
+			}
 			for (const owner of request.completionUnsubscribes ?? []) {
 				const subscriptionId = this.#completionSubscriptions.get(owner);
 				if (
@@ -620,11 +620,36 @@ class DaemonBroker {
 				}
 			}
 			const result = await this.#dispatch(request.operation);
-			socket.write(`${JSON.stringify({ id, ok: true, result })}\n`);
+			response = `${JSON.stringify({ id, ok: true, result })}\n`;
 			if (request.operation.op === "shutdown") setTimeout(() => void this.shutdown(), 10);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
-			socket.write(`${JSON.stringify({ id, ok: false, error: message })}\n`);
+			response = `${JSON.stringify({ id, ok: false, error: message })}\n`;
+		}
+		try {
+			if (starting) {
+				// Preserve the rejection for a connected caller before shutdown
+				// destroys sockets. A disconnected caller must not strand the drain.
+				await new Promise<void>(resolve => {
+					if (socket.destroyed) {
+						resolve();
+						return;
+					}
+					const finished = () => {
+						socket.off("close", finished);
+						resolve();
+					};
+					socket.once("close", finished);
+					socket.write(response, finished);
+				});
+			} else {
+				socket.write(response);
+			}
+		} finally {
+			if (starting) {
+				this.#pendingStarts.delete(starting.promise);
+				starting.resolve();
+			}
 		}
 	}
 
@@ -632,16 +657,9 @@ class DaemonBroker {
 		switch (operation.op) {
 			case "ping":
 				return { op: "ping", projectDir: this.#projectDir };
-			case "start": {
+			case "start":
 				if (this.#shuttingDown) throw new Error("Daemon broker is shutting down");
-				const starting = this.#start(operation.spec, operation.owner, operation.replace);
-				this.#pendingStarts.add(starting);
-				try {
-					return await starting;
-				} finally {
-					this.#pendingStarts.delete(starting);
-				}
-			}
+				return this.#start(operation.spec, operation.owner, operation.replace);
 			case "list": {
 				await Promise.all([...this.#records.values()].map(record => this.#refreshDetached(record)));
 				return {

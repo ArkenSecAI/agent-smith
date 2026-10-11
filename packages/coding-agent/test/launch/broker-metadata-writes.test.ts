@@ -4,7 +4,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { TempDir } from "@oh-my-pi/pi-utils";
 import { startDaemonBrokerFromEnvironment } from "../../src/launch/broker";
-import { createDaemonBrokerClient } from "../../src/launch/client";
+import { createDaemonBrokerClient, DaemonBrokerRejectedError } from "../../src/launch/client";
 import {
 	DAEMON_IDLE_GRACE_ENV,
 	DAEMON_PROJECT_DIR_ENV,
@@ -133,87 +133,98 @@ describe("daemon metadata writes", () => {
 		}
 	}, 20_000);
 
-	it("drains a preparing start and rejects new starts before completing shutdown", async () => {
-		const root = await fs.mkdtemp(path.join(os.tmpdir(), "broker-drain-"));
-		const projectDir = path.join(root, "project");
-		const runtimeDir = path.join(root, "runtime");
-		const marker = path.join(root, "unexpected-child");
-		await fs.mkdir(projectDir);
-		const client = await createDaemonBrokerClient(projectDir, { runtimeDir });
-		const previousTitle = process.title;
-		const broker = startBroker(projectDir, runtimeDir);
-		await broker.listening;
-		await client.request({ op: "ping" });
-		const socket = await connectJsonlSocket(daemonBrokerEndpoint(projectDir, runtimeDir), 1_000);
-		const token = (await fs.readFile(path.join(runtimeDir, "broker.token"), "utf8")).trim();
-		async function rpc(operation: DaemonOperation): Promise<{ ok: boolean }> {
-			const response = Promise.withResolvers<{ ok: boolean }>();
-			const parser = new LineParser(line => response.resolve(JSON.parse(line)));
-			const onData = (chunk: string) => parser.push(chunk);
-			const onClose = () => response.reject(new Error("Broker closed before draining preparation"));
-			socket.on("data", onData);
-			socket.once("close", onClose);
-			socket.once("error", response.reject);
+	it.each([false, true])(
+		"drains a preparing start through shutdown (caller disconnected: %s)",
+		async disconnected => {
+			const root = await fs.mkdtemp(path.join(os.tmpdir(), "broker-drain-"));
+			const projectDir = path.join(root, "project");
+			const runtimeDir = path.join(root, "runtime");
+			const marker = path.join(root, "unexpected-child");
+			await fs.mkdir(projectDir);
+			const client = await createDaemonBrokerClient(projectDir, { runtimeDir });
+			const previousTitle = process.title;
+			const broker = startBroker(projectDir, runtimeDir);
+			await broker.listening;
+			await client.request({ op: "ping" });
+			const socket = await connectJsonlSocket(daemonBrokerEndpoint(projectDir, runtimeDir), 1_000);
+			const token = (await fs.readFile(path.join(runtimeDir, "broker.token"), "utf8")).trim();
+			async function rpc(operation: DaemonOperation): Promise<{ ok: boolean }> {
+				const response = Promise.withResolvers<{ ok: boolean }>();
+				const parser = new LineParser(line => response.resolve(JSON.parse(line)));
+				const onData = (chunk: string) => parser.push(chunk);
+				const onClose = () => response.reject(new Error("Broker closed before draining preparation"));
+				socket.on("data", onData);
+				socket.once("close", onClose);
+				socket.once("error", response.reject);
+				try {
+					writeJsonLine(socket, { id: crypto.randomUUID(), token, operation });
+					return await response.promise;
+				} finally {
+					socket.off("data", onData);
+					socket.off("close", onClose);
+					socket.off("error", response.reject);
+				}
+			}
+			const preparing = Promise.withResolvers<void>();
+			const release = Promise.withResolvers<void>();
+			const stat = fs.stat;
+			const delayedStat = (async (...args: Parameters<typeof fs.stat>) => {
+				if (args[0] === projectDir) {
+					preparing.resolve();
+					await release.promise;
+				}
+				return stat(...args);
+			}) as typeof fs.stat;
+			const statSpy = spyOn(fs, "stat").mockImplementation(delayedStat);
+			const spec: DaemonSpec = {
+				name: "preparing",
+				application: process.execPath,
+				args: ["--no-env-file", "-e", `await Bun.write(${JSON.stringify(marker)}, "launched");`],
+				env: {},
+				cwd: projectDir,
+				pty: false,
+				restart: "no",
+				persist: true,
+				detached: false,
+			};
+			let passed = false;
+			vi.useFakeTimers();
+			const started = client.request({ op: "start", spec }).then(
+				result => ({ result }),
+				(error: unknown) => ({ error }),
+			);
 			try {
-				writeJsonLine(socket, { id: crypto.randomUUID(), token, operation });
-				return await response.promise;
+				await preparing.promise;
+				expect((await rpc({ op: "shutdown" })).ok).toBe(true);
+				// Deliver the acknowledged shutdown callback deterministically while
+				// preparation remains gated; no guessed sleep or child-start timing.
+				vi.advanceTimersByTime(10);
+				expect((await rpc({ op: "start", spec: { ...spec, name: "after-shutdown" } })).ok).toBe(false);
+				if (disconnected) client.close();
+				release.resolve();
+				const outcome = await started;
+				if (disconnected) {
+					expect(outcome).toEqual({ error: expect.any(Error) });
+				} else {
+					expect(outcome).toEqual({ error: expect.any(DaemonBrokerRejectedError) });
+					expect(outcome).toMatchObject({ error: { message: "Daemon broker is shutting down" } });
+				}
+				await broker.finished;
+				expect(await Bun.file(marker).exists()).toBe(false);
+				passed = true;
 			} finally {
-				socket.off("data", onData);
-				socket.off("close", onClose);
-				socket.off("error", response.reject);
+				release.resolve();
+				statSpy.mockRestore();
+				client.close();
+				socket.destroy();
+				await broker.finished;
+				vi.useRealTimers();
+				process.title = previousTitle;
+				// A failed lifecycle proof retains its state instead of deleting under
+				// potentially outstanding preparation or a late child.
+				if (passed) await fs.rm(root, { recursive: true, force: true });
 			}
-		}
-		const preparing = Promise.withResolvers<void>();
-		const release = Promise.withResolvers<void>();
-		const stat = fs.stat;
-		const delayedStat = (async (...args: Parameters<typeof fs.stat>) => {
-			if (args[0] === projectDir) {
-				preparing.resolve();
-				await release.promise;
-			}
-			return stat(...args);
-		}) as typeof fs.stat;
-		const statSpy = spyOn(fs, "stat").mockImplementation(delayedStat);
-		const spec: DaemonSpec = {
-			name: "preparing",
-			application: process.execPath,
-			args: ["--no-env-file", "-e", `await Bun.write(${JSON.stringify(marker)}, "launched");`],
-			env: {},
-			cwd: projectDir,
-			pty: false,
-			restart: "no",
-			persist: true,
-			detached: false,
-		};
-		let passed = false;
-		vi.useFakeTimers();
-		const started = client.request({ op: "start", spec }).then(
-			result => ({ result }),
-			(error: unknown) => ({ error }),
-		);
-		try {
-			await preparing.promise;
-			expect((await rpc({ op: "shutdown" })).ok).toBe(true);
-			// Deliver the acknowledged shutdown callback deterministically while
-			// preparation remains gated; no guessed sleep or child-start timing.
-			vi.advanceTimersByTime(10);
-			expect((await rpc({ op: "start", spec: { ...spec, name: "after-shutdown" } })).ok).toBe(false);
-			release.resolve();
-			await started;
-			await broker.finished;
-			expect(await Bun.file(marker).exists()).toBe(false);
-			passed = true;
-		} finally {
-			release.resolve();
-			statSpy.mockRestore();
-			client.close();
-			socket.destroy();
-			await broker.finished;
-			vi.useRealTimers();
-			process.title = previousTitle;
-			// A failed lifecycle proof retains its state instead of deleting under
-			// potentially outstanding preparation or a late child.
-			if (passed) await fs.rm(root, { recursive: true, force: true });
-		}
-	}, 20_000);
+		},
+		20_000,
+	);
 });

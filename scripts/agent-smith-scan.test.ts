@@ -3,15 +3,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { fixture, sha256 } from "./agent-smith-common";
 import { historicalCoverage, parseHistoryMetadata } from "./agent-smith-scan-history";
-import type {
-	Binding,
-	Decision,
-	Disposition,
-	HistoricalVersion,
-	Ledger,
-	Scope,
-	ScopeOutcome,
-} from "./agent-smith-scan-policy";
+import type { Binding, Decision, Disposition, HistoricalVersion, Ledger, Scope } from "./agent-smith-scan-policy";
 import {
 	decide as decidePrepared,
 	EMPTY_TREE,
@@ -666,10 +658,11 @@ describe("historical whole-blob coverage boundary", () => {
 	});
 
 	test("the combined receipt requires complete passing execution of all three scopes and unchanged inputs", () => {
-		const scopes: Record<Scope, ScopeOutcome> = {
+		const scopes: Parameters<typeof scopesPass>[0] = {
 			history: { status: "passed", complete: true },
 			tree: { status: "passed", complete: true },
 			historicalBlob: { status: "not-run", complete: false },
+			attributeCanary: { status: "passed", complete: true, receiptSha256: "c".repeat(64) },
 		};
 		expect(scopesPass(scopes, [])).toBe(false);
 		scopes.historicalBlob = { status: "failed", complete: true };
@@ -678,6 +671,27 @@ describe("historical whole-blob coverage boundary", () => {
 		expect(scopesPass(scopes, [])).toBe(false);
 		scopes.historicalBlob.complete = true;
 		expect(scopesPass(scopes, ["Source HEAD moved during scan"])).toBe(false);
+		expect(scopesPass(scopes, [])).toBe(true);
+	});
+
+	test("the combined gate rejects absent, incomplete, failed or unbound attribute canaries", () => {
+		const scopes: Parameters<typeof scopesPass>[0] = {
+			history: { status: "passed", complete: true },
+			tree: { status: "passed", complete: true },
+			historicalBlob: { status: "passed", complete: true },
+		};
+		expect(scopesPass(scopes, [])).toBe(false);
+		for (const attributeCanary of [
+			{ status: "not-run", complete: false },
+			{ status: "failed", complete: true, receiptSha256: "c".repeat(64) },
+			{ status: "passed", complete: false, receiptSha256: "c".repeat(64) },
+			{ status: "passed", complete: true },
+			{ status: "passed", complete: true, receiptSha256: "not-a-digest" },
+		] as const) {
+			scopes.attributeCanary = attributeCanary;
+			expect(scopesPass(scopes, [])).toBe(false);
+		}
+		scopes.attributeCanary = { status: "passed", complete: true, receiptSha256: "c".repeat(64) };
 		expect(scopesPass(scopes, [])).toBe(true);
 	});
 

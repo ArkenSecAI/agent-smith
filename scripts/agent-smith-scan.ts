@@ -21,7 +21,14 @@ import {
 } from "./agent-smith-scan-decoder";
 import type { HistoricalResult } from "./agent-smith-scan-history";
 import { historicalCoverage, historyMetadata, parseHistoryMetadata } from "./agent-smith-scan-history";
-import type { Decision, HistoricalVersion, PreparedLedger, Scope, ScopeOutcome } from "./agent-smith-scan-policy";
+import type {
+	AttributeCanaryOutcome,
+	Decision,
+	HistoricalVersion,
+	PreparedLedger,
+	Scope,
+	ScopeOutcome,
+} from "./agent-smith-scan-policy";
 import {
 	approvalsFor,
 	decide,
@@ -83,7 +90,7 @@ interface HistoricalReceipt extends ScanReceipt {
 	gitlinkReferences?: number;
 }
 interface Summary {
-	schemaVersion: 4;
+	schemaVersion: 5;
 	pass: boolean;
 	sourceBase: string;
 	sourceTree: string;
@@ -96,6 +103,7 @@ interface Summary {
 	inputs?: Record<string, string>;
 	toolchain?: Record<string, string>;
 	snapshot?: { files: number; bytes: number; inventorySha256: string };
+	attributeCanary: AttributeCanaryOutcome;
 	history: ScanReceipt;
 	tree: ScanReceipt;
 	historicalBlob: HistoricalReceipt;
@@ -697,6 +705,239 @@ async function scanHistoricalBlobs(
 	return outcome;
 }
 
+/** Exercise suppression controls and the same native scan path before scanning candidate content. */
+export async function scanAttributeCanary(
+	context: ScanContext,
+	ownedDir: string,
+): Promise<{ outcome: AttributeCanaryOutcome; files: Map<string, string> }> {
+	const output = path.join(context.output, "attribute-canary");
+	await fs.mkdir(output, { mode: 0o700 });
+	const outcome: AttributeCanaryOutcome = { status: "failed", complete: false };
+	const files = new Map<string, string>();
+	const proof: Record<string, unknown> = {
+		schemaVersion: 1,
+		candidate: context.candidate,
+		attributeSource: SOURCE_BASE,
+		scannerSha256: SCANNER_SHA256,
+		configSha256: await fileHash(context.config),
+		ignoreSha256: await fileHash(context.ignore),
+	};
+	async function retain(file: string, bytes: Uint8Array | string): Promise<void> {
+		await Bun.write(file, bytes);
+		files.set(file, await fileHash(file));
+	}
+	async function json(file: string, value: unknown): Promise<void> {
+		await retain(file, `${JSON.stringify(value, null, 2)}\n`);
+	}
+	try {
+		const root = path.join(ownedDir, "attribute-canary-fixture");
+		const repository = path.join(root, "repository.git");
+		const template = path.join(root, "empty-template");
+		await fs.mkdir(template, { recursive: true, mode: 0o700 });
+		await git(context.git, [
+			"init",
+			"--bare",
+			"--quiet",
+			"--initial-branch=canary",
+			`--template=${template}`,
+			repository,
+		]);
+		await Bun.write(path.join(repository, "objects/info/alternates"), `${path.join(context.git.cwd, "objects")}\n`);
+		const fixtureGit: GitContext = {
+			...context.git,
+			cwd: repository,
+			env: {
+				...context.git.env,
+				GIT_AUTHOR_NAME: "Agent Smith synthetic canary",
+				GIT_AUTHOR_EMAIL: "canary@example.invalid",
+				GIT_COMMITTER_NAME: "Agent Smith synthetic canary",
+				GIT_COMMITTER_EMAIL: "canary@example.invalid",
+				GIT_AUTHOR_DATE: "2000-01-01T00:00:00Z",
+				GIT_COMMITTER_DATE: "2000-01-01T00:00:00Z",
+			},
+			logs: path.join(output, "git-errors.log"),
+		};
+		await Bun.write(fixtureGit.logs, "");
+		const encode = (text: string) => new TextEncoder().encode(text);
+		const file = "packages/catalog/src/models.json";
+		const token = ["ghp", sha256(encode("Agent Smith synthetic attribute canary; never issued")).slice(0, 36)].join(
+			"_",
+		);
+		const content = encode(`${JSON.stringify({ token })}\n`);
+		const contentSha256 = sha256(content);
+		const blob = oid((await git(fixtureGit, ["hash-object", "-w", "--stdin"], content)).trim());
+		const attributes = `${file} -diff export-ignore\n`;
+		const attributeBlob = oid((await git(fixtureGit, ["hash-object", "-w", "--stdin"], encode(attributes))).trim());
+		let nested = oid((await git(fixtureGit, ["mktree"], encode(`100644 blob ${blob}\tmodels.json\n`))).trim());
+		for (const directory of ["src", "catalog"]) {
+			nested = oid((await git(fixtureGit, ["mktree"], encode(`040000 tree ${nested}\t${directory}\n`))).trim());
+		}
+		const tree = oid(
+			(
+				await git(
+					fixtureGit,
+					["mktree"],
+					encode(`100644 blob ${attributeBlob}\t.gitattributes\n040000 tree ${nested}\tpackages\n`),
+				)
+			).trim(),
+		);
+		const candidate = oid(
+			(await git(fixtureGit, ["commit-tree", tree, "-m", "Synthetic attribute-suppression canary"])).trim(),
+		);
+		await Bun.write(path.join(repository, "HEAD"), `${candidate}\n`);
+		const commits = new Set([candidate]);
+		const fixtureAttributes = { ...fixtureGit, env: { ...fixtureGit.env, GIT_ATTR_SOURCE: candidate } };
+		const suppressed = await git(fixtureAttributes, ["check-attr", "-z", "diff", "export-ignore", "--", file]);
+		const pinned = await git(fixtureGit, ["check-attr", "-z", "diff", "--", file]);
+		if (suppressed !== `${file}\0diff\0unset\0${file}\0export-ignore\0set\0` || pinned !== `${file}\0diff\0unset\0`)
+			throw new Error("Canary attribute suppression was not established");
+		const metadata = await historyMetadata(fixtureGit, candidate);
+		const inventory = parseHistoryMetadata(metadata, commits);
+		const version = inventory.versions[0];
+		if (
+			inventory.versions.length !== 1 ||
+			inventory.binaryChanges !== 1 ||
+			version.file !== file ||
+			version.blob !== blob ||
+			version.commits.length !== 1 ||
+			version.commits[0] !== candidate
+		)
+			throw new Error("Canary metadata omitted the suppressed stored version");
+		await retain(path.join(output, "history-metadata.nul"), metadata);
+		await json(path.join(output, "inventory.json"), inventory);
+		Object.assign(proof, {
+			fixture: { candidate, tree, file, blob, contentSha256, suppressed, pinned },
+			metadataSha256: sha256(metadata),
+			inventorySha256: await fileHash(path.join(output, "inventory.json")),
+		});
+		// The fixture has no approvals. Its finding must be detected and denied, not baselined.
+		const fixtureContext: ScanContext = {
+			...context,
+			git: fixtureGit,
+			candidate,
+			commits,
+			prepared: prepareLedger({
+				schemaVersion: 4,
+				sourceBase: SOURCE_BASE,
+				sourceTree: SOURCE_TREE,
+				origins: {},
+				groups: {},
+				history: [],
+				tree: [],
+				historicalBlob: [],
+			}),
+		};
+		const probes: Record<string, unknown> = {};
+		proof.probes = probes;
+		async function probe(
+			label: string,
+			scope: Scope,
+			cwd: string,
+			expectedFinding: boolean,
+			historicalVersion?: HistoricalVersion,
+		): Promise<void> {
+			const destination = path.join(output, label);
+			await fs.mkdir(destination, { mode: 0o700 });
+			const receipt = await scan(scope, cwd, { ...fixtureContext, output: destination }, historicalVersion);
+			const receiptFile = path.join(destination, "receipt.json");
+			await json(receiptFile, receipt);
+			for (const [suffix, expected] of [
+				["findings.json", receipt.reportSha256],
+				["errors.log", receipt.stderrSha256],
+				["stdout.log", receipt.stdoutSha256],
+				["bindings.json", receipt.bindingsSha256],
+				["invocation.json", receipt.invocationSha256],
+			] as const) {
+				if (!expected) throw new Error(`Missing canary native binding: ${label}/${suffix}`);
+				files.set(path.join(destination, `${scope}-${suffix}`), expected);
+			}
+			const findings = parseReport(await Bun.file(path.join(destination, `${scope}-findings.json`)).json(), scope);
+			probes[label] = { scope, expectedFinding, receiptSha256: files.get(receiptFile), findings };
+			if (
+				!receipt.complete ||
+				receipt.signal !== null ||
+				receipt.timedOut ||
+				receipt.exitCode !== (expectedFinding ? 1 : 0) ||
+				receipt.decision?.errors.length !== 0 ||
+				receipt.decision.approved !== 0 ||
+				receipt.decision.blocked.length !== (expectedFinding ? 1 : 0) ||
+				receipt.decision.pass !== !expectedFinding ||
+				findings.length !== (expectedFinding ? 1 : 0) ||
+				(expectedFinding && (findings[0].file !== file || findings[0].rule !== "github-pat"))
+			)
+				throw new Error(`Canary did not observe the expected native finding disposition: ${label}`);
+		}
+		await probe("suppressed-history", "history", repository, false);
+		const exported = path.join(root, "archive");
+		await fs.mkdir(exported, { mode: 0o700 });
+		const archiveRun = await execute(
+			[fixtureGit.executable, "archive", "--format=tar", candidate],
+			repository,
+			fixtureAttributes.env,
+			output,
+			"export",
+		);
+		proof.archive = archiveRun;
+		for (const suffix of ["invocation.json", "stdout.log", "errors.log"]) {
+			const artifact = path.join(output, `export-${suffix}`);
+			files.set(artifact, await fileHash(artifact));
+		}
+		if (
+			archiveRun.exitCode !== 0 ||
+			archiveRun.signal !== null ||
+			archiveRun.timedOut ||
+			(await fs.stat(path.join(output, "export-errors.log"))).size !== 0
+		) {
+			throw new Error("Canary archive export failed");
+		}
+		const archive = path.join(exported, "fixture.tar");
+		await fs.copyFile(path.join(output, "export-stdout.log"), archive);
+		await probe("suppressed-export", "tree", exported, false);
+		if ((await fileHash(archive)) !== files.get(path.join(output, "export-stdout.log"))) {
+			throw new Error("Canary archive changed during scanning");
+		}
+		const stored = path.join(root, "stored-version");
+		await fs.mkdir(stored, { mode: 0o700 });
+		const storedFile = path.join(stored, file);
+		await blobs(fixtureGit, [{ spec: version.blob, blob: version.blob }], async (_request, _blob, bytes) => {
+			if (sha256(bytes) !== contentSha256) throw new Error("Canary stored bytes changed");
+			await Bun.write(storedFile, bytes);
+		});
+		await probe("stored-version", "historicalBlob", stored, true, version);
+		if ((await fileHash(storedFile)) !== contentSha256) throw new Error("Canary stored export changed during scan");
+		const snapshotDir = path.join(root, "snapshot");
+		const snapshotInventory = await snapshot(fixtureGit, tree, snapshotDir);
+		await json(path.join(output, "snapshot-inventory.json"), snapshotInventory);
+		if (
+			!snapshotInventory.some(entry => entry.file === file && entry.blob === blob && entry.sha256 === contentSha256)
+		) {
+			throw new Error("Canary snapshot omitted the export-suppressed file");
+		}
+		await probe("snapshot", "tree", snapshotDir, true);
+		for (const entry of snapshotInventory) {
+			if ((await fileHash(path.join(snapshotDir, entry.file))) !== entry.sha256) {
+				throw new Error("Canary snapshot changed during scanning");
+			}
+		}
+		files.set(fixtureGit.logs, await fileHash(fixtureGit.logs));
+		if ((await fs.stat(fixtureGit.logs)).size !== 0) throw new Error("Canary Git reported errors");
+		for (const [artifact, expected] of files) {
+			if ((await fileHash(artifact)) !== expected) throw new Error("Canary evidence changed during execution");
+		}
+		proof.artifacts = Object.fromEntries(
+			[...files].map(([artifact, digest]) => [path.relative(output, artifact), digest]),
+		);
+		outcome.status = "passed";
+		outcome.complete = true;
+	} catch (error) {
+		proof.error = errorMessage(error);
+	}
+	const receiptFile = path.join(output, "receipt.json");
+	await json(receiptFile, { ...proof, ...outcome });
+	outcome.receiptSha256 = files.get(receiptFile);
+	return { outcome, files };
+}
+
 async function main(): Promise<void> {
 	const args = options(process.argv.slice(2));
 	const owned = await fixture("scan");
@@ -704,10 +945,11 @@ async function main(): Promise<void> {
 	// An existing output directory is never reused: stale reports cannot satisfy this run.
 	await fs.mkdir(output, { mode: 0o700 });
 	const summary: Summary = {
-		schemaVersion: 4,
+		schemaVersion: 5,
 		pass: false,
 		sourceBase: SOURCE_BASE,
 		sourceTree: SOURCE_TREE,
+		attributeCanary: { status: "not-run", complete: false },
 		history: { status: "not-run", complete: false },
 		tree: { status: "not-run", complete: false },
 		historicalBlob: { status: "not-run", complete: false },
@@ -811,6 +1053,11 @@ async function main(): Promise<void> {
 			output,
 			prepared: prepareLedger(ledger),
 		};
+		const canary = await scanAttributeCanary(scanContext, owned.dir);
+		summary.attributeCanary = canary.outcome;
+		if (!canary.outcome.complete || canary.outcome.status !== "passed") {
+			throw new Error("Required attribute-suppression canary failed; see attribute-canary/receipt.json");
+		}
 		// Findings/decoder errors in any scope never short-circuit the other scopes.
 		summary.history = await scan("history", source.context.cwd, scanContext);
 		await Bun.write(
@@ -888,6 +1135,9 @@ async function main(): Promise<void> {
 			if ((await fileHash(file)) !== expected) throw new Error("Scan tool/configuration changed during execution");
 		}
 		if (historical.supplement) await verifySupplementFiles(historical.supplement);
+		for (const [artifact, expected] of canary.files) {
+			if ((await fileHash(artifact)) !== expected) throw new Error("Attribute canary evidence changed during scan");
+		}
 		await verifyInputs(source.context, candidate);
 		const finalAncestry = await git(source.context, ["rev-list", "--parents", candidate]);
 		if (
@@ -906,7 +1156,7 @@ async function main(): Promise<void> {
 		summary.pass = scopesPass(summary, summary.errors);
 		await Bun.write(path.join(output, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
 		console.log(
-			`smith:scan ${summary.pass ? "PASS" : "FAIL"}; history=${summary.history.status}, historicalBlob=${summary.historicalBlob.status}, tree=${summary.tree.status}`,
+			`smith:scan ${summary.pass ? "PASS" : "FAIL"}; canary=${summary.attributeCanary.status}, history=${summary.history.status}, historicalBlob=${summary.historicalBlob.status}, tree=${summary.tree.status}`,
 		);
 		console.log(`Retained scan evidence: ${output}`);
 		if (!summary.pass) process.exitCode = 1;

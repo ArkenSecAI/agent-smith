@@ -81,11 +81,20 @@ export interface ScopeOutcome {
 	status: "not-run" | "failed" | "passed";
 	complete: boolean;
 }
+export interface AttributeCanaryOutcome extends ScopeOutcome {
+	receiptSha256?: string;
+}
 export const STDERR_ERROR = "Scanner stderr is not empty; native errors remain blocking";
 
-export function scopesPass(scopes: Record<Scope, ScopeOutcome>, errors: readonly string[]): boolean {
+export function scopesPass(
+	scopes: Record<Scope, ScopeOutcome> & { attributeCanary?: AttributeCanaryOutcome },
+	errors: readonly string[],
+): boolean {
 	return (
 		errors.length === 0 &&
+		scopes.attributeCanary?.complete === true &&
+		scopes.attributeCanary.status === "passed" &&
+		/^[0-9a-f]{64}$/.test(scopes.attributeCanary.receiptSha256 ?? "") &&
 		(["history", "historicalBlob", "tree"] as const).every(
 			scope => scopes[scope].complete && scopes[scope].status === "passed",
 		)

@@ -149,17 +149,23 @@ receive new completion text. Own-history incremental ingestion, persistence and
 corrupt-state recovery remain supported. Explicit manual history imports are
 separate from automatic predictor seeding.
 
-The broker name and endpoint use a 128-bit SHA-256 identity of the generation and
-resolved agent directory, not a short non-cryptographic profile hash. The compact
-broker name fits its 48-character limit without truncating that identity. Unix
-socket basenames omit the redundant service prefix to preserve path-length headroom.
+The broker name and endpoint use the first 128 SHA-256 bits of the generation and
+resolved agent directory, encoded as 22 canonical unpadded base64url characters.
+The 35-character broker name fits its unchanged 48-character limit; the same key
+forms a 27-byte Unix socket basename. A 75-byte runtime directory therefore gives
+a 103-byte endpoint, exercised by an actual Linux bind/connect. This improves
+headroom without claiming arbitrary-path, symlink-alias or macOS qualification.
 
 The real-broker privacy regression runs its broker host and predictor under the
 same whitelisted synthetic HOME/XDG environment as the client. It joins the host's
 full shutdown, including predictor termination and log/metadata persistence,
 before removing fixture state, even after a client is killed. The broker rejects
 new `start` requests during shutdown and drains earlier starts still preparing
-their records; a controlled filesystem gate exercises this race without a sleep.
+their records; a controlled filesystem gate requires the original request's
+shutdown rejection as well as no late launch, without a sleep.
+Tracked starts remain owned until their reply write completes or the caller
+disconnects. Both transitions are exercised; a connected caller must receive the
+specific broker shutdown rejection rather than a premature connection-close error.
 Startup, stop and shutdown failures are preserved together after the owned broker
 finishes, rather than a later teardown exception hiding an earlier failure.
 
@@ -286,6 +292,17 @@ conversion, export substitution or export-ignore omission defines scan bytes.
 The implementation rejects blobs over 512 MiB instead of skipping them; reviewed
 ZIP member verification is bounded to 64 MiB and extracts only in memory.
 
+Before candidate-content scans, a mandatory synthetic canary exercises the same
+copied, pinned Gitleaks executable and default configuration. Its owned Git fixture
+sets `-diff` and `export-ignore`: ordinary history and archive controls omit the
+synthetic finding, while maintained metadata/blob export and exact snapshot paths
+must both detect the expected `github-pat` and deny it as unapproved. No real
+credential or new source-disposition allowance is involved. Native reports,
+invocations, metadata and their hashes are retained under `attribute-canary/`;
+`receipt.json` is bound into the summary and its artifacts are rechecked before
+completion. Missing, incomplete, changed or unexpected proof fails preflight,
+leaving candidate scans `not-run`. This does not restore forced-text minified diffs.
+
 All three scopes use explicit `[extend] useDefault = true`, an empty
 ignore file, `--ignore-gitleaks-allow`, full redaction, archive/decode depth 2 and
 error-only non-color logging. No custom default-rule edits, blanket baseline,
@@ -299,9 +316,10 @@ Missing/malformed reports, unexpected stdout, undispositioned stderr, unsupporte
 execution, output/exit disagreement or changed inputs fail. Native exit 1 can
 pass disposition evaluation only when every finding is exactly approved and no
 error remains; other nonzero exits always fail. `summary.json` is the authoritative
-combined outcome, and requires complete passing coverage of all three scopes;
-preflight failures explicitly leave scans marked `not-run`. The summary schema
-is version 4; historical inventory schema is version 2. Tools, configuration,
+combined outcome, and requires the bound passing canary plus complete passing
+coverage of all three scopes. Preflight failures explicitly leave scans marked
+`not-run`. The summary schema is version 5; the disposition ledger remains version
+4 and historical inventory version 2. Tools, configuration, canary evidence,
 implementation/ledger inputs and source HEAD are rechecked before completion.
 
 Native redacted `history-findings.json`, `tree-findings.json`, and per-object
