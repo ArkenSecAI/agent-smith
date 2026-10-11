@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import * as fs from "node:fs/promises";
 import * as net from "node:net";
 import * as os from "node:os";
@@ -243,6 +243,19 @@ describe("Agent Smith predictor privacy", () => {
 		await ready.promise;
 		return operations;
 	}
+
+	it("keeps profile namespaces separate when the legacy non-cryptographic hash collides", () => {
+		const legacyHash = spyOn(Bun.hash, "wyhash").mockReturnValue(0n);
+		try {
+			const first = textPredictDaemon(root, agentDir);
+			const second = textPredictDaemon(root, path.join(home, "other-profile"));
+			expect(first.name).not.toBe(second.name);
+			expect(first.endpoint).not.toBe(second.endpoint);
+			expect(textPredictDaemon(root, path.join(agentDir, "..", "agent"))).toEqual(first);
+		} finally {
+			legacyHash.mockRestore();
+		}
+	});
 
 	it("fresh engines ignore foreign prompts, learn only new own rows, and persist on shutdown", async () => {
 		let child = await startDaemon();

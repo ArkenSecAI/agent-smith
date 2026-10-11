@@ -148,6 +148,11 @@ generation, so an old daemon advertising the same application version cannot
 receive new completion text. Own-history incremental ingestion, persistence and
 corrupt-state recovery remain supported. Explicit manual history imports are
 separate from automatic predictor seeding.
+
+The broker name and endpoint use a 128-bit SHA-256 identity of the generation and
+resolved agent directory, not a short non-cryptographic profile hash. Unix socket
+basenames omit the redundant service prefix to preserve path-length headroom.
+
 This separation is not VM containment, host sandboxing or target authorization.
 
 ## CI, review and scan boundaries

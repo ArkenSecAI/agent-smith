@@ -39,17 +39,20 @@ export function textPredictReadyBanner(endpoint: string): string {
  * endpoint inside the broker runtime dir. Different agent directories (profiles,
  * tests) get separate daemons because history and learned state are per agent dir.
  * The generation separates clients from pre-cutover daemons that seeded foreign history.
+ * A 128-bit SHA-256 identity prevents short, non-cryptographic hash collisions
+ * from selecting another profile's broker record or socket.
  */
 export function textPredictDaemon(runtimeDir: string, agentDir: string): { name: string; endpoint: string } {
-	const key = Bun.hash
-		.wyhash(`${TEXT_PREDICT_GENERATION}\0${path.resolve(agentDir)}`)
-		.toString(16)
-		.padStart(16, "0")
-		.slice(0, 12);
+	const key = new Bun.CryptoHasher("sha256")
+		.update(TEXT_PREDICT_GENERATION)
+		.update("\0")
+		.update(path.resolve(agentDir))
+		.digest("hex")
+		.slice(0, 32);
 	const endpoint =
 		process.platform === "win32"
 			? `\\\\.\\pipe\\agent-smith-text-predict-${Bun.hash.wyhash(runtimeDir).toString(16)}-${key}`
-			: path.join(runtimeDir, `text-predict-${key}.sock`);
+			: path.join(runtimeDir, `${key}.sock`);
 	return { name: `agent-smith.text-predict.${key}`, endpoint };
 }
 
