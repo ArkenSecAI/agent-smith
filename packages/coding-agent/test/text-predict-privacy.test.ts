@@ -51,6 +51,7 @@ async function request(endpoint: string, message: TextPredictRequest): Promise<T
 
 describe("Agent Smith predictor privacy", () => {
 	let root: string;
+	let boundaryRoot: string | undefined;
 	let home: string;
 	let agentDir: string;
 	let endpoint: string;
@@ -64,6 +65,7 @@ describe("Agent Smith predictor privacy", () => {
 	beforeEach(async () => {
 		// Keep the socket path short enough for macOS's Unix socket limit too.
 		root = await fs.mkdtemp(path.join(os.tmpdir(), "sp-"));
+		boundaryRoot = undefined;
 		home = path.join(root, "home");
 		agentDir = path.join(home, ".agent-smith", "agent");
 		await fs.mkdir(agentDir, { recursive: true });
@@ -123,6 +125,7 @@ describe("Agent Smith predictor privacy", () => {
 			server.close(() => closed.resolve());
 			await closed.promise;
 		}
+		if (boundaryRoot) await fs.rm(boundaryRoot, { recursive: true, force: true });
 		await fs.rm(root, { recursive: true, force: true });
 	});
 
@@ -324,14 +327,26 @@ describe("Agent Smith predictor privacy", () => {
 		}
 	});
 
-	it.skipIf(process.platform === "win32")("retains all identity bits within a 103-byte Unix endpoint", () => {
-		const runtime = "/tmp/agent-smith-runtime/".padEnd(75, "r");
+	it.skipIf(process.platform === "win32")("retains all identity bits within a 103-byte Unix endpoint", async () => {
+		// The qualification runner deliberately uses a long isolated TMPDIR.
+		// Own a short Unix fixture so the endpoint is exactly the tested boundary,
+		// independent of the workspace path; shared teardown joins its server.
+		boundaryRoot = await fs.mkdtemp("/tmp/sp-boundary-");
+		const runtime = path.join(boundaryRoot, "runtime".padEnd(75 - Buffer.byteLength(boundaryRoot) - 1, "r"));
+		await fs.mkdir(runtime);
 		const { name, endpoint: longEndpoint } = textPredictDaemon(runtime, agentDir);
 		expect(Buffer.byteLength(runtime)).toBe(75);
 		expect(Buffer.byteLength(longEndpoint)).toBe(103);
 		expect(path.dirname(longEndpoint)).toBe(runtime);
 		expect(Buffer.from(path.basename(longEndpoint, ".sock"), "base64url")).toHaveLength(16);
 		expect(path.basename(longEndpoint, ".sock")).toBe(name.slice("text-predict.".length));
+		await legacyListener(longEndpoint);
+		expect(await request(longEndpoint, { id: 103, op: "ping" })).toMatchObject({
+			id: 103,
+			ok: true,
+			op: "ping",
+			version: VERSION,
+		});
 	});
 
 	it("fresh engines ignore foreign prompts, learn only new own rows, and persist on shutdown", async () => {

@@ -153,8 +153,10 @@ The broker name and endpoint use the first 128 SHA-256 bits of the generation an
 resolved agent directory, encoded as 22 canonical unpadded base64url characters.
 The 35-character broker name fits its unchanged 48-character limit; the same key
 forms a 27-byte Unix socket basename. A 75-byte runtime directory therefore gives
-a 103-byte endpoint, exercised by an actual Linux bind/connect. This improves
-headroom without claiming arbitrary-path, symlink-alias or macOS qualification.
+a 103-byte endpoint. The permanent Unix boundary regression listens, connects and
+exchanges a request on that exact endpoint before joined socket/server cleanup.
+This improves headroom without claiming arbitrary-path, symlink-alias or macOS
+qualification; the current runtime evidence is Linux only.
 
 The real-broker privacy regression runs its broker host and predictor under the
 same whitelisted synthetic HOME/XDG environment as the client. It joins the host's
@@ -163,9 +165,15 @@ before removing fixture state, even after a client is killed. The broker rejects
 new `start` requests during shutdown and drains earlier starts still preparing
 their records; a controlled filesystem gate requires the original request's
 shutdown rejection as well as no late launch, without a sleep.
-Tracked starts remain owned until their reply write completes or the caller
-disconnects. Both transitions are exercised; a connected caller must receive the
-specific broker shutdown rejection rather than a premature connection-close error.
+During ordinary operation, tracked starts remain owned until their reply write
+completes or the caller disconnects. Shutdown starts a 250 ms delivery grace for
+pending replies, including those already backpressured before shutdown. Completion,
+disconnection or grace expiry releases that wait so teardown can close sockets.
+Actual non-reading and resumed-reading socket regressions cover both outcomes;
+ordinary elapsed time cannot consume a later shutdown's delivery grace. Reading
+preparing callers still receive the specific broker shutdown rejection rather than
+premature connection closure. This does not bound hung filesystem/process primitives
+or unrelated restart/mode operations.
 Startup, stop and shutdown failures are preserved together after the owned broker
 finishes, rather than a later teardown exception hiding an earlier failure.
 

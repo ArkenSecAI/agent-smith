@@ -37,6 +37,7 @@ import { renderTerminalOutput } from "./terminal-output";
 
 const DEFAULT_IDLE_GRACE_MS = 3_000;
 const MAX_REQUEST_BYTES = 1024 * 1024;
+const START_REPLY_DRAIN_MS = 250;
 const MAX_LOG_BYTES = 25 * 1024 * 1024;
 const LOG_READ_BYTES = 2 * 1024 * 1024;
 const READINESS_BUFFER_CHARS = 64 * 1024;
@@ -417,13 +418,14 @@ class DaemonBroker {
 	readonly #records = new Map<string, ManagedDaemon>();
 	/** Reserve names only until their prepared records are published. */
 	readonly #startingNames = new Set<string>();
-	/** Shutdown owns starts through preparation, readiness and response delivery. */
+	/** Shutdown owns starts through preparation, readiness and bounded response delivery. */
 	readonly #pendingStarts = new Set<Promise<void>>();
 	readonly #clients = new Set<net.Socket>();
 	readonly #ownerSockets = new Map<string, { socket: net.Socket; subscriptionId: string | undefined }>();
 	readonly #completionSubscriptions = new Map<string, string | undefined>();
 	readonly #pendingCompletions = new Map<string, Map<string, DaemonCompletionNotification>>();
 	readonly #finished = Promise.withResolvers<void>();
+	readonly #shutdownStarted = new AbortController();
 	readonly #sockets = new Set<net.Socket>();
 	#server: net.Server | undefined;
 	#idleTimer: NodeJS.Timeout | undefined;
@@ -463,6 +465,7 @@ class DaemonBroker {
 	async shutdown(): Promise<void> {
 		if (this.#shuttingDown) return this.#finished.promise;
 		this.#shuttingDown = true;
+		this.#shutdownStarted.abort();
 		clearTimeout(this.#idleTimer);
 		this.#idleTimer = undefined;
 		for (const starting of this.#pendingStarts) await starting;
@@ -628,17 +631,26 @@ class DaemonBroker {
 		}
 		try {
 			if (starting) {
-				// Preserve the rejection for a connected caller before shutdown
-				// destroys sockets. A disconnected caller must not strand the drain.
+				// Ordinary replies stay owned until delivered or disconnected.
+				// Only shutdown starts a grace period for a non-reading peer.
 				await new Promise<void>(resolve => {
 					if (socket.destroyed) {
 						resolve();
 						return;
 					}
+					const signal = this.#shutdownStarted.signal;
+					let timer: NodeJS.Timeout | undefined;
 					const finished = () => {
+						clearTimeout(timer);
+						signal.removeEventListener("abort", onShutdown);
 						socket.off("close", finished);
 						resolve();
 					};
+					const onShutdown = () => {
+						timer = setTimeout(finished, START_REPLY_DRAIN_MS);
+					};
+					if (signal.aborted) onShutdown();
+					else signal.addEventListener("abort", onShutdown, { once: true });
 					socket.once("close", finished);
 					socket.write(response, finished);
 				});

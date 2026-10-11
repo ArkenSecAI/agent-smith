@@ -227,4 +227,95 @@ describe("daemon metadata writes", () => {
 		},
 		20_000,
 	);
+
+	it.each([false, true])(
+		"bounds a backpressured reply only during shutdown (caller resumes reading: %s)",
+		async resumesReading => {
+			const root = await fs.mkdtemp(path.join(os.tmpdir(), "broker-backpressure-"));
+			const projectDir = path.join(root, "project");
+			const runtimeDir = path.join(root, "runtime");
+			await fs.mkdir(projectDir);
+			const controller = await createDaemonBrokerClient(projectDir, { runtimeDir });
+			const previousTitle = process.title;
+			const broker = startBroker(projectDir, runtimeDir);
+			await broker.listening;
+			await controller.request({ op: "ping" });
+			const endpoint = daemonBrokerEndpoint(projectDir, runtimeDir);
+			const socket = await connectJsonlSocket(endpoint, 1_000);
+			socket.pause();
+			const readable = Promise.withResolvers<void>();
+			socket.once("readable", readable.resolve);
+			socket.once("error", readable.reject);
+			let passed = false;
+			if (resumesReading) vi.useFakeTimers();
+			try {
+				const token = (await fs.readFile(path.join(runtimeDir, "broker.token"), "utf8")).trim();
+				const id = "p".repeat(900 * 1024);
+				// A valid request below the 1 MiB limit yields a large correlated
+				// error without launching a child. Real socket buffers hold it.
+				writeJsonLine(socket, {
+					id,
+					token,
+					operation: {
+						op: "start",
+						spec: {
+							name: "invalid name",
+							application: process.execPath,
+							args: [],
+							env: {},
+							cwd: projectDir,
+							pty: false,
+							restart: "no",
+							persist: false,
+							detached: false,
+						},
+					},
+				});
+				await readable.promise;
+				expect(socket.isPaused()).toBe(true);
+				if (resumesReading) {
+					// Ordinary elapsed time must not consume a later shutdown's
+					// delivery grace or release this still-buffered start reply.
+					vi.advanceTimersByTime(60_000);
+					await Promise.resolve();
+				}
+				await controller.request({ op: "shutdown" });
+				if (resumesReading) {
+					const reply = Promise.withResolvers<{ id: string; ok: boolean; error: string }>();
+					const parser = new LineParser(line => reply.resolve(JSON.parse(line)));
+					socket.on("data", (chunk: string) => parser.push(chunk));
+					socket.once("close", () => reply.reject(new Error("Broker closed before delivering the reply")));
+					socket.once("error", reply.reject);
+					const response = reply.promise.then(
+						value => ({ value }),
+						(error: unknown) => ({ error }),
+					);
+					vi.advanceTimersByTime(10);
+					socket.resume();
+					const outcome = await response;
+					expect(outcome).toMatchObject({ value: { ok: false } });
+					if ("value" in outcome) expect(outcome.value.id === id).toBe(true);
+				}
+				const completed = await Promise.race([
+					broker.finished.then(() => true),
+					Bun.sleep(2_000).then(() => false),
+				]);
+				expect(completed).toBe(true);
+				await expect(fs.stat(endpoint)).rejects.toMatchObject({ code: "ENOENT" });
+				expect(await fs.exists(path.join(runtimeDir, "daemons"))).toBe(false);
+				passed = true;
+			} finally {
+				// Disconnection releases both failing-before implementations.
+				// Join the broker and retain failed state without leaking workers.
+				socket.destroy();
+				controller.close();
+				if (resumesReading) vi.advanceTimersByTime(5_000);
+				await broker.finished;
+				if (resumesReading) vi.useRealTimers();
+				process.title = previousTitle;
+				if (passed) await fs.rm(root, { recursive: true, force: true });
+			}
+		},
+		10_000,
+	);
 });
