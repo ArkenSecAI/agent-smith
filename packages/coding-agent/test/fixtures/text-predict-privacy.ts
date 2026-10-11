@@ -4,6 +4,9 @@ import { TextPredictor } from "@oh-my-pi/pi-natives";
 import * as launch from "../../src/launch/client";
 import { closeTextPrediction, requestTextPrediction } from "../../src/predict/client";
 import { TEXT_PREDICT_BROKER_SCOPE } from "../../src/predict/protocol";
+import { getGlobalDaemonRuntimeDir } from "@oh-my-pi/pi-utils";
+import { startDaemonBrokerFromEnvironment } from "../../src/launch/broker";
+import { DAEMON_PROJECT_DIR_ENV, DAEMON_RUNTIME_DIR_ENV, DAEMON_IDLE_GRACE_ENV } from "../../src/launch/protocol";
 
 // The parent supplies an isolated HOME and agent directory; no inherited account environment.
 const agentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
@@ -57,19 +60,71 @@ switch (process.argv[2]) {
 		}
 		break;
 	}
+	case "broker-host": {
+		if (!process.send) throw new Error("Owned broker host requires parent IPC");
+		const runtimeDir = getGlobalDaemonRuntimeDir(TEXT_PREDICT_BROKER_SCOPE);
+		const control = await launch.createDaemonBrokerClient(runtimeDir, { runtimeDir, idleGraceMs: 5_000 });
+		const shutdown = Promise.withResolvers<void>();
+		process.on("message", message => {
+			if (message === "shutdown") shutdown.resolve();
+		});
+		process.once("disconnect", () => shutdown.resolve());
+		process.env[DAEMON_PROJECT_DIR_ENV] = runtimeDir;
+		process.env[DAEMON_RUNTIME_DIR_ENV] = runtimeDir;
+		process.env[DAEMON_IDLE_GRACE_ENV] = "5000";
+		const listening = Promise.withResolvers<void>();
+		let ready = false;
+		const finished = startDaemonBrokerFromEnvironment({
+			onListening: () => {
+				ready = true;
+				listening.resolve();
+			},
+		});
+		try {
+			await Promise.race([
+				listening.promise,
+				finished.then(() => {
+					throw new Error("Owned global broker stopped before listening");
+				}),
+			]);
+			await control.request({ op: "ping" });
+			process.send("ready");
+			await shutdown.promise;
+		} finally {
+			try {
+				if (ready) {
+					try {
+						const listed = await control.request({ op: "list" });
+						if (listed.op !== "list") throw new Error("Unexpected broker list response");
+						for (const daemon of listed.daemons) {
+							const stopped = await control.request({ op: "stop", name: daemon.name, timeoutMs: 2_000 });
+							if (stopped.op !== "stop" || !["exited", "failed"].includes(stopped.daemon.state)) {
+								throw new Error("Owned predictor did not terminate");
+							}
+						}
+					} finally {
+						await control.request({ op: "shutdown" });
+					}
+				}
+			} finally {
+				control.close();
+				try {
+					await finished;
+				} finally {
+					if (process.connected && process.disconnect) process.disconnect();
+				}
+			}
+		}
+		break;
+	}
 	case "broker-client": {
-		const broker = await launch.daemonClientForGlobal(TEXT_PREDICT_BROKER_SCOPE);
 		try {
 			const own = (await requestTextPrediction("ngram", "please inspect ", "zqsmith")).suggestion;
 			const foreign = (await requestTextPrediction("ngram", "please inspect ", "zqclaude")).suggestion;
 			process.stdout.write(JSON.stringify({ own, foreign }));
 		} finally {
 			closeTextPrediction();
-			try {
-				await broker.request({ op: "shutdown" });
-			} finally {
-				await launch.closeDaemonClients();
-			}
+			await launch.closeDaemonClients();
 		}
 		break;
 	}

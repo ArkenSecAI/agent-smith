@@ -37,6 +37,7 @@ async function main(): Promise<void> {
 		[
 			"packages/coding-agent/test/agent-smith-isolation.test.ts",
 			"packages/coding-agent/test/text-predict-privacy.test.ts",
+			"packages/coding-agent/test/launch/broker-metadata-writes.test.ts",
 			"packages/coding-agent/test/discovery",
 			"packages/coding-agent/test/settings-manager.test.ts",
 			"packages/coding-agent/test/settings-reload-cwd.test.ts",

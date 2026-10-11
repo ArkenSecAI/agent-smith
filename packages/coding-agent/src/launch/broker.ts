@@ -415,15 +415,10 @@ class DaemonBroker {
 	readonly #idleGraceMs: number;
 	readonly #restartBackoffBaseMs: number;
 	readonly #records = new Map<string, ManagedDaemon>();
-	/**
-	 * Names reserved by an in-flight `start` before its record lands in
-	 * `#records`. Requests dispatch concurrently, and `#start` awaits (cwd stat,
-	 * log open) between the duplicate check and the record insert; without a
-	 * synchronous reservation two clients can both pass the check and spawn
-	 * duplicate processes — one exits on a held resource (e.g. a Chromium
-	 * profile lock) or keeps running untracked.
-	 */
+	/** Reserve names only until their prepared records are published. */
 	readonly #startingNames = new Set<string>();
+	/** Shutdown owns the complete starts, including preparation and readiness. */
+	readonly #pendingStarts = new Set<Promise<DaemonRpcResult>>();
 	readonly #clients = new Set<net.Socket>();
 	readonly #ownerSockets = new Map<string, { socket: net.Socket; subscriptionId: string | undefined }>();
 	readonly #completionSubscriptions = new Map<string, string | undefined>();
@@ -470,6 +465,13 @@ class DaemonBroker {
 		this.#shuttingDown = true;
 		clearTimeout(this.#idleTimer);
 		this.#idleTimer = undefined;
+		for (const starting of this.#pendingStarts) {
+			try {
+				await starting;
+			} catch {
+				// The request handler reports its failure; shutdown still owns the drain.
+			}
+		}
 		for (const record of this.#records.values()) {
 			const detached = record.spec.detached && !record.stopRequested && record.snapshot.pid !== undefined;
 			if (!detached && !terminalState(record.snapshot.state)) await this.#stopRecord(record, 2_000);
@@ -630,8 +632,16 @@ class DaemonBroker {
 		switch (operation.op) {
 			case "ping":
 				return { op: "ping", projectDir: this.#projectDir };
-			case "start":
-				return this.#start(operation.spec, operation.owner, operation.replace);
+			case "start": {
+				if (this.#shuttingDown) throw new Error("Daemon broker is shutting down");
+				const starting = this.#start(operation.spec, operation.owner, operation.replace);
+				this.#pendingStarts.add(starting);
+				try {
+					return await starting;
+				} finally {
+					this.#pendingStarts.delete(starting);
+				}
+			}
 			case "list": {
 				await Promise.all([...this.#records.values()].map(record => this.#refreshDetached(record)));
 				return {
@@ -705,8 +715,14 @@ class DaemonBroker {
 			}
 			const stat = await fs.stat(spec.cwd);
 			if (!stat.isDirectory()) throw new Error(`Daemon cwd is not a directory: ${spec.cwd}`);
+			if (this.#shuttingDown) throw new Error("Daemon broker is shutting down");
 			const dir = path.join(this.#runtimeDir, "daemons", spec.name);
 			const now = Date.now();
+			const log = await DaemonLog.create(dir);
+			if (this.#shuttingDown) {
+				await log.close();
+				throw new Error("Daemon broker is shutting down");
+			}
 			record = {
 				spec,
 				snapshot: {
@@ -722,7 +738,7 @@ class DaemonBroker {
 					detached: spec.detached,
 				},
 				dir,
-				log: await DaemonLog.create(dir),
+				log,
 				generation: 0,
 				stopRequested: false,
 				logReady: !spec.ready?.log,
@@ -747,16 +763,17 @@ class DaemonBroker {
 			// Wake on the sticky readyAt marker or any terminal state, not the live
 			// state: a fast process flips starting→ready→exited within one poll
 			// interval, so sampling `state === "ready"` never observes readiness even
-			// though #markReady durably recorded readyAt. A pre-ready exit must also
-			// wake the wait rather than block for the full timeout.
+			// though #markReady durably recorded readyAt. Shutdown also releases the
+			// start so it can stop the process rather than waiting for readiness.
 			const ready = await this.#waitUntil(
 				record,
-				() => record.snapshot.readyAt !== undefined || terminalState(record.snapshot.state),
+				() => this.#shuttingDown || record.snapshot.readyAt !== undefined || terminalState(record.snapshot.state),
 				spec.ready.timeoutMs,
 			);
 			readyTimedOut = !ready;
 		}
 		await record.persistQueue;
+		if (this.#shuttingDown) throw new Error("Daemon broker is shutting down");
 		return { op: "start", daemon: record.snapshot, readyTimedOut };
 	}
 

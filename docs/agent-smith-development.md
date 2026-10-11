@@ -154,6 +154,13 @@ resolved agent directory, not a short non-cryptographic profile hash. The compac
 broker name fits its 48-character limit without truncating that identity. Unix
 socket basenames omit the redundant service prefix to preserve path-length headroom.
 
+The real-broker privacy regression runs its broker host and predictor under the
+same whitelisted synthetic HOME/XDG environment as the client. It joins the host's
+full shutdown, including predictor termination and log/metadata persistence,
+before removing fixture state, even after a client is killed. The broker rejects
+new `start` requests during shutdown and drains earlier starts still preparing
+their records; a controlled filesystem gate exercises this race without a sleep.
+
 This separation is not VM containment, host sandboxing or target authorization.
 
 ## CI, review and scan boundaries

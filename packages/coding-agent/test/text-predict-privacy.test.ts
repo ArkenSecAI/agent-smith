@@ -57,6 +57,8 @@ describe("Agent Smith predictor privacy", () => {
 	let children: Subprocess[];
 	let servers: net.Server[];
 	let sockets: Set<net.Socket>;
+	let broker: Subprocess<"ignore", "ignore", "pipe"> | undefined;
+	let brokerStderr: Promise<string> | undefined;
 
 	beforeEach(async () => {
 		// Keep the socket path short enough for macOS's Unix socket limit too.
@@ -68,6 +70,8 @@ describe("Agent Smith predictor privacy", () => {
 		children = [];
 		servers = [];
 		sockets = new Set();
+		broker = undefined;
+		brokerStderr = undefined;
 		// Whitelist the environment so neither the fixture nor CLI can reach real account homes.
 		env = {
 			HOME: home,
@@ -102,6 +106,16 @@ describe("Agent Smith predictor privacy", () => {
 			if (child.exitCode === null) child.kill("SIGKILL");
 			await child.exited;
 		}
+		if (broker) {
+			try {
+				if (broker.exitCode !== null) throw new Error("Owned global broker exited before teardown");
+				broker.send("shutdown");
+			} finally {
+				// The host exits only after stopping its predictor and joining the
+				// real broker's log/metadata persistence, even if the client was killed.
+				expect(await broker.exited, await brokerStderr).toBe(0);
+			}
+		}
 		for (const socket of sockets) socket.destroy();
 		for (const server of servers) {
 			const closed = Promise.withResolvers<void>();
@@ -132,6 +146,44 @@ describe("Agent Smith predictor privacy", () => {
 			]);
 			expect(code, stderr).toBe(0);
 			return JSON.parse(stdout) as T;
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
+	async function startGlobalBroker(): Promise<void> {
+		const listening = Promise.withResolvers<void>();
+		const host = Bun.spawn(
+			[
+				process.execPath,
+				"--no-env-file",
+				path.join(import.meta.dir, "fixtures/text-predict-privacy.ts"),
+				"broker-host",
+			],
+			{
+				cwd: root,
+				env,
+				stdin: "ignore",
+				stdout: "ignore",
+				stderr: "pipe",
+				ipc(message) {
+					if (message === "ready") listening.resolve();
+					else listening.reject(new Error("Unexpected broker host message"));
+				},
+			},
+		);
+		broker = host;
+		brokerStderr = new Response(host.stderr).text();
+		// Real subprocess startup needs a wall-clock failure bound; success is
+		// signalled by IPC, not a sleep. No prediction client exists before ready.
+		const timer = setTimeout(() => host.kill("SIGKILL"), TIMEOUT_MS);
+		try {
+			await Promise.race([
+				listening.promise,
+				host.exited.then(async code => {
+					throw new Error(`Owned global broker exited before readiness (${code}): ${await brokerStderr}`);
+				}),
+			]);
 		} finally {
 			clearTimeout(timer);
 		}
@@ -346,6 +398,7 @@ describe("Agent Smith predictor privacy", () => {
 
 	it("the real global broker accepts the profile identity and serves only its own history", async () => {
 		addOwnHistory("please inspect zqsmithbloom");
+		await startGlobalBroker();
 		const result = await fixture<{ own: PredictedWord | null; foreign: PredictedWord | null }>("broker-client");
 		expect(result.own?.suffix).toBe("bloom");
 		expect(result.foreign).toBeNull();
