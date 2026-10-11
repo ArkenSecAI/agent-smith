@@ -150,8 +150,9 @@ corrupt-state recovery remain supported. Explicit manual history imports are
 separate from automatic predictor seeding.
 
 The broker name and endpoint use a 128-bit SHA-256 identity of the generation and
-resolved agent directory, not a short non-cryptographic profile hash. Unix socket
-basenames omit the redundant service prefix to preserve path-length headroom.
+resolved agent directory, not a short non-cryptographic profile hash. The compact
+broker name fits its 48-character limit without truncating that identity. Unix
+socket basenames omit the redundant service prefix to preserve path-length headroom.
 
 This separation is not VM containment, host sandboxing or target authorization.
 

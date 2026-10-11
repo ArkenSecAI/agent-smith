@@ -53,7 +53,7 @@ export function textPredictDaemon(runtimeDir: string, agentDir: string): { name:
 		process.platform === "win32"
 			? `\\\\.\\pipe\\agent-smith-text-predict-${Bun.hash.wyhash(runtimeDir).toString(16)}-${key}`
 			: path.join(runtimeDir, `${key}.sock`);
-	return { name: `agent-smith.text-predict.${key}`, endpoint };
+	return { name: `text-predict.${key}`, endpoint };
 }
 
 /** Client → daemon request. */

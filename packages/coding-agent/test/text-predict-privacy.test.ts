@@ -60,7 +60,7 @@ describe("Agent Smith predictor privacy", () => {
 
 	beforeEach(async () => {
 		// Keep the socket path short enough for macOS's Unix socket limit too.
-		root = await fs.mkdtemp(path.join(os.tmpdir(), "smith-pred-"));
+		root = await fs.mkdtemp(path.join(os.tmpdir(), "sp-"));
 		home = path.join(root, "home");
 		agentDir = path.join(home, ".agent-smith", "agent");
 		await fs.mkdir(agentDir, { recursive: true });
@@ -249,6 +249,7 @@ describe("Agent Smith predictor privacy", () => {
 		try {
 			const first = textPredictDaemon(root, agentDir);
 			const second = textPredictDaemon(root, path.join(home, "other-profile"));
+			expect(first.name.length).toBeLessThanOrEqual(48);
 			expect(first.name).not.toBe(second.name);
 			expect(first.endpoint).not.toBe(second.endpoint);
 			expect(textPredictDaemon(root, path.join(agentDir, "..", "agent"))).toEqual(first);
@@ -341,6 +342,13 @@ describe("Agent Smith predictor privacy", () => {
 		expect(await sync()).toBe(0);
 		await stopDaemon(child);
 		expect(await Bun.file(path.join(stateDir, "cursor.json")).json()).toEqual({ historyId: 240 });
+	}, 60_000);
+
+	it("the real global broker accepts the profile identity and serves only its own history", async () => {
+		addOwnHistory("please inspect zqsmithbloom");
+		const result = await fixture<{ own: PredictedWord | null; foreign: PredictedWord | null }>("broker-client");
+		expect(result.own?.suffix).toBe("bloom");
+		expect(result.foreign).toBeNull();
 	}, 60_000);
 
 	it("the public client reaches the new daemon while a same-version legacy endpoint remains live", async () => {

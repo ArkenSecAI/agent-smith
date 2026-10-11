@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { TextPredictor } from "@oh-my-pi/pi-natives";
 import * as launch from "../../src/launch/client";
 import { closeTextPrediction, requestTextPrediction } from "../../src/predict/client";
+import { TEXT_PREDICT_BROKER_SCOPE } from "../../src/predict/protocol";
 
 // The parent supplies an isolated HOME and agent directory; no inherited account environment.
 const agentDir = process.env.AGENT_SMITH_CODING_AGENT_DIR;
@@ -53,6 +54,22 @@ switch (process.argv[2]) {
 		} finally {
 			closeTextPrediction();
 			brokerSpy.mockRestore();
+		}
+		break;
+	}
+	case "broker-client": {
+		const broker = await launch.daemonClientForGlobal(TEXT_PREDICT_BROKER_SCOPE);
+		try {
+			const own = (await requestTextPrediction("ngram", "please inspect ", "zqsmith")).suggestion;
+			const foreign = (await requestTextPrediction("ngram", "please inspect ", "zqclaude")).suggestion;
+			process.stdout.write(JSON.stringify({ own, foreign }));
+		} finally {
+			closeTextPrediction();
+			try {
+				await broker.request({ op: "shutdown" });
+			} finally {
+				await launch.closeDaemonClients();
+			}
 		}
 		break;
 	}
