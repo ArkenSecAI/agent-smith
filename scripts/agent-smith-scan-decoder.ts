@@ -320,7 +320,7 @@ export interface DecoderDisposition {
 	decision: Decision;
 }
 
-function exactErrors(stderr: Uint8Array): boolean {
+function exactErrors(stderr: Uint8Array, scope: Scope): boolean {
 	let text: string;
 	try {
 		text = new TextDecoder("utf-8", { fatal: true }).decode(stderr);
@@ -329,10 +329,11 @@ function exactErrors(stderr: Uint8Array): boolean {
 	}
 	const lines = text.split("\n");
 	if (lines.pop() !== "" || lines.length !== APPLEDOUBLE.members.length) return false;
+	const commit = scope === "history" ? ` commit=${APPLEDOUBLE.commit.slice(0, 7)}` : "";
 	const expected = new Set<string>(
 		APPLEDOUBLE.members.map(
 			member =>
-				`ERR error="could not read file: bzip2: corrupted input: invalid stream magic" path=${APPLEDOUBLE.file}!${member.path}`,
+				`ERR error="could not read file: bzip2: corrupted input: invalid stream magic"${commit} path=${APPLEDOUBLE.file}!${member.path}`,
 		),
 	);
 	for (const line of lines) {
@@ -357,7 +358,7 @@ export function reconcileDecoder(
 		scope === "tree" ||
 		!proof ||
 		!decision.errors.includes(STDERR_ERROR) ||
-		!exactErrors(native.stderr) ||
+		!exactErrors(native.stderr, scope) ||
 		native.stdout.length !== 0 ||
 		native.signal !== null ||
 		native.timedOut ||

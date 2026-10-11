@@ -82,6 +82,7 @@ const errors = APPLEDOUBLE.members
 			`${index + 1}:31PM ERR error="could not read file: bzip2: corrupted input: invalid stream magic" path=${APPLEDOUBLE.file}!${member.path}\n`,
 	)
 	.join("");
+const historyErrors = errors.replaceAll(" path=", " commit=6f0fec7 path=");
 let owned: Fixture;
 let archive: Uint8Array;
 let members: Uint8Array[];
@@ -142,9 +143,10 @@ function rawCase(index = 0): { evidence: RawEvidence; locations: ScanLocations }
 }
 
 function decoderCase(scope: Scope = "historicalBlob") {
+	const stderr = scope === "history" ? historyErrors : errors;
 	const native: NativeEvidence = {
 		report: encode("[]\n"),
-		stderr: encode(errors),
+		stderr: encode(stderr),
 		stdout: new Uint8Array(),
 		exitCode: 0,
 		signal: null,
@@ -162,7 +164,7 @@ function decoderCase(scope: Scope = "historicalBlob") {
 			historicalBlob: [],
 		}),
 	);
-	const decision = decide([], scope, prepared, new Map(), 0, errors, sha256(native.report), version);
+	const decision = decide([], scope, prepared, new Map(), 0, stderr, sha256(native.report), version);
 	const proof: DecoderProof = {
 		coverage: { ...coverage },
 		version,
@@ -196,7 +198,7 @@ function decoderCase(scope: Scope = "historicalBlob") {
 		contextSha256: "3".repeat(64),
 		receiptSha256: "4".repeat(64),
 		reportSha256: sha256(native.report),
-		stderrSha256: sha256(native.stderr),
+		stderrSha256: sha256(encode(errors)),
 		proofSha256: proof.proofSha256,
 		inventorySha256: coverage.inventorySha256,
 		resultsSha256: "5".repeat(64),
@@ -384,9 +386,35 @@ describe("reviewed immutable AppleDouble supplement", () => {
 		])
 			expect(reconcileDecoder(decision, "history", native, coverage, proof, undefined, changed)).toBeUndefined();
 		expect(reconcileDecoder(decision, "tree", native, coverage, proof, version, wholeBlob)).toBeUndefined();
+		const historical = decoderCase();
 		expect(
-			reconcileDecoder(decision, "historicalBlob", native, coverage, proof, { ...version, file: "other.gz" }),
+			reconcileDecoder(historical.decision, "historicalBlob", historical.native, coverage, historical.proof, {
+				...version,
+				file: "other.gz",
+			}),
 		).toBeUndefined();
+	});
+
+	test("history requires the exact native commit field and directory errors cannot borrow that context", () => {
+		const { native, decision, proof, wholeBlob } = decoderCase("history");
+		for (const stderr of [
+			errors,
+			historyErrors.replaceAll("commit=6f0fec7", "commit=aaaaaaa"),
+			historyErrors.replaceAll("commit=6f0fec7", `commit=${APPLEDOUBLE.commit}`),
+		]) {
+			expect(
+				reconcileDecoder(
+					decision,
+					"history",
+					{ ...native, stderr: encode(stderr) },
+					coverage,
+					proof,
+					undefined,
+					wholeBlob,
+				),
+			).toBeUndefined();
+		}
+		expect(reconcileDecoder(decision, "historicalBlob", native, coverage, proof, version)).toBeUndefined();
 	});
 
 	test("metadata disposition never removes decoded findings or unrelated execution errors", () => {

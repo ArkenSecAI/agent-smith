@@ -402,9 +402,12 @@ missing or changed supplemental receipt never authorizes an error; previous
 exploratory raw-scan receipts cannot substitute for this run.
 
 The historical-blob decision additionally requires the exact single-version
-context and exactly one of each of the three observed error lines. Only the
-normal clock prefix can vary; other stderr, missing/extra errors, different
-paths or unsupported log formats fail. Whole-history reconciliation happens
+context and exactly one of each of the three observed error lines. Git-history
+errors must include the pinned scanner's exact `commit=6f0fec7` field;
+directory-scan errors must omit it. Neither scope may borrow the other's log
+context. Only the normal clock prefix can vary; other stderr, missing/extra
+errors, different paths/commits or unsupported log formats fail.
+Whole-history reconciliation happens
 after all historical object scans. It requires complete candidate ancestry and
 inventory under pinned-base attributes, the reviewed blob's sole addition, the
 passing independent whole-blob scan and all raw-member proofs. The archive path
