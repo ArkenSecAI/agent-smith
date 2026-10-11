@@ -6,13 +6,15 @@ application version is `0.0.0-unreleased`, and its source entrypoint is
 `packages/coding-agent/src/cli.ts`. Internal workspace packages and the native ABI
 retain version 18.4.8; this is not an upstream release or a supported installer.
 
-**Publication hold:** no product source ref or remote CI execution is authorized
-until an actual non-maintainer tests private vulnerability reporting on
-`ArkenSecAI/agent-smith`. An admin cannot substitute for that reporter. Source
-rights, inherited scanner findings, exact-pin independent review and required
-hosted checks are separate gates; see [the rights inventory](agent-smith-source-rights.md)
-and [contribution policy](../CONTRIBUTING.md). A successful local build does not
-clear any of them.
+**Publication prerequisites:** private vulnerability reporting must be enabled on
+`ArkenSecAI/agent-smith`, with clear [private reporting instructions](../.github/SECURITY.md).
+The synthetic outsider report → maintainer notification → private acknowledgement/
+confidentiality round trip is explicitly deferred until after publication when users
+or an authorized reporter are available; it remains unverified, not passed.
+Source rights, inherited scanner findings, exact-pin independent review and required
+hosted checks/protection remain separate gates; see [the rights inventory](agent-smith-source-rights.md)
+and [contribution policy](../CONTRIBUTING.md). Deferring the reporting test or passing
+a local build does not clear those gates or authorize a supported release.
 
 ## Toolchain and maintained commands
 
@@ -402,7 +404,9 @@ public ledger, never detected token/PEM values, author emails, raw reports or
 private workspace paths. Approvals require independent review followed by Main's
 exact-pin integration and checks; similarity never extends their authority.
 
-Fresh history review covers 281 rows: 265 reviewed non-secret and 16 blocked.
+The complete history ledger covers 281 rows: 266 reviewed non-secret and
+15 blocked. Its original complete review classified 265 non-secret and 16 blocked;
+the subsequent exact Antigravity public-distribution evidence clears one finding.
 All 273 earlier identities remain, but their native `Link` fields changed and
 eight additional identities appeared. That required a new complete review,
 not filtering `Link` or inheriting the earlier report's authority. Current-tree
@@ -412,12 +416,18 @@ non-secret; four duplicate groups preserve every separately reviewed occurrence.
 The mechanical commitment reconciliation preserves those original tree/object
 reports, row assignments, source bindings and review digests.
 
-The remaining history holds are one captured Startpage token, fourteen Xiaomi
-credential occurrences and one distinct Antigravity parameter. Current-tree
-Xiaomi findings remain blocked too. Retained primary evidence covers the exact
-publicly distributed Gemini native-client pair, not permission to reuse its
-registration. These are finding dispositions, not a green baseline, exhaustive
-binary decoding, rights clearance or publication approval.
+The remaining history holds are one captured Startpage token and fourteen Xiaomi
+credential occurrences. Current-tree Xiaomi findings remain blocked too. The
+Antigravity pair is bound to the official 2.22.0 macOS ARM64 distribution: native
+type metadata and static instructions place both exact parameters in one OAuth
+configuration used by its token-acquisition paths. The ledger records publisher
+URLs, archive/member digests and byte spans; the independently reviewed proof is
+`candidate-13-antigravity-public-client-provenance.json`, SHA-256
+`d7df4eb2f6a243c78eb246bb3dd88bce6a20b29994d43cc62d45d5eeb8ba9feb`.
+Neither that proof nor the retained Gemini public-native evidence authorizes
+registration reuse or provider service access. These are finding dispositions,
+not a green baseline, exhaustive binary decoding, rights clearance or publication
+approval. Apple code-signature/notarization verification is not claimed.
 
 Native decoder errors are preserved unchanged. The only implemented supplemental
 disposition is the independently reviewed AppleDouble v2 metadata in

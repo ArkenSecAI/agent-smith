@@ -21,8 +21,9 @@ kimi.tiktoken.model, tokenization_kimi.py:
   Both files exactly match K3 snapshot f831ab66814297da540d832a5235f8e904f29d06.
   The vocabulary also matches Moonshot's Kimi-VL-A3B-Instruct release; its
   separate MIT notice is retained in ../../data/LICENSE.kimi-vl.
-  The Python file's existing Xenova citation is preserved; that fragment's
-  separate grant remains unestablished. See ../../data/README.md.
+  The Python file's existing Xenova citation is preserved. Separate permission
+  for its exact byte-mapping expression was determined unnecessary by the narrow
+  U.S. copyright assessment in ../../data/README.md; no notebook license is asserted.
 
 deepseek-v3.tokenizer.json, deepseek-v4.tokenizer.json:
   DeepSeek; Copyright (c) 2023 DeepSeek.

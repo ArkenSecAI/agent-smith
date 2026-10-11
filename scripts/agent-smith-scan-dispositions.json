@@ -21686,12 +21686,16 @@
         "gemini-public-client-provenance.json SHA-256 15f9afddc8678517e1d443cff50635f05c1f93f5134ed4fc4618164cc20e638b; official source commit 9b6e0265d16bbd29ca51e33c9e0c01dc4cec5e83, blob 8ec92848c1a77bb28ae394b9e9720e41b64177c2"
       ]
     },
-    "current-history-antigravity-unresolved-parameter": {
+    "current-history-antigravity-public-native-parameter": {
       "origin": "candidate-history",
-      "disposition": "blocked",
-      "reason": "Distinct native OAuth client-secret pair without authoritative exact-pair public-distribution provenance. PKCE, localhost and Gemini evidence do not resolve it.",
+      "disposition": "reviewed_non_secret",
+      "reason": "The exact historical client-ID/client-secret pair is intentionally distributed together in publisher Antigravity 2.22.0 macOS ARM64 build 2.22.0-5446056071266304. Independent archive hashing, native type metadata and static instructions bind both values to ClientID and ClientSecret fields of one OAuth configuration used by native token-acquisition flows. This classifies the distributed native client parameter; it does not authorize registration reuse, establish provider service entitlement or clear source publication.",
       "evidence": [
-        "0fe6361528903703319cdb978796df7e6441e847:packages/ai/src/utils/oauth/google-antigravity.ts:11-13,257,293-298"
+        "0fe6361528903703319cdb978796df7e6441e847:packages/ai/src/utils/oauth/google-antigravity.ts:11-13,257,293-298",
+        "candidate-13-antigravity-public-client-provenance.json SHA-256 d7df4eb2f6a243c78eb246bb3dd88bce6a20b29994d43cc62d45d5eeb8ba9feb; independent review SHA-256 8dfe931e0e3b2c0dd8f3bfa5016716acfd6e85cdceebb556bc39bfd1ed40a656",
+        "https://antigravity.google/download links the DMG in 2.22.0-5446056071266304/darwin-arm; https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/manifest/latest-arm64-mac.yml names the same-directory ZIP and matching SHA-512/size.",
+        "https://storage.googleapis.com/antigravity-public/antigravity-hub/2.22.0-5446056071266304/darwin-arm/Antigravity.zip SHA-256 079ba05eb9768f13461fb39411dc7b6ebb2ac16abc905820273394ce86f61340; 181627488 bytes.",
+        "ZIP member Antigravity.app/Contents/Resources/bin/language_server SHA-256 2bb1bda598569c6f4eb6809158f72cc0c3b6cf10e9bd64fcc00cbed33f70093e; 151002800 bytes. Zero-based half-open value spans [46283626,46283699) and [45729748,45729783); getOAuthConfig [35804608,35805888) SHA-256 904a76f7b609492fc090e08dead06aa22d20c98565e6f5f9a6e3c64c5f3d04f3 binds ClientID/ClientSecret fields of one configuration."
       ]
     },
     "current-history-generator-model-identifiers": {
@@ -27533,7 +27537,7 @@
       "containerSha256": "2cb67965bd585bece9d2832a9547526e0a17edaa7de4250bc0a30804b5ea487e",
       "contentSha256": "2cb67965bd585bece9d2832a9547526e0a17edaa7de4250bc0a30804b5ea487e",
       "origin": "candidate-history",
-      "group": "current-history-antigravity-unresolved-parameter"
+      "group": "current-history-antigravity-public-native-parameter"
     },
     {
       "row": 274,

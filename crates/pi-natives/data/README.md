@@ -8,11 +8,13 @@ components do **not** acquire a universal MIT grant from the repository root.
 Keep their component licenses, this mapping, the cache's `NOTICE.tokenizers`,
 and file-specific `.NOTICE` sidecars with source redistributions.
 
-The evidence below was collected on **2026-10-10** for OMP **v18.4.8**, commit
-`717f97f4d22b3d65c4a4eef6a744255d46f4d1a6`. All ten retained cache files' locally
-computed Git blob IDs matched that commit's tree. This work added notices only:
+The initial evidence was collected on **2026-10-10** for OMP **v18.4.8**, commit
+`717f97f4d22b3d65c4a4eef6a744255d46f4d1a6`; the narrow Kimi assessment below
+was completed on **2026-10-11**. All ten retained cache files' locally computed
+Git blob IDs matched that commit's tree. This work added notices only:
 no cache, table, generator, `families.json`, or runtime code was changed.
-**Publication remains blocked for the unresolved material listed below.**
+Whole-source publication remains subject to the
+[source-rights inventory](../../../docs/agent-smith-source-rights.md).
 An available license text is not itself proof that an unmatched file is covered.
 
 ### Component mapping
@@ -27,7 +29,7 @@ they were inspected, not run or independently validated by regenerating outputs.
 | `o200k_base.tiktoken` | `o200k_base.bin.zst`; same process for 199998 ranks. Also supplies the pieces/ranks for both Jev tables. | Same OpenAI notice; exact cache SHA-256 matches. Jev's separate measurement provenance is discussed below. |
 | `qwen3.8.tokenizer.json` | `qwen3.bin.zst`; `pack-qwen.ts` decodes the byte alphabet, excludes 33 added tokens and empties 201 unreachable entries while retaining 248044 rank slots; UTOK1 and zstd -19. | [Qwen3.8 Apache-2.0](LICENSE.qwen3.8), including Copyright 2026 Alibaba Cloud. Full JSON identity established after reversing formatting/key-order changes. Attach the [cache modification notice](../tools/cache/qwen3.8.tokenizer.json.NOTICE) and [table modification notice](NOTICE.qwen3). |
 | `kimi.tiktoken.model` | `kimi_k2.bin.zst`; `pack-kimi.ts` decodes 163584 base64/rank entries; specials are absent; UTOK1 and zstd -19. | Exact bytes match pinned **Kimi K3**. [K3 license](LICENSE.kimi-k3), Copyright (c) 2026 Moonshot AI; custom terms, not ordinary MIT. The identical vocabulary also appears in Kimi-VL; its separate [MIT notice](LICENSE.kimi-vl) is retained without asserting that OMP acquired it there. |
-| `tokenization_kimi.py` | Retained Python source; its split expression is recorded in `families.json`. It imports K3 support (`encoding_k3`); `pack-kimi.ts` does not read it. | Exact bytes match the same K3 snapshot. K3 notice retained; the cited Xenova fragment's separate grant remains unestablished. |
+| `tokenization_kimi.py` | Retained Python source; its split expression is recorded in `families.json`. It imports K3 support (`encoding_k3`); `pack-kimi.ts` does not read it. | Exact bytes match the same K3 snapshot. K3 notice and Xenova citation retained; separate permission for the exact byte-mapping expression is unnecessary under the narrow U.S. assessment below, not an assumed notebook license. |
 | `deepseek-v4.tokenizer.json` | `deepseek3.bin.zst`; `pack-deepseek.ts` decodes 128000 byte-alphabet entries, empties sentinel ranks 0–2, excludes 1283 added tokens, then UTOK1 and zstd -19. | Full JSON content matches pinned **DeepSeek-V4-Pro**, ignoring object-key order/formatting only. [DeepSeek MIT](LICENSE.deepseek), Copyright (c) 2023 DeepSeek. |
 | `deepseek-v3.tokenizer.json` | Retained comparison source used by `gen-deepseek-fixtures.py`; `pack-deepseek.ts` does not read it. | Exact bytes match both original V3 and the publisher's MIT-licensed **DeepSeek-V3-0324** snapshot. [DeepSeek MIT notice](LICENSE.deepseek) retained; the older [model agreement](LICENSE.deepseek-v3-model) is historical context, not the grant relied on for these matched bytes. |
 | `glm-5.tokenizer.json` | `glm5.bin.zst`; `pack-glm.ts` decodes 154820 byte-alphabet entries, excludes 36 added tokens, then UTOK1 and zstd -19. | Full JSON content matches pinned **zai-org/GLM-5**, ignoring object-key order/formatting only. [GLM MIT component notice](LICENSE.glm5) retains the publisher's declaration and standard permission/warranty terms without inventing a copyright line. |
@@ -97,10 +99,35 @@ Their SHA-256 values are in the cache table above. The snapshot's
 [license](https://huggingface.co/moonshotai/Kimi-K3/raw/f831ab66814297da540d832a5235f8e904f29d06/LICENSE)
 is retained in LICENSE.kimi-k3. No cache modifications were found.
 The Python's existing citation to the
-[Xenova conversion notebook](https://gist.github.com/xenova/a452a6474428de0182b17605a98631ee)
-is preserved. That public notebook contains the corresponding Latin-1
-byte-alphabet join expression, but lists no separate license file. This record
-does not invent a grant for that incorporated fragment.
+[Xenova conversion notebook at `a04931ccfe0633c343ef3a925ab40d1e25f2795f`](https://gist.github.com/xenova/a452a6474428de0182b17605a98631ee/a04931ccfe0633c343ef3a925ab40d1e25f2795f)
+is preserved. The retained notebook's SHA-256 is
+`c12de2c8d39a1daf66baf08d834724246dfc067be98040305cda82d786b00bf9`.
+The exact cited Python fragment, lines 131–135 including their final LF, has
+SHA-256 `2568d289c3c096227dc585ff0e7b9d7036f2592776745aea32b5d55e0c47ce08`.
+
+**Narrow permission-necessity determination.** Separate Xenova copyright
+permission is unnecessary for the expression at lines 132–135 under this
+independently reviewed U.S. assessment. It maps ordered bytes through the existing
+GPT-2 alphabet and joins the results. The Latin-1/`ord` round trip is the identity
+for all 256 byte values, with the same empty result and pointwise concatenation
+behavior as direct byte iteration. The earlier lookup-and-join idiom appears in
+[Transformers v4.26.1, lines 300–302](https://github.com/huggingface/transformers/blob/ae54e3c3b18bac0832ad62ea9b896dfd52a09850/src/transformers/models/gpt2/tokenization_gpt2.py#L300-L302)
+and [OpenAI GPT-2, line 99](https://github.com/openai/gpt-2/blob/9b63575ef42771a015060c964af2c3da4cf7c8ab/src/encoder.py#L99).
+Those sources carry Apache-2.0 and Modified MIT notices respectively; neither is
+treated as a Xenova grant. After separating the function, the residual expression
+is conventional iteration, indexing, a standard codec conversion and joining;
+no independently protectable expressive contribution was identified in this
+limited combination. Syntax alternatives exist, so the conclusion does not
+follow merely from shortness, equivalent behavior or public availability.
+
+[Copyright Office Circular 61](https://www.copyright.gov/circs/circ61.pdf)
+distinguishes copyrightable source expression from functional aspects, algorithms
+and logic. Applying that distinction here is a limited analytical determination,
+not a court ruling or general tokenizer-code exemption. It covers neither the
+notebook's separately attributed BPE routine nor the whole notebook. The Python
+bytes, original citation and complete K3 notice remain unchanged; no notebook
+license or provider service entitlement is asserted.
+
 The vocabulary also matches
 [Kimi-VL-A3B-Instruct at `a2143f93a3f72a8ebcd64702a676fe47fd9c1937`](https://huggingface.co/moonshotai/Kimi-VL-A3B-Instruct/blob/a2143f93a3f72a8ebcd64702a676fe47fd9c1937/tiktoken.model).
 LICENSE.kimi-vl preserves the separately observed
@@ -165,8 +192,9 @@ URLs and the limits of each pin are recorded above.
   12 months. Section 3 requires prominent Kimi K3 UI attribution for commercial
   products/services exceeding 100 million monthly users or USD 20 million monthly
   revenue; §4 states exceptions. No determination of an operator's qualification
-  under these conditions is made here. Exact K3 content matching is complete;
-  the separate basis for the cited Xenova fragment remains unestablished.
+  under these conditions is made here. Exact K3 content matching and the narrow
+  permission-necessity determination above are complete; neither clears unrelated
+  publication prerequisites or grants provider service entitlement.
 - **DeepSeek:** both tokenizer caches now match identified MIT-licensed publisher
   snapshots. Retain the actual copyright/permission notice with the caches and
   derived tables. Matching tokenizer bytes does not license a remote service or

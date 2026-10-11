@@ -42,18 +42,41 @@ an established basis for the following retained material:
   and **192,511 dictionary-only words**, not merely membership flags. Its Git blob
   is `cbc0b8da7be850ad04d790ca4443ae82a779d3da`; SHA-256 is
   `d930584e1f9585103367d3d0485d9a96afd50f961dcdedb708407c2045999d1d`.
-  Establish the actual dictionary package/version and notices, plus a grant or
-  documented independent basis for the incorporated count data and word list.
+  Independent reconstruction from Apple's
+  [`files-974.120.2` dictionary](https://github.com/apple-oss-distributions/files/blob/5fc07dd6ecbaa178fff2431dc99e4dffd611ea2d/usr/share/dict/web2)
+  and the retained Norvig count inputs reproduces all **6,184,980 decompressed
+  bytes**, SHA-256
+  `738701f105686d488bd3ee4ee4e48a20e5c77f624505daa32ede80c4c999d672`.
+  This includes all 234,454 normalized dictionary words, 150,000 unigram counts
+  and 258,168 bigram rows. It identifies same-content inputs, not the unknown
+  original host acquisition or unique original input hashes; compressed encoding
+  was not regenerated. The count payload SHA-256 values are
+  [`51df159fd3de12b20e403c108f526e96dbd723d9cabdd5f17955cdc16059e690`](https://www.norvig.com/ngrams/count_1w.txt)
+  and [`781c0596c3eea532d30bef9f3dba1d5137d652f00376260822c761a7584dfb8c`](https://www.norvig.com/ngrams/count_2w.txt).
+  Apple's [dictionary README](https://github.com/apple-oss-distributions/files/blob/5fc07dd6ecbaa178fff2431dc99e4dffd611ea2d/usr/share/dict/README)
+  reports a supplier's copyright-lapse assertion and later maintenance; blanket
+  package-level APSL coverage of this third-party list is not established.
   [Norvig's primary page](https://www.norvig.com/ngrams/) expressly licenses
-  **code** under MIT and separately describes Google/LDC data origins. Neither
-  that code grant nor `/usr/share/dict/words` identifies the required data basis.
-  This is an evidence gap, not a finding that individual words/counts are
-  necessarily copyrightable.
-- K3's cached Python exactly matches its custom-licensed publisher source and
-  preserves a [Xenova gist citation](https://gist.github.com/xenova/a452a6474428de0182b17605a98631ee)
-  for a small byte-mapping expression. Resolve that narrow fragment through
-  permission or a documented assessment that permission is unnecessary.
-  Neither its size nor the absence of a separate license decides that question.
+  **code** under MIT and separately describes Google/LDC data origins. The
+  [LDC agreement](https://catalog.ldc.upenn.edu/license/web-1t-5-gram-version-1.pdf)
+  allows research use and limited excerpts in research-result documents; it does
+  not supply a redistribution grant for this operational packed prior. That
+  unsigned agreement does not establish that ArkenSec is a party or exclude
+  separate permission held by Norvig. A grant or documented independent basis for
+  the actual word-list/count compilation and applicable acquisition obligations
+  remains required. Individual words/counts are not thereby declared copyrightable.
+
+## Completed source-rights determinations
+
+K3's cached Python exactly matches its custom-licensed publisher source and
+preserves its Xenova citation. Separate permission for the exact byte-mapping
+expression is unnecessary under the narrow, independently reviewed U.S.
+assessment in the [component record](../crates/pi-natives/data/README.md).
+The determination inspects the pinned expression and earlier GPT-2 idiom; it
+does not assume a notebook license or an exemption based only on size or
+functionality. Python bytes, the citation and complete K3 notice are unchanged.
+The notebook's BPE routine, whole-notebook rights and service rights are outside
+that determination.
 
 The original DeepSeek V3 code/model-license ambiguity is resolved for the retained
 tokenizer: its exact bytes also match the publisher's MIT-licensed V3-0324 release.
