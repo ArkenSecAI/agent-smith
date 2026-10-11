@@ -47,12 +47,32 @@ const coverage: DecoderCoverage = {
 	attributeSource: SOURCE_BASE,
 	attributeTree: SOURCE_TREE,
 };
-const ancestry = new Set([candidate, SOURCE_BASE, APPLEDOUBLE.commit]);
+const successorBlob = "11b82d8a2cec26c2efd22961700c4435988f7897";
+const replacementCommit = "156300200742fa25d53f9e1acab02afe7f76750d";
+const successorAdditions = [
+	"59c5ac386d6f8ceefee76cd98fac69ceeea9dbe0",
+	"445021a4e82ccfb3fd527ebf62fefb1b5d456fdf",
+	"e853f0b974eb364fcda8552964982639b2d90128",
+	"f30e9e29344d7e25d3a21d74048265b98864cc17",
+	"ad39907f8f2014d54be86e449607e17a61a9ed7b",
+];
+const ancestry = new Set([candidate, SOURCE_BASE, APPLEDOUBLE.commit, replacementCommit, ...successorAdditions]);
 const header = (commit: string): string => `\0commit ${commit}\0\0`;
 const metadata = encode(
 	header(APPLEDOUBLE.commit) +
 		"\n" +
 		`:000000 100644 ${"0".repeat(40)} ${APPLEDOUBLE.blob} A\0${APPLEDOUBLE.file}\0-\t-\t${APPLEDOUBLE.file}\0` +
+		header(replacementCommit) +
+		"\n" +
+		`:100644 100644 ${APPLEDOUBLE.blob} ${successorBlob} M\0${APPLEDOUBLE.file}\0-\t-\t${APPLEDOUBLE.file}\0` +
+		successorAdditions
+			.map(
+				commit =>
+					header(commit) +
+					"\n" +
+					`:000000 100644 ${"0".repeat(40)} ${successorBlob} A\0${APPLEDOUBLE.file}\0-\t-\t${APPLEDOUBLE.file}\0`,
+			)
+			.join("") +
 		header(SOURCE_BASE) +
 		header(candidate),
 );
@@ -212,7 +232,7 @@ describe("reviewed immutable AppleDouble supplement", () => {
 		expect(() => verifyAppleDouble(encode("BZh9"))).toThrow();
 	});
 
-	test("full candidate metadata must retain the sole exact baseline archive addition", () => {
+	test("full candidate metadata must retain the reviewed addition and exact existing successor lifecycle", () => {
 		const inventory = parseHistoryMetadata(metadata, ancestry);
 		verifyDecoderCoverage(inventory, ancestry, coverage);
 		// A distinct immutable version of this path is a changed decoder context, even with the same error text.
@@ -229,6 +249,30 @@ describe("reviewed immutable AppleDouble supplement", () => {
 		const nonbinary = structuredClone(inventory);
 		nonbinary.commits[0].changes[0].binary = false;
 		expect(() => verifyDecoderCoverage(nonbinary, ancestry, coverage)).toThrow();
+	});
+
+	test("missing, changed or duplicated archive retirement and successor context cannot authorize an exception", () => {
+		const inventory = parseHistoryMetadata(metadata, ancestry);
+		for (const field of ["oldObject", "object"] as const) {
+			const changed = structuredClone(inventory);
+			changed.commits[1].changes[0][field] = candidate;
+			expect(() => verifyDecoderCoverage(changed, ancestry, coverage)).toThrow();
+		}
+		const missing = structuredClone(inventory);
+		missing.commits[1].changes = [];
+		expect(() => verifyDecoderCoverage(missing, ancestry, coverage)).toThrow();
+		const relocated = structuredClone(inventory);
+		relocated.commits[0].changes[0].file = "elsewhere/ar.tar.gz";
+		expect(() => verifyDecoderCoverage(relocated, ancestry, coverage)).toThrow();
+		const incompleteVersion = structuredClone(inventory);
+		incompleteVersion.versions[1].commits.pop();
+		expect(() => verifyDecoderCoverage(incompleteVersion, ancestry, coverage)).toThrow();
+		const duplicateVersion = structuredClone(inventory);
+		duplicateVersion.versions[1].commits[0] = duplicateVersion.versions[1].commits[1];
+		expect(() => verifyDecoderCoverage(duplicateVersion, ancestry, coverage)).toThrow();
+		const unreviewedVersion = structuredClone(inventory);
+		unreviewedVersion.versions.push({ file: APPLEDOUBLE.file, blob: candidate, commits: [candidate] });
+		expect(() => verifyDecoderCoverage(unreviewedVersion, ancestry, coverage)).toThrow();
 	});
 
 	test("raw scan proof requires every input byte and native clean outputs under the pinned invocation", () => {

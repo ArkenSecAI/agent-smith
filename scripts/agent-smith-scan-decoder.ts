@@ -32,6 +32,20 @@ export const APPLEDOUBLE = {
 	],
 } as const;
 
+// The reviewed blob was replaced once; five other additions recorded its clean successor.
+// Pin that existing lifecycle, not every future version of this archive path.
+const ARCHIVE_SUCCESSOR = {
+	blob: "11b82d8a2cec26c2efd22961700c4435988f7897",
+	replacementCommit: "156300200742fa25d53f9e1acab02afe7f76750d",
+	additionCommits: new Set([
+		"59c5ac386d6f8ceefee76cd98fac69ceeea9dbe0",
+		"445021a4e82ccfb3fd527ebf62fefb1b5d456fdf",
+		"e853f0b974eb364fcda8552964982639b2d90128",
+		"f30e9e29344d7e25d3a21d74048265b98864cc17",
+		"ad39907f8f2014d54be86e449607e17a61a9ed7b",
+	]),
+};
+
 export function reviewedVersion(version: HistoricalVersion): boolean {
 	return (
 		version.file === APPLEDOUBLE.file &&
@@ -85,25 +99,44 @@ export function verifyDecoderCoverage(
 			)
 			.map(change => ({ commit, change })),
 	);
-	const occurrence = occurrences[0];
+	if (
+		occurrences.length !== ARCHIVE_SUCCESSOR.additionCommits.size + 2 ||
+		new Set(occurrences.map(({ commit }) => commit)).size !== occurrences.length
+	) {
+		throw new Error("Decoder proof requires the exact baseline archive lifecycle");
+	}
+	for (const { commit, change } of occurrences) {
+		const original = commit === APPLEDOUBLE.commit;
+		const replacement = commit === ARCHIVE_SUCCESSOR.replacementCommit;
+		if (
+			(!original && !replacement && !ARCHIVE_SUCCESSOR.additionCommits.has(commit)) ||
+			change.file !== APPLEDOUBLE.file ||
+			change.object !== (original ? APPLEDOUBLE.blob : ARCHIVE_SUCCESSOR.blob) ||
+			change.status !== (replacement ? "M" : "A") ||
+			change.oldObject !== (replacement ? APPLEDOUBLE.blob : "0".repeat(40)) ||
+			change.oldMode !== (replacement ? "100644" : "000000") ||
+			change.mode !== "100644" ||
+			!change.binary
+		) {
+			throw new Error("Decoder proof requires the exact baseline archive lifecycle");
+		}
+	}
 	const versions = inventory.versions.filter(
 		version => version.file === APPLEDOUBLE.file || version.blob === APPLEDOUBLE.blob,
 	);
+	const successor = versions.find(version => version.blob === ARCHIVE_SUCCESSOR.blob);
 	if (
-		occurrences.length !== 1 ||
-		!occurrence ||
-		occurrence.commit !== APPLEDOUBLE.commit ||
-		occurrence.change.file !== APPLEDOUBLE.file ||
-		occurrence.change.object !== APPLEDOUBLE.blob ||
-		occurrence.change.status !== "A" ||
-		occurrence.change.oldObject !== "0".repeat(40) ||
-		occurrence.change.oldMode !== "000000" ||
-		occurrence.change.mode !== "100644" ||
-		!occurrence.change.binary ||
-		versions.length !== 1 ||
-		!reviewedVersion(versions[0])
+		versions.length !== 2 ||
+		!versions.some(reviewedVersion) ||
+		!successor ||
+		successor.file !== APPLEDOUBLE.file ||
+		successor.commits.length !== ARCHIVE_SUCCESSOR.additionCommits.size + 1 ||
+		new Set(successor.commits).size !== successor.commits.length ||
+		successor.commits.some(
+			commit => commit !== ARCHIVE_SUCCESSOR.replacementCommit && !ARCHIVE_SUCCESSOR.additionCommits.has(commit),
+		)
 	) {
-		throw new Error("Decoder proof requires the sole exact baseline archive occurrence");
+		throw new Error("Decoder proof requires the exact baseline archive versions");
 	}
 }
 

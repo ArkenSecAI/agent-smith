@@ -41,17 +41,17 @@ bun --no-env-file run smith:build
 bun --no-env-file run smith:scan
 ```
 
-| Command | Behavior |
-| --- | --- |
-| `smith:prepare` | Check runtime/tools; frozen Bun install with lifecycle scripts disabled; locked Cargo fetch; source host addon build, load/ABI check and real asset generation. |
-| `smith:check` | Verify the native receipt; lint/format checks and all workspace/tool typechecks; maintained environment, credentials, discovery, predictor privacy, native artifact integrity, settings, CLI and scan-boundary contracts; native crash-path/OAuth callback Rust tests. No automatic fixes. |
-| `smith:smoke` | Run the actual source CLI/worker smoke and persistent config round trips, including rejected input and isolated state overrides. |
-| `smith:build` | Generate real embedded assets, compile the host executable, restore generated inputs even after failure, package/hash/extract it, then smoke the extracted executable before populating `dist/agent-smith/<host>/`. |
-| `smith:scan` | Verify provisioned scanner/runtime bytes; scan complete candidate ancestry, historical binary/link/type-change blob versions and an exact current-tree Git snapshot; account for external Git references without fetching them; apply only independently reviewed exact dispositions; retain native reports, errors and one fail-closed summary. Linux x64 only. |
-| `smith:native` | Rebuild the reviewed native input pin from source. |
-| `smith:native -- --verify` | Verify source/artifact fingerprints, ABI and live native behavior without compiling. |
-| `smith:native -- --allow-native-changes` | Intentionally build changed native inputs for development; review and update the source pin before acceptance. |
-| `smith:smoke -- --binary /absolute/path/agent-smith` | Exercise a particular executable (`agent-smith.exe` on Windows). |
+| Command                                              | Behavior                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `smith:prepare`                                      | Check runtime/tools; frozen Bun install with lifecycle scripts disabled; locked Cargo fetch; source host addon build, load/ABI check and real asset generation.                                                                                                                                                                                                  |
+| `smith:check`                                        | Verify the native receipt; lint/format checks and all workspace/tool typechecks; maintained environment, credentials, discovery, predictor privacy, native artifact integrity, settings, CLI and scan-boundary contracts; native crash-path/OAuth callback Rust tests. No automatic fixes.                                                                       |
+| `smith:smoke`                                        | Run the actual source CLI/worker smoke and persistent config round trips, including rejected input and isolated state overrides.                                                                                                                                                                                                                                 |
+| `smith:build`                                        | Generate real embedded assets, compile the host executable, restore generated inputs even after failure, package/hash/extract it, then smoke the extracted executable before populating `dist/agent-smith/<host>/`.                                                                                                                                              |
+| `smith:scan`                                         | Verify provisioned scanner/runtime bytes; scan complete candidate ancestry, historical binary/link/type-change blob versions and an exact current-tree Git snapshot; account for external Git references without fetching them; apply only independently reviewed exact dispositions; retain native reports, errors and one fail-closed summary. Linux x64 only. |
+| `smith:native`                                       | Rebuild the reviewed native input pin from source.                                                                                                                                                                                                                                                                                                               |
+| `smith:native -- --verify`                           | Verify source/artifact fingerprints, ABI and live native behavior without compiling.                                                                                                                                                                                                                                                                             |
+| `smith:native -- --allow-native-changes`             | Intentionally build changed native inputs for development; review and update the source pin before acceptance.                                                                                                                                                                                                                                                   |
+| `smith:smoke -- --binary /absolute/path/agent-smith` | Exercise a particular executable (`agent-smith.exe` on Windows).                                                                                                                                                                                                                                                                                                 |
 
 The root `build` command routes to `smith:build`. Retired global setup, lifecycle
 prepare, publication and release aliases are removed, not compatibility shims.
@@ -406,12 +406,19 @@ context and exactly one of each of the three observed error lines. Only the
 normal clock prefix can vary; other stderr, missing/extra errors, different
 paths or unsupported log formats fail. Whole-history reconciliation happens
 after all historical object scans. It requires complete candidate ancestry and
-inventory under pinned-base attributes, the sole baseline archive occurrence,
-the passing independent whole-blob scan and all raw-member proofs. `SOURCE_BASE`
-must remain an ancestor, so the known failing input is still present; another
-same-looking failure changes the exact error multiset and fails. Changed/new
-archive versions also invalidate this binding. Current-tree errors receive no
-exception, and findings from decoding are never removed.
+inventory under pinned-base attributes, the reviewed blob's sole addition, the
+passing independent whole-blob scan and all raw-member proofs. The archive path
+has two baseline versions: the reviewed blob was replaced at
+`156300200742fa25d53f9e1acab02afe7f76750d` by
+`11b82d8a2cec26c2efd22961700c4435988f7897`; five other commits introduced that
+successor. The coverage guard pins all seven raw changes, including exact
+old/new modes and objects, plus both versions and all occurrence commits.
+The successor receives no exception and must pass ordinary scanning.
+`SOURCE_BASE` must remain an ancestor, so the known failing input is still
+present; another same-looking failure changes the exact error multiset and
+fails. Missing, changed or additional archive lifecycle records invalidate this
+binding. Current-tree errors receive no exception, and findings from decoding
+are never removed.
 
 Receipts retain the original `nativeDecision`, native report and stderr digests,
 plus the separate `decoderDisposition` and final decision; a passing disposition
@@ -432,18 +439,18 @@ license clearance, reproducibility or binary release readiness.
 
 ## Verified tool/action pins
 
-| Component | Pin and primary source |
-| --- | --- |
-| Bun | [1.4.2 release assets](https://github.com/oven-sh/bun/releases/expanded_assets/bun-v1.4.2), archive SHA-256 values below |
-| Gitleaks | [8.30.1 assets](https://github.com/gitleaks/gitleaks/releases/expanded_assets/v8.30.1); Linux x64 archive SHA-256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` |
-| checkout | [11bd71901bbe5b1630ceea73d27597364c9af683](https://github.com/actions/checkout/commit/11bd71901bbe5b1630ceea73d27597364c9af683), v4.2.2 |
-| upload-artifact | [ea165f8d65b6e75b540449e92b4886f43607fa02](https://github.com/actions/upload-artifact/commit/ea165f8d65b6e75b540449e92b4886f43607fa02), v4.6.2 |
-| attest-build-provenance | [e8998f949152b193b063cb0ec769d69d929409be](https://github.com/actions/attest-build-provenance/commit/e8998f949152b193b063cb0ec769d69d929409be), v2.4.0 |
+| Component               | Pin and primary source                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Bun                     | [1.4.2 release assets](https://github.com/oven-sh/bun/releases/expanded_assets/bun-v1.4.2), archive SHA-256 values below                                                             |
+| Gitleaks                | [8.30.1 assets](https://github.com/gitleaks/gitleaks/releases/expanded_assets/v8.30.1); Linux x64 archive SHA-256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` |
+| checkout                | [11bd71901bbe5b1630ceea73d27597364c9af683](https://github.com/actions/checkout/commit/11bd71901bbe5b1630ceea73d27597364c9af683), v4.2.2                                              |
+| upload-artifact         | [ea165f8d65b6e75b540449e92b4886f43607fa02](https://github.com/actions/upload-artifact/commit/ea165f8d65b6e75b540449e92b4886f43607fa02), v4.6.2                                       |
+| attest-build-provenance | [e8998f949152b193b063cb0ec769d69d929409be](https://github.com/actions/attest-build-provenance/commit/e8998f949152b193b063cb0ec769d69d929409be), v2.4.0                               |
 
-| Bun archive | SHA-256 |
-| --- | --- |
-| `bun-linux-x64.zip` | `36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913` |
-| `bun-windows-x64.zip` | `ce4c17497b2f29712a99d3d53f028de28cd42e3bacb8589599e7f000e49b6405` |
+| Bun archive              | SHA-256                                                            |
+| ------------------------ | ------------------------------------------------------------------ |
+| `bun-linux-x64.zip`      | `36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913` |
+| `bun-windows-x64.zip`    | `ce4c17497b2f29712a99d3d53f028de28cd42e3bacb8589599e7f000e49b6405` |
 | `bun-darwin-aarch64.zip` | `90987a3a16d7db556d886ac3d551e7b6d3edf0a1cf43acaed622e8676be1d12f` |
 
 `scripts/agent-smith-ci-tools.ps1` verifies hashes before extraction and executable
