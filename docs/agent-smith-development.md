@@ -44,10 +44,10 @@ bun --no-env-file run smith:scan
 | Command | Behavior |
 | --- | --- |
 | `smith:prepare` | Check runtime/tools; frozen Bun install with lifecycle scripts disabled; locked Cargo fetch; source host addon build, load/ABI check and real asset generation. |
-| `smith:check` | Verify the native receipt; lint/format checks and all workspace/tool typechecks; maintained environment, credentials, discovery, settings, CLI and scan-boundary contracts; native crash-path/OAuth callback Rust tests. No automatic fixes. |
+| `smith:check` | Verify the native receipt; lint/format checks and all workspace/tool typechecks; maintained environment, credentials, discovery, predictor privacy, native artifact integrity, settings, CLI and scan-boundary contracts; native crash-path/OAuth callback Rust tests. No automatic fixes. |
 | `smith:smoke` | Run the actual source CLI/worker smoke and persistent config round trips, including rejected input and isolated state overrides. |
 | `smith:build` | Generate real embedded assets, compile the host executable, restore generated inputs even after failure, package/hash/extract it, then smoke the extracted executable before populating `dist/agent-smith/<host>/`. |
-| `smith:scan` | Verify provisioned scanner/runtime bytes; scan complete candidate ancestry, every historical binary diff version and an exact current-tree Git snapshot; apply only independently reviewed exact dispositions; retain native reports, errors and one fail-closed summary. Linux x64 only. |
+| `smith:scan` | Verify provisioned scanner/runtime bytes; scan complete candidate ancestry, historical binary/link/type-change blob versions and an exact current-tree Git snapshot; account for external Git references without fetching them; apply only independently reviewed exact dispositions; retain native reports, errors and one fail-closed summary. Linux x64 only. |
 | `smith:native` | Rebuild the reviewed native input pin from source. |
 | `smith:native -- --verify` | Verify source/artifact fingerprints, ABI and live native behavior without compiling. |
 | `smith:native -- --allow-native-changes` | Intentionally build changed native inputs for development; review and update the source pin before acceptance. |
@@ -84,6 +84,21 @@ source generator, not a second hand-maintained implementation. Native crash logs
 and callback registration use Agent Smith's namespace; these native components
 are app-global rather than separate registrations for every profile.
 
+Compiled addons carry a required per-file SHA-256 and a canonical manifest
+artifact ID binding platform, ABI version, variant, filename, size and content
+digest. Their cache is `~/.agent-smith/natives/<version>/<artifactId>/`, not just
+a version directory. Same-size, same-ABI bytes are not interchangeable. Regular
+cached files must match their expected size and full digest; symlinks are not
+cache hits. An invalid cache is repaired only from a completely verified archive.
+Missing/inconsistent manifest metadata fails before extraction or fallback.
+
+Fallback candidates are copied to an owned temporary file, verified, and staged
+at that same artifact-specific path before native loading. An adjacent/shared
+path is never the compiled loader's final module identity. This requires a
+writable artifact cache even for a valid fallback. Different artifacts of the
+same release can coexist without reusing a resident old module. A verified warm
+cache does not require reading the archive again.
+
 Compilation reuses `compileCodingAgent`, the existing JSON/virtual-module
 plugins, embedded documentation and single-entry worker host. Bun dotenv and
 configuration autoloading are disabled in the compiled executable. Native/stats
@@ -95,7 +110,7 @@ The local output contains the executable, host `.tar.gz`, `SHA256SUMS`,
 `build-manifest.json`, this guide and root/native license/notice files. Only the
 explicit payload enters the archive. Extraction must preserve its exact file set,
 hashes and executable permission. Compiled smoke requires the embedded addon to
-extract under the synthetic `~/.agent-smith/natives/18.4.8/` and match the receipt.
+extract under the synthetic version/artifact directory and match the receipt.
 There is no binary upload, installer, global link or release qualification.
 The inherited notice aggregate is not a complete derivative binary SBOM; public
 binary distribution has additional component/source/notice obligations.
@@ -124,6 +139,15 @@ Foreign discovery requires app-owned consent, including project directories;
 showing disabled dashboard items is not that consent. See the current
 [settings](settings.md) and
 [environment reference](environment-variables.md).
+
+Text prediction automatically learns only this agent directory's Agent Smith
+history. It does not seed from Claude or Codex history. Cache state lives under
+`predict/own-history-v1/<engine>/`; pre-cutover snapshots and cursors are neither
+adopted nor deleted. The daemon identity and handshake carry this independent
+generation, so an old daemon advertising the same application version cannot
+receive new completion text. Own-history incremental ingestion, persistence and
+corrupt-state recovery remain supported. Explicit manual history imports are
+separate from automatic predictor seeding.
 This separation is not VM containment, host sandboxing or target authorization.
 
 ## CI, review and scan boundaries
@@ -193,7 +217,7 @@ objects/parents, shallow metadata, grafts, external object alternates and nonemp
 repository `info/attributes` fail. Original upstream commit and tree pins remain
 fixed. No upstream scripts, hooks, filters, external diff drivers or textconv run.
 
-System/global attributes are disabled. For both the history scanner and binary
+System/global attributes are disabled. For both the history scanner and object
 metadata enumeration, `GIT_ATTR_SOURCE` selects immutable `SOURCE_BASE`
 (`717f97f4d22b3d65c4a4eef6a744255d46f4d1a6`), whose tree must equal the pinned
 `SOURCE_TREE`. Its reviewed `.gitattributes` marks the minified catalogs binary;
@@ -206,13 +230,22 @@ The historical-blob scope independently enumerates that same candidate and
 history/diff selection using `--raw --numstat -z --no-abbrev --always`. The NUL
 parser pairs raw paths with numstat paths and validates full object IDs, modes,
 statuses and counts; missing/repeated commits must fail comparison with complete
-ancestry. Root diffs, first-parent merge diffs, deletions, mode changes and empty
-commits are accounted for. Unsupported modes, unsafe/non-UTF-8 paths, renames or
-ambiguous/truncated records fail the scope. There is no extension allowlist.
-Every non-deleted `-/-` binary version enters `historical-blob-inventory.json`,
-deduplicated only by exact original relative path plus new blob, with every
-occurrence commit retained. Full parsed diff metadata, native metadata digest,
-attribute pins, ancestry digest and candidate commit/tree bind the inventory.
+ancestry. Root diffs, first-parent merge diffs, deletions, mode/type changes and
+empty commits are accounted for. Unsupported modes, unsafe/non-UTF-8 paths,
+renames or ambiguous/truncated records fail the scope. There is no extension
+allowlist. Every non-deleted binary `-/-` result, stored symlink target, and
+file/link type-change result enters `historical-blob-inventory.json`, deduplicated
+only by exact original path plus resulting blob. Every occurrence commit remains.
+Symlink targets are scanned as ordinary stored bytes, never materialized as
+filesystem links or followed into a host path.
+
+Historical mode-160000 Gitlinks are external commit references, not file blobs.
+Their exact path/target-commit pairs and occurrence commits are inventoried
+separately as `gitlinks`; additions, changes and deletions also remain in the full
+raw metadata. No external repository is fetched or its contents claimed as
+scanned. Current-tree symlinks and Gitlinks remain rejected. Full parsed object
+metadata, native metadata digest, attribute pins, ancestry digest and candidate
+commit/tree bind the inventory.
 The inventory is generated from the candidate; exploratory base counts are not
 imported or used as a future coverage limit.
 
@@ -253,7 +286,7 @@ pass disposition evaluation only when every finding is exactly approved and no
 error remains; other nonzero exits always fail. `summary.json` is the authoritative
 combined outcome, and requires complete passing coverage of all three scopes;
 preflight failures explicitly leave scans marked `not-run`. The summary schema
-is version 3; historical inventory schema is version 1. Tools, configuration,
+is version 4; historical inventory schema is version 2. Tools, configuration,
 implementation/ledger inputs and source HEAD are rechecked before completion.
 
 Native redacted `history-findings.json`, `tree-findings.json`, and per-object
@@ -268,14 +301,14 @@ scanning is not exhaustive arbitrary-binary analysis or rights clearance.
 
 ### Disposition ledger and open scan holds
 
-`scripts/agent-smith-scan-dispositions.json` is schema version 3, with no legacy
-schema fallback. All 273 original rows explicitly migrate to `occurrence: 1` and
-`occurrences: 1`; this migration adds no reviews. `sourceBase` and
-`sourceTree` preserve upstream identity. `origins` records each independent review
-and original report SHA-256, report row count and reviewed source commit/tree.
-`groups` preserves the review's reason, citations and `reviewed_non_secret` or
-`blocked` decision. `history`, `tree` and `historicalBlob` contain separate exact
-approval collections:
+`scripts/agent-smith-scan-dispositions.json` is schema version 4, with no legacy
+schema fallback. `sourceBase` and `sourceTree` preserve upstream identity.
+`origins` retains each original raw report SHA-256, independent review digest,
+report row count and reviewed source commit/tree. It also stores the original
+ordered `rowDigests` and complete `reportContentSha256` commitment. `groups`
+preserves each review's reason, citations and `reviewed_non_secret` or `blocked`
+decision. `history`, `tree` and `historicalBlob` have separate exact approval
+collections:
 
 - `origin`, one-based `row`, and `group` bind the original reviewed report/evidence.
 - `commit` is the full Git-report commit, or the native empty string for either
@@ -284,49 +317,66 @@ approval collections:
 - `file` includes exact archive member paths separated by `!`; `rule`, original
   `fingerprint`, and `span` bind the rule and all four coordinates. Span order is
   start line, end line, start column, end column.
-- `occurrence` is the one-based ordinal among identical native identities in the
-  original report, and `occurrences` is that identity's exact multiplicity.
-  Native identities use commit, path, rule, fingerprint and all four coordinates.
+- `nativeRowSha256` commits to every native field and value before projection,
+  including metadata, optional-field presence and tag-array order. Unsupported
+  native fields fail rather than being silently discarded.
+- `occurrence` is the one-based ordinal among identical complete native records
+  in the original report; `occurrences` is that record's exact multiplicity.
 - `blob` is the containing Git blob; `containerSha256` hashes its full bytes;
   `contentSha256` hashes the file or decompressed reviewed member. Plain-file
   content and container digests must agree.
 
+The row commitment hashes UTF-8 `agent-smith/gitleaks-row/v1\0` followed by
+`JSON.stringify` of the native object's field/value entries sorted by field name
+using ordinal comparison. The report commitment hashes UTF-8
+`agent-smith/gitleaks-report/v1\0` followed by `JSON.stringify` of the sorted row
+digests, retaining duplicates. Only native object-key order, JSON serialization
+and report-row order are normalized. No field, value, context or occurrence is
+filtered out. The original raw report digest and review row assignments are
+never replaced by the current scanner's serialization or ordering.
+
+Complete report membership and cardinality must match before a scope/path-blob
+subset can reuse its reviews, including when findings disappear. Each disposition
+must still match its original ordered row commitment and original occurrence
+ordinal/count. New/missing rows or changed metadata require independent review;
+an equivalent row permutation does not. Current raw reports are still hashed and
+retained unchanged, separately from their complete-record commitments.
+
 Fingerprints are not unique identifiers: distinct spans and distinct historical
 blobs need distinct approvals. Historical-blob identity includes the blob as well
-as native path/rule/fingerprint/all coordinates. Even byte-identical native report
-digests/row numbers may describe different blobs: each needs its own content-bound
-approval. Gitleaks directory columns are fragment-relative: distinct original
-source spans can have identical native coordinates. Every such row is preserved,
-with its own ordinal and approval. A duplicate group is eligible only when every
-member is independently reviewed non-secret and matches the exact group count,
-ordinal, absolute native report row, full report row count, original report
-SHA-256 and immutable source binding. The runner hashes original scanner bytes,
-never reserialized JSON. A missing, extra, reordered, changed or blocked member
-invalidates the whole duplicate group; reused review rows are rejected. Ordinary
-distinct-coordinate findings also require the exact original report SHA-256,
-report row count and absolute row, in addition to their source/identity bindings.
-The ledger is indexed once, with per-path/blob subsets used by object scans.
-The same path/blob version may use one approval for all occurrence
-commits supplied by the inventory. A new Git-report commit, changed blob/content/
-span, unresolved row or unreviewed occurrence stays blocked. No scope inherits
-another scope's approvals. Only safe metadata, hashes and review explanations belong
-in this public ledger, never detected token/PEM values, author emails, raw reports
-or private workspace paths. Adding approvals requires new independent review,
-followed by Main's exact-pin integration and checks; the scanner never invents or
-extends approvals from similarity.
+as the native tuple and full-record digest. Even identical native reports may
+describe different blobs, each requiring its own content-bound approval.
+Directory columns can be fragment-relative, so distinct source spans can produce
+identical native records. Every such row retains its own reviewed ordinal and
+source evidence. Missing, extra, changed, partially approved or blocked duplicate
+members invalidate the whole group. Reused or reassigned original review rows are
+rejected, including swaps between identical records.
 
-The ledger preserves 260 reviewed non-secret history rows and 13 blocked
-occurrences from the original 273-row report, including pinned primary provenance
-for the public Gemini pair. Independent current-tree review covers 126 rows:
-124 reviewed non-secret and two blocked. Independent historical-blob review covers
-13,527 findings from 197 exact native object reports, all reviewed non-secret;
-four duplicate identity groups retain every separately reviewed report row.
-These approvals do not rebind themselves to a different native report. Candidate
-execution can therefore require fresh independent report reconciliation even when
-the underlying finding bytes are unchanged. Raw binary formats and archive/decode
-depth 2 have scanner limitations: whole-blob inclusion is not exhaustive decoding.
-The remaining blocked values concern captured Startpage material, the Xiaomi
-parameter and a distinct Antigravity parameter. This is not a green baseline.
+The ledger is indexed once, with per-path/blob subsets used by object scans.
+One exact path/blob version may reuse its review for occurrence commits supplied
+by the complete inventory. A new Git-report commit, changed blob/container/member,
+span or unresolved occurrence stays blocked. Scopes never inherit one another's
+approvals. Only safe metadata, hashes and review explanations belong in this
+public ledger, never detected token/PEM values, author emails, raw reports or
+private workspace paths. Approvals require independent review followed by Main's
+exact-pin integration and checks; similarity never extends their authority.
+
+Fresh history review covers 281 rows: 265 reviewed non-secret and 16 blocked.
+All 273 earlier identities remain, but their native `Link` fields changed and
+eight additional identities appeared. That required a new complete review,
+not filtering `Link` or inheriting the earlier report's authority. Current-tree
+review covers 126 rows: 124 reviewed non-secret and two blocked. Historical-blob
+review covers 13,527 findings from 197 exact native reports, all reviewed
+non-secret; four duplicate groups preserve every separately reviewed occurrence.
+The mechanical commitment reconciliation preserves those original tree/object
+reports, row assignments, source bindings and review digests.
+
+The remaining history holds are one captured Startpage token, fourteen Xiaomi
+credential occurrences and one distinct Antigravity parameter. Current-tree
+Xiaomi findings remain blocked too. Retained primary evidence covers the exact
+publicly distributed Gemini native-client pair, not permission to reuse its
+registration. These are finding dispositions, not a green baseline, exhaustive
+binary decoding, rights clearance or publication approval.
 
 Native decoder errors are preserved unchanged. The only implemented supplemental
 disposition is the independently reviewed AppleDouble v2 metadata in

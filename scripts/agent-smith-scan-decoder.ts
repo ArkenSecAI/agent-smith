@@ -80,8 +80,8 @@ export function verifyDecoderCoverage(
 			.filter(
 				change =>
 					change.file === APPLEDOUBLE.file ||
-					change.blob === APPLEDOUBLE.blob ||
-					change.oldBlob === APPLEDOUBLE.blob,
+					change.object === APPLEDOUBLE.blob ||
+					change.oldObject === APPLEDOUBLE.blob,
 			)
 			.map(change => ({ commit, change })),
 	);
@@ -94,9 +94,9 @@ export function verifyDecoderCoverage(
 		!occurrence ||
 		occurrence.commit !== APPLEDOUBLE.commit ||
 		occurrence.change.file !== APPLEDOUBLE.file ||
-		occurrence.change.blob !== APPLEDOUBLE.blob ||
+		occurrence.change.object !== APPLEDOUBLE.blob ||
 		occurrence.change.status !== "A" ||
-		occurrence.change.oldBlob !== "0".repeat(40) ||
+		occurrence.change.oldObject !== "0".repeat(40) ||
 		occurrence.change.oldMode !== "000000" ||
 		occurrence.change.mode !== "100644" ||
 		!occurrence.change.binary ||

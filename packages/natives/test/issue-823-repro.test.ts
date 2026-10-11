@@ -51,11 +51,18 @@ describe("issue 823: standalone-binary native loader path resolution", () => {
 				embeddedAddon: {
 					platformTag: "linux-x64",
 					version: "14.5.2",
+					artifactId: "a".repeat(64),
+					archive: {
+						format: "tar.gz",
+						filename: "embedded-addons.linux-x64.tar.gz",
+						filePath: "/$bunfs/root/embedded-addons.linux-x64.tar.gz",
+					},
 					files: [
 						{
 							variant: "modern",
 							filename: "pi_natives.linux-x64-modern.node",
-							filePath: "/$bunfs/root/packages/natives/native/pi_natives.linux-x64-modern.node",
+							size: 1,
+							sha256: "b".repeat(64),
 						},
 					],
 				},
@@ -205,8 +212,18 @@ describe("issue 823: standalone-binary native loader path resolution", () => {
 			);
 
 			const files: EmbeddedAddonFile[] = [
-				{ variant: "modern", filename: modernFilename, size: modern.length },
-				{ variant: "baseline", filename: baselineFilename, size: baseline.length },
+				{
+					variant: "modern",
+					filename: modernFilename,
+					size: modern.length,
+					sha256: new Bun.CryptoHasher("sha256").update(modern).digest("hex"),
+				},
+				{
+					variant: "baseline",
+					filename: baselineFilename,
+					size: baseline.length,
+					sha256: new Bun.CryptoHasher("sha256").update(baseline).digest("hex"),
+				},
 			];
 
 			const written = extractEmbeddedAddonArchive({ archivePath, files, targetDir });

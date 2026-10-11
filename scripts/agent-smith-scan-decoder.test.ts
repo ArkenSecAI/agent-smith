@@ -132,7 +132,7 @@ function decoderCase(scope: Scope = "historicalBlob") {
 	};
 	const prepared = prepareLedger(
 		parseLedger({
-			schemaVersion: 3,
+			schemaVersion: 4,
 			sourceBase: SOURCE_BASE,
 			sourceTree: SOURCE_TREE,
 			origins: {},
@@ -217,7 +217,7 @@ describe("reviewed immutable AppleDouble supplement", () => {
 		verifyDecoderCoverage(inventory, ancestry, coverage);
 		// A distinct immutable version of this path is a changed decoder context, even with the same error text.
 		const added = structuredClone(inventory);
-		added.commits[2].changes.push({ ...added.commits[0].changes[0], blob: candidate });
+		added.commits[2].changes.push({ ...added.commits[0].changes[0], object: candidate });
 		expect(() => verifyDecoderCoverage(added, ancestry, coverage)).toThrow();
 		const repeated = structuredClone(inventory);
 		repeated.versions[0].commits.push(candidate);

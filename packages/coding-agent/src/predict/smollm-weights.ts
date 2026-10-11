@@ -25,7 +25,7 @@ import { downloadFile } from "../utils/tools-manager";
  *
  * Only interactive processes download (the composer on first use through
  * {@link prefetchSmolLmWeights}, shown in the download HUD, or
- * `omp tiny-models download smollm`); the prediction daemon just checks
+ * `agent-smith tiny-models download smollm`); the prediction daemon just checks
  * {@link smolLmWeightsReady} and serves ngram until then.
  */
 

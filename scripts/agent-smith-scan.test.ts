@@ -20,11 +20,12 @@ import {
 	parseLedger,
 	parseReport,
 	prepareLedger,
+	reportContentSha256,
 	scopesPass,
 	SOURCE_BASE,
 	SOURCE_TREE,
 } from "./agent-smith-scan-policy";
-import { git, neutralEnvironment, parseTree, snapshot } from "./agent-smith-scan-source";
+import { blobs, git, neutralEnvironment, parseTree, snapshot } from "./agent-smith-scan-source";
 
 function decide(
 	report: unknown,
@@ -34,9 +35,28 @@ function decide(
 	exitCode: number,
 	stderr: string,
 	version?: HistoricalVersion,
-	reportSha256 = "d".repeat(64),
+	reportSha256 = sha256(new TextEncoder().encode(JSON.stringify(report))),
 ): Decision {
 	return decidePrepared(report, scope, prepareLedger(ledger), bindings, exitCode, stderr, reportSha256, version);
+}
+
+function reviewedReport(report: Record<string, unknown>[], scope: Scope) {
+	const findings = parseReport(report, scope);
+	const rowDigests = findings.map(item => item.nativeRowSha256);
+	const bytes = new TextEncoder().encode(`${JSON.stringify(report, null, 2)}\n`);
+	return {
+		findings,
+		bytes,
+		origin: {
+			reportSha256: sha256(bytes),
+			reportContentSha256: reportContentSha256(rowDigests),
+			rowDigests,
+			reviewSha256: "e".repeat(64),
+			sourceCommit: SOURCE_BASE,
+			sourceTree: SOURCE_TREE,
+			reportRows: report.length,
+		},
+	};
 }
 
 function reviewedCase(): {
@@ -45,56 +65,16 @@ function reviewedCase(): {
 	bindings: Map<string, Binding>;
 	approval: Disposition;
 } {
-	const approval: Disposition = {
-		commit: "a".repeat(40),
-		file: "example.txt",
-		rule: "example-rule",
-		span: [1, 1, 3, 12],
-		fingerprint: `${"a".repeat(40)}:example.txt:example-rule:1`,
-		blob: "b".repeat(40),
-		containerSha256: "c".repeat(64),
-		contentSha256: "c".repeat(64),
-		origin: "review",
-		row: 1,
-		group: "example",
-		occurrence: 1,
-		occurrences: 1,
-	};
-	const ledger = parseLedger({
-		schemaVersion: 3,
-		sourceBase: SOURCE_BASE,
-		sourceTree: SOURCE_TREE,
-		origins: {
-			review: {
-				reportSha256: "d".repeat(64),
-				reviewSha256: "e".repeat(64),
-				sourceCommit: SOURCE_BASE,
-				sourceTree: SOURCE_TREE,
-				reportRows: 1,
-			},
-		},
-		groups: {
-			example: {
-				origin: "review",
-				disposition: "reviewed_non_secret",
-				reason: "Constructed deterministic example for the disposition boundary.",
-				evidence: ["example.txt:1"],
-			},
-		},
-		history: [approval],
-		tree: [],
-		historicalBlob: [],
-	});
-	const report = [
+	const report: Record<string, unknown>[] = [
 		{
-			Commit: approval.commit,
-			File: approval.file,
-			RuleID: approval.rule,
+			Commit: "a".repeat(40),
+			File: "example.txt",
+			RuleID: "example-rule",
 			StartLine: 1,
 			EndLine: 1,
 			StartColumn: 3,
 			EndColumn: 12,
-			Fingerprint: approval.fingerprint,
+			Fingerprint: `${"a".repeat(40)}:example.txt:example-rule:1`,
 			Secret: "REDACTED",
 			Match: "REDACTED",
 			SymlinkFile: "",
@@ -107,6 +87,33 @@ function reviewedCase(): {
 			Tags: [],
 		},
 	];
+	const reviewed = reviewedReport(report, "history");
+	const approval: Disposition = {
+		...reviewed.findings[0],
+		blob: "b".repeat(40),
+		containerSha256: "c".repeat(64),
+		contentSha256: "c".repeat(64),
+		origin: "review",
+		row: 1,
+		group: "example",
+	};
+	const ledger = parseLedger({
+		schemaVersion: 4,
+		sourceBase: SOURCE_BASE,
+		sourceTree: SOURCE_TREE,
+		origins: { review: reviewed.origin },
+		groups: {
+			example: {
+				origin: "review",
+				disposition: "reviewed_non_secret",
+				reason: "Constructed deterministic example for the disposition boundary.",
+				evidence: ["example.txt:1"],
+			},
+		},
+		history: [approval],
+		tree: [],
+		historicalBlob: [],
+	});
 	return { report, ledger, approval, bindings: new Map([[identity(approval), approval]]) };
 }
 
@@ -119,9 +126,12 @@ describe("maintained scan disposition boundary", () => {
 		expect(result.blocked).toEqual([]);
 	});
 
-	test("review provenance rejects changed report bytes for a unique finding", () => {
+	test("equivalent JSON serialization does not replace original raw-report provenance", () => {
 		const { report, ledger, bindings } = reviewedCase();
-		expect(decide(report, "history", ledger, bindings, 1, "", undefined, "f".repeat(64)).pass).toBe(false);
+		const original = structuredClone(ledger);
+		const reorderedKeys = report.map(row => Object.fromEntries(Object.entries(row).reverse()));
+		expect(decide(reorderedKeys, "history", ledger, bindings, 1, "").pass).toBe(true);
+		expect(ledger).toEqual(original);
 	});
 
 	test("review provenance rejects a different declared report size for a unique finding", () => {
@@ -131,21 +141,21 @@ describe("maintained scan disposition boundary", () => {
 	});
 
 	test("review provenance rejects swapped review rows even when every distinct span is approved", () => {
-		const { report, ledger, bindings, approval } = reviewedCase();
-		const second = { ...approval, span: [1, 1, 23, 32] as Disposition["span"], row: 1 };
+		const { report, ledger, approval } = reviewedCase();
 		report.push({ ...report[0], StartColumn: 23, EndColumn: 32 });
-		ledger.origins.review.reportRows = 2;
+		const reviewed = reviewedReport(report, "history");
+		ledger.origins.review = reviewed.origin;
 		ledger.history[0].row = 2;
-		ledger.history.push(second);
-		bindings.set(identity(second), second);
-		expect(decide(report, "history", parseLedger(ledger), bindings, 1, "").pass).toBe(false);
+		ledger.history.push({ ...approval, ...reviewed.findings[1], row: 1 });
+		expect(() => parseLedger(ledger)).toThrow();
 	});
 
 	test("same fingerprint at a different span needs its own approval", () => {
 		const { report, ledger, bindings, approval } = reviewedCase();
 		report.push({ ...report[0], StartColumn: 23, EndColumn: 32 });
-		ledger.origins.review.reportRows = report.length;
-		const second: Disposition = { ...approval, span: [1, 1, 23, 32], row: 2 };
+		const reviewed = reviewedReport(report, "history");
+		ledger.origins.review = reviewed.origin;
+		const second: Disposition = { ...approval, ...reviewed.findings[1], row: 2 };
 		bindings.set(identity(second), second);
 		const blocked = decide(report, "history", ledger, bindings, 1, "");
 		expect(blocked.pass).toBe(false);
@@ -153,6 +163,38 @@ describe("maintained scan disposition boundary", () => {
 		expect(blocked.blocked.map(item => item.row)).toEqual([2]);
 		ledger.history.push(second);
 		expect(decide(report, "history", parseLedger(ledger), bindings, 1, "").pass).toBe(true);
+	});
+
+	test("missing and extra unique records cannot reuse a complete report review", () => {
+		const { report, ledger, bindings } = reviewedCase();
+		for (const changed of [[], [...report, { ...report[0], StartColumn: 23, EndColumn: 32 }]]) {
+			const result = decide(changed, "history", ledger, bindings, changed.length ? 1 : 0, "");
+			expect(result.pass).toBe(false);
+			expect(result.approved).toBe(0);
+		}
+	});
+
+	test("native metadata outside the projected finding identity remains binding", () => {
+		const { report, ledger, approval } = reviewedCase();
+		for (const [field, value] of [
+			["Description", "changed description"],
+			["Author", "changed author"],
+			["Email", "other@example.invalid"],
+			["Date", "2026-10-10T00:00:00Z"],
+			["Message", "changed message"],
+			["Entropy", 1],
+			["Tags", ["changed-tag"]],
+			["Tags", null],
+			["Link", "https://example.invalid/review"],
+			["Match", "changed REDACTED match"],
+		] as const) {
+			const changed = [{ ...report[0], [field]: value }];
+			const finding = parseReport(changed, "history")[0];
+			const bindings = new Map([[identity(finding), approval]]);
+			const result = decide(changed, "history", ledger, bindings, 1, "");
+			expect(result.pass).toBe(false);
+			expect(result.approved).toBe(0);
+		}
 	});
 
 	test("a changed blob cannot reuse a reviewed fingerprint and span", () => {
@@ -166,8 +208,13 @@ describe("maintained scan disposition boundary", () => {
 	test("missing source bytes and changed content digests both block an approved occurrence", () => {
 		const { report, ledger, bindings, approval } = reviewedCase();
 		expect(decide(report, "history", ledger, new Map(), 1, "").pass).toBe(false);
-		bindings.set(identity(approval), { ...approval, contentSha256: "f".repeat(64) });
-		expect(decide(report, "history", ledger, bindings, 1, "").pass).toBe(false);
+		for (const changed of [
+			{ ...approval, contentSha256: "f".repeat(64) },
+			{ ...approval, containerSha256: "f".repeat(64) },
+		]) {
+			bindings.set(identity(approval), changed);
+			expect(decide(report, "history", ledger, bindings, 1, "").pass).toBe(false);
+		}
 	});
 
 	test("an independently blocked row cannot be accepted merely because its bytes match", () => {
@@ -190,16 +237,39 @@ describe("maintained scan disposition boundary", () => {
 		expect(result.pass).toBe(false);
 	});
 
+	test("identical member bytes under a different archive path need a separate review", () => {
+		const { report, ledger, approval } = reviewedCase();
+		report[0] = {
+			...report[0],
+			File: "archive.zip!first.txt",
+			Fingerprint: `${approval.commit}:archive.zip!first.txt:example-rule:1`,
+		};
+		const reviewed = reviewedReport(report, "history");
+		ledger.origins.review = reviewed.origin;
+		ledger.history = [{ ...approval, ...reviewed.findings[0], contentSha256: "f".repeat(64) }];
+		const parsed = parseLedger(ledger);
+		report[0] = {
+			...report[0],
+			File: "archive.zip!other.txt",
+			Fingerprint: `${approval.commit}:archive.zip!other.txt:example-rule:1`,
+		};
+		const changed = parseReport(report, "history")[0];
+		expect(decide(report, "history", parsed, new Map([[identity(changed), ledger.history[0]]]), 1, "").pass).toBe(
+			false,
+		);
+	});
+
 	test("tree detections cannot inherit history approvals", () => {
 		const { report, ledger, approval } = reviewedCase();
-		const tree = { ...approval, commit: "", fingerprint: "example.txt:example-rule:1" };
-		report[0] = { ...report[0], Commit: "", Fingerprint: tree.fingerprint };
+		report[0] = { ...report[0], Commit: "", Fingerprint: "example.txt:example-rule:1" };
+		const reviewed = reviewedReport(report, "tree");
+		const tree = { ...approval, ...reviewed.findings[0] };
 		const bindings = new Map([[identity(tree), tree]]);
 		expect(decide(report, "tree", ledger, bindings, 1, "").pass).toBe(false);
-		ledger.origins["tree-review"] = { ...ledger.origins.review, reportSha256: "f".repeat(64) };
+		ledger.origins["tree-review"] = reviewed.origin;
 		ledger.groups["tree-example"] = { ...ledger.groups.example, origin: "tree-review" };
 		ledger.tree.push({ ...tree, origin: "tree-review", group: "tree-example" });
-		expect(decide(report, "tree", parseLedger(ledger), bindings, 1, "", undefined, "f".repeat(64)).pass).toBe(true);
+		expect(decide(report, "tree", parseLedger(ledger), bindings, 1, "").pass).toBe(true);
 	});
 
 	test("native errors block even an empty report and exit zero", () => {
@@ -210,9 +280,11 @@ describe("maintained scan disposition boundary", () => {
 
 	test("historical directory findings keep native Commit empty and need their own scope approval", () => {
 		const { report, ledger, approval } = reviewedCase();
-		const native = { ...approval, commit: "", fingerprint: "example.txt:example-rule:1" };
+		report[0] = { ...report[0], Commit: "", Fingerprint: "example.txt:example-rule:1" };
+		const reviewed = reviewedReport(report, "historicalBlob");
+		const native = { ...approval, ...reviewed.findings[0] };
 		const version = { file: native.file, blob: native.blob, commits: [approval.commit] };
-		report[0] = { ...report[0], Commit: "", Fingerprint: native.fingerprint };
+		ledger.origins.review = reviewed.origin;
 		ledger.history = [];
 		ledger.tree = [native];
 		const bindings = new Map([[identity(native, version.blob), native]]);
@@ -229,9 +301,11 @@ describe("maintained scan disposition boundary", () => {
 
 	test("identical native fingerprints, spans and report rows on different blobs need distinct immutable approvals", () => {
 		const { report, ledger, approval } = reviewedCase();
-		const first = { ...approval, commit: "", fingerprint: "example.txt:example-rule:1" };
+		report[0] = { ...report[0], Commit: "", Fingerprint: "example.txt:example-rule:1" };
+		const reviewed = reviewedReport(report, "historicalBlob");
+		const first = { ...approval, ...reviewed.findings[0] };
 		const second = { ...first, blob: "f".repeat(40), containerSha256: "1".repeat(64), contentSha256: "1".repeat(64) };
-		report[0] = { ...report[0], Commit: "", Fingerprint: first.fingerprint };
+		ledger.origins.review = reviewed.origin;
 		ledger.history = [];
 		ledger.historicalBlob = [first];
 		const version = { file: first.file, blob: second.blob, commits: [approval.commit, "9".repeat(40)] };
@@ -256,7 +330,14 @@ describe("maintained scan disposition boundary", () => {
 
 	test("missing, malformed and unredacted reports cannot pass as clean", () => {
 		const { report, ledger, bindings } = reviewedCase();
-		for (const invalid of [undefined, [{ ...report[0], StartColumn: "3" }], [{ ...report[0], Secret: "plain" }]]) {
+		for (const invalid of [
+			undefined,
+			[{ ...report[0], StartColumn: "3" }],
+			[{ ...report[0], Secret: "plain" }],
+			[{ ...report[0], Fragment: "unsupported" }],
+			[{ ...report[0], Link: undefined }],
+			[{ ...report[0], Tags: [undefined] }],
+		]) {
 			expect(decide(invalid, "history", ledger, bindings, 0, "").pass).toBe(false);
 		}
 	});
@@ -288,9 +369,11 @@ function duplicateCase(scope: Scope = "historicalBlob") {
 	ledger.groups[last.group] = { ...ledger.groups.example };
 	const native = { ...fixture.report[0], Commit: first.commit, Fingerprint: first.fingerprint };
 	const report = [native, { ...native, StartColumn: 23, EndColumn: 32 }, { ...native }];
-	const bytes = new TextEncoder().encode(`${JSON.stringify(report, null, 2)}\n`);
-	ledger.origins.review.reportSha256 = sha256(bytes);
-	ledger.origins.review.reportRows = report.length;
+	const { origin, findings, bytes } = reviewedReport(report, scope);
+	Object.assign(first, findings[0]);
+	Object.assign(distinct, findings[1]);
+	Object.assign(last, findings[2]);
+	ledger.origins.review = origin;
 	ledger.history = [];
 	ledger[scope] = [first, distinct, last];
 	const version = { file: first.file, blob: first.blob, commits: [fixture.approval.commit] };
@@ -351,19 +434,21 @@ describe("native duplicate report-row boundary", () => {
 		}
 	});
 
-	test("original byte digest and original absolute row positions are both required", () => {
-		const { report, bytes, ledger, bindings, version } = duplicateCase();
-		const changedWhitespace = new TextEncoder().encode(JSON.stringify(report));
-		expect(decide(report, "historicalBlob", ledger, bindings, 1, "", version, sha256(changedWhitespace)).pass).toBe(
-			false,
-		);
-		// Even a caller supplying the old hash cannot make shifted reviewed row positions agree.
-		expect(
-			decide([report[1], report[0], report[2]], "historicalBlob", ledger, bindings, 1, "", version, sha256(bytes))
-				.pass,
-		).toBe(false);
-		ledger.historicalBlob[2].row = 2;
-		expect(decide(report, "historicalBlob", ledger, bindings, 1, "", version, sha256(bytes)).pass).toBe(false);
+	test("report permutation preserves the original review rows, raw digest and duplicate approvals", () => {
+		const { report, ledger, bindings, version } = duplicateCase();
+		const original = structuredClone(ledger);
+		const permuted = [report[1], report[2], report[0]].map(row => Object.fromEntries(Object.entries(row).reverse()));
+		const result = decide(permuted, "historicalBlob", ledger, bindings, 1, "", version);
+		expect(result.pass).toBe(true);
+		expect(result.approved).toBe(3);
+		expect(ledger).toEqual(original);
+	});
+
+	test("swapping identical reviewed rows cannot exchange their original occurrence ordinals", () => {
+		const { ledger } = duplicateCase();
+		ledger.historicalBlob[0].row = 3;
+		ledger.historicalBlob[2].row = 1;
+		expect(() => parseLedger(ledger)).toThrow();
 	});
 
 	test("each duplicate needs its own immutable binding, and a new blob cannot inherit either review", () => {
@@ -391,9 +476,10 @@ describe("native duplicate report-row boundary", () => {
 
 	test("the schema cutover rejects missing ordinals and inconsistent or reused review identities", () => {
 		const { ledger } = duplicateCase();
-		expect(() => parseLedger({ ...ledger, schemaVersion: 2 })).toThrow();
+		expect(() => parseLedger({ ...ledger, schemaVersion: 3 })).toThrow();
 		for (const changed of [
 			{ ...ledger.historicalBlob[0], occurrence: undefined },
+			{ ...ledger.historicalBlob[0], nativeRowSha256: undefined },
 			{ ...ledger.historicalBlob[0], occurrence: 3 },
 		])
 			expect(() => parseLedger({ ...ledger, historicalBlob: [changed] })).toThrow();
@@ -455,7 +541,7 @@ describe("immutable snapshot boundary", () => {
 	});
 });
 
-describe("historical binary coverage boundary", () => {
+describe("historical whole-blob coverage boundary", () => {
 	const commit = "a".repeat(40);
 	const next = "b".repeat(40);
 	const blob = "c".repeat(40);
@@ -496,6 +582,51 @@ describe("historical binary coverage boundary", () => {
 		expect(() => parseHistoryMetadata(encode(header(commit) + header(commit)), new Set([commit]))).toThrow();
 	});
 
+	test("historical link targets and type changes retain exact stored-blob coverage", () => {
+		const third = "e".repeat(40);
+		const fourth = "f".repeat(40);
+		const raw =
+			header(commit) +
+			"\n" +
+			`:000000 120000 ${zero} ${blob} A\0link\0` +
+			"1\t0\tlink\0" +
+			header(next) +
+			"\n" +
+			`:120000 120000 ${blob} ${other} M\0link\0` +
+			"1\t1\tlink\0" +
+			header(third) +
+			"\n" +
+			`:120000 100644 ${other} ${other} T\0link\0` +
+			"0\t0\tlink\0" +
+			header(fourth) +
+			"\n" +
+			`:100644 000000 ${other} ${zero} D\0link\0` +
+			"0\t1\tlink\0";
+		const inventory = parseHistoryMetadata(encode(raw), new Set([commit, next, third, fourth]));
+		expect(inventory.versions).toEqual([
+			{ file: "link", blob, commits: [commit] },
+			{ file: "link", blob: other, commits: [next, third] },
+		]);
+		expect(inventory.binaryChanges).toBe(0);
+		expect(inventory.commits.map(item => item.changes[0].status)).toEqual(["A", "M", "T", "D"]);
+	});
+
+	test("gitlinks retain external reference history without pretending their commits are file blobs", () => {
+		const raw =
+			header(commit) +
+			"\n" +
+			`:000000 160000 ${zero} ${blob} A\0external\0` +
+			"1\t0\texternal\0" +
+			header(next) +
+			"\n" +
+			`:160000 000000 ${blob} ${zero} D\0external\0` +
+			"0\t1\texternal\0";
+		const inventory = parseHistoryMetadata(encode(raw), new Set([commit, next]));
+		expect(inventory.gitlinks).toEqual([{ file: "external", targetCommit: blob, commits: [commit] }]);
+		expect(inventory.versions).toEqual([]);
+		expect(inventory.commits[1].changes[0].oldObject).toBe(blob);
+	});
+
 	test("raw/numstat ambiguity, unsupported paths and truncated records fail instead of omitting blobs", () => {
 		const start = header(commit) + "\n";
 		for (const raw of [
@@ -508,8 +639,10 @@ describe("historical binary coverage boundary", () => {
 			start + addition("line\nname") + "-\t-\tline\nname\0",
 			start + addition("../escape") + "-\t-\t../escape\0",
 			start + `:100644 100644 ${blob} ${other} R100\0old\0new\0-\t-\t\0old\0new\0`,
-			start + `:000000 120000 ${zero} ${blob} A\0link\0-\t-\tlink\0`,
+			start + `:000000 040000 ${zero} ${blob} A\0directory\0-\t-\tdirectory\0`,
 			start + `:000000 100644 ${blob} ${other} A\0bad\0-\t-\tbad\0`,
+			start + `:100644 120000 ${blob} ${other} M\0link\0-\t-\tlink\0`,
+			start + `:100644 100755 ${blob} ${other} T\0file\0-\t-\tfile\0`,
 		])
 			expect(() => parseHistoryMetadata(encode(raw), new Set([commit]))).toThrow();
 		expect(() => parseHistoryMetadata(new Uint8Array([255, 0]), new Set([commit]))).toThrow();
@@ -600,7 +733,24 @@ describe("historical binary coverage boundary", () => {
 			const side = await commitTree(sideTree.tree, [root]);
 			const emptyCommit = await commitTree(baseTree.tree, [root]);
 			const merge = await commitTree(sideTree.tree, [emptyCommit, side]);
-			const ancestry = new Set([merge, side, emptyCommit, root]);
+			const canary = path.join(owned.dir, "outside-canary");
+			await Bun.write(canary, "host bytes must not be ingested");
+			const targetBlob = (await git(context, ["hash-object", "-w", "--stdin"], encode(canary))).trim();
+			const external = "f".repeat(40);
+			const linkTree = (
+				await git(
+					context,
+					["mktree", "--missing"],
+					encode(`160000 commit ${external}\texternal-ref\n120000 blob ${targetBlob}\thistoric-link\n`),
+				)
+			).trim();
+			const plainTree = (
+				await git(context, ["mktree"], encode(`100644 blob ${targetBlob}\thistoric-link\n`))
+			).trim();
+			const linkCommit = await commitTree(linkTree, [root]);
+			const plainCommit = await commitTree(plainTree, [linkCommit]);
+			const candidate = await commitTree(sideTree.tree, [merge, plainCommit]);
+			const ancestry = new Set([candidate, plainCommit, linkCommit, merge, side, emptyCommit, root]);
 			const raw = await git(context, [
 				"log",
 				...HISTORY_SELECTION,
@@ -610,7 +760,7 @@ describe("historical binary coverage boundary", () => {
 				"-z",
 				"--no-abbrev",
 				"--format=%x00commit %H%x00",
-				merge,
+				candidate,
 				"--",
 			]);
 			const inventory = parseHistoryMetadata(encode(raw), ancestry);
@@ -618,6 +768,19 @@ describe("historical binary coverage boundary", () => {
 			expect(changed?.commits.sort()).toEqual([merge, side].sort());
 			expect(inventory.versions.find(version => version.blob === baseTree.blob)?.commits).toEqual([root]);
 			expect(inventory.commits.find(item => item.commit === emptyCommit)?.changes).toEqual([]);
+			expect(inventory.versions.find(version => version.blob === targetBlob)?.commits).toEqual([
+				plainCommit,
+				linkCommit,
+			]);
+			expect(inventory.gitlinks).toEqual([{ file: "external-ref", targetCommit: external, commits: [linkCommit] }]);
+			const exported = path.join(owned.dir, "exported-target");
+			await blobs(context, [{ spec: targetBlob, blob: targetBlob }], async (_request, _blob, bytes) => {
+				await Bun.write(exported, bytes);
+			});
+			const stat = await fs.lstat(exported);
+			expect(stat.isFile() && !stat.isSymbolicLink()).toBe(true);
+			expect(await Bun.file(exported).text()).toBe(canary);
+			expect(await Bun.file(canary).text()).toBe("host bytes must not be ingested");
 		} finally {
 			await fs.rm(owned.dir, { recursive: true, force: true });
 			if (owned.env.TMPDIR) await fs.rm(owned.env.TMPDIR, { recursive: true, force: true });

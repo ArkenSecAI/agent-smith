@@ -56,9 +56,19 @@ export async function smoke(binary?: string): Promise<void> {
 		expectEqual(await mouseValue(override), false, "Override state persists");
 		expectEqual(await mouseValue(), true, "Override state stays separate from default state");
 		if (binary) {
-			const extracted = path.join(context.home, ".agent-smith", "natives", NATIVE_VERSION, receipt.filename);
+			const nativesDir = path.join(context.home, ".agent-smith", "natives");
+			const candidates = (await filesUnder(nativesDir)).filter(file => {
+				const parts = path.relative(nativesDir, file).split(path.sep);
+				return (
+					parts.length === 3 &&
+					parts[0] === NATIVE_VERSION &&
+					/^[a-f0-9]{64}$/.test(parts[1]) &&
+					parts[2] === receipt.filename
+				);
+			});
+			expectEqual(candidates.length, 1, "Compiled package uses one content-specific native cache path");
 			expectEqual(
-				await fileHash(extracted),
+				await fileHash(candidates[0]),
 				receipt.sha256,
 				"Compiled package extracts the verified native payload",
 			);

@@ -21,6 +21,14 @@ async function main(): Promise<void> {
 		["packages/ai/test/agent-smith-credentials.test.ts"],
 		["packages/mnemopi/test/triples-data-dir.test.ts"],
 		[
+			"packages/natives/test/embed-native.test.ts",
+			"packages/natives/test/embedded-addon-integrity.test.ts",
+			"packages/natives/test/issue-823-repro.test.ts",
+			"packages/natives/test/windows-staging.test.ts",
+			"packages/natives/test/issue-4812-repro.test.ts",
+			"packages/natives/test/legacy-desktop-sentinel.test.ts",
+		],
+		[
 			"packages/utils/test/profiles.test.ts",
 			"packages/utils/test/logger-contract.test.ts",
 			"packages/utils/test/logger-multiprocess.test.ts",
@@ -28,6 +36,7 @@ async function main(): Promise<void> {
 		],
 		[
 			"packages/coding-agent/test/agent-smith-isolation.test.ts",
+			"packages/coding-agent/test/text-predict-privacy.test.ts",
 			"packages/coding-agent/test/discovery",
 			"packages/coding-agent/test/settings-manager.test.ts",
 			"packages/coding-agent/test/settings-reload-cwd.test.ts",

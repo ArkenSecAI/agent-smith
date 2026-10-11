@@ -27,7 +27,9 @@ export interface Finding {
 	rule: string;
 	span: Span;
 	fingerprint: string;
-	/** One-based ordinal and total within the identical native identity in this report. */
+	/** Commitment to every native field, before projection or occurrence numbering. */
+	nativeRowSha256: string;
+	/** One-based ordinal and total within identical complete native records in this report. */
 	occurrence: number;
 	occurrences: number;
 }
@@ -43,6 +45,9 @@ export interface Disposition extends Finding, Binding {
 }
 export interface Origin {
 	reportSha256: string;
+	reportContentSha256: string;
+	/** Original reviewed order; never replaced by the current scanner's row order. */
+	rowDigests: string[];
 	reviewSha256: string;
 	sourceCommit: string;
 	sourceTree: string;
@@ -55,7 +60,7 @@ export interface ReviewGroup {
 	evidence: string[];
 }
 export interface Ledger {
-	schemaVersion: 3;
+	schemaVersion: 4;
 	sourceBase: string;
 	sourceTree: string;
 	origins: Record<string, Origin>;
@@ -70,6 +75,7 @@ export interface Decision {
 	approved: number;
 	blocked: { row: number; fingerprint: string; span: Span; reason: string }[];
 	errors: string[];
+	reportContentSha256?: string;
 }
 export interface ScopeOutcome {
 	status: "not-run" | "failed" | "passed";
@@ -166,21 +172,65 @@ function finding(value: unknown, scope: Scope): Finding {
 	const occurrence = integer(item.occurrence);
 	const occurrences = integer(item.occurrences);
 	if (occurrence > occurrences) throw new Error("Invalid occurrence ordinal");
-	return { commit, file, rule, span: coordinates, fingerprint, occurrence, occurrences };
+	return {
+		commit,
+		file,
+		rule,
+		span: coordinates,
+		fingerprint,
+		nativeRowSha256: digest(item.nativeRowSha256),
+		occurrence,
+		occurrences,
+	};
+}
+
+const NATIVE_FIELDS = new Set([
+	"RuleID",
+	"Description",
+	"StartLine",
+	"EndLine",
+	"StartColumn",
+	"EndColumn",
+	"Match",
+	"Secret",
+	"File",
+	"SymlinkFile",
+	"Commit",
+	"Entropy",
+	"Author",
+	"Email",
+	"Date",
+	"Message",
+	"Tags",
+	"Fingerprint",
+	"Link",
+]);
+
+/** Row order is irrelevant; multiplicity and every original native field remain binding. */
+export function reportContentSha256(rowDigests: readonly string[]): string {
+	return new Bun.CryptoHasher("sha256")
+		.update("agent-smith/gitleaks-report/v1\0")
+		.update(JSON.stringify(rowDigests.toSorted()))
+		.digest("hex");
 }
 
 export function parseReport(value: unknown, scope: Scope): Finding[] {
 	const counts = new Map<string, number>();
 	const findings = array(value).map(raw => {
 		const item = record(raw);
+		const entries = Object.entries(item);
+		if (entries.some(([key]) => !NATIVE_FIELDS.has(key))) throw new Error("Unsupported native report field");
 		if (item.Secret !== "REDACTED" || !string(item.Match).includes("REDACTED") || item.SymlinkFile !== "") {
 			throw new Error("Unredacted or unsupported report finding");
 		}
 		for (const field of ["Description", "Author", "Email", "Date", "Message"]) string(item[field]);
-		if (item.Link !== undefined) string(item.Link);
-		if (item.Fragment !== undefined) throw new Error("Unexpected raw fragment in report");
+		if (Object.hasOwn(item, "Link")) string(item.Link);
 		if (typeof item.Entropy !== "number" || !Number.isFinite(item.Entropy)) throw new Error("Invalid entropy");
-		if (item.Tags !== null) array(item.Tags).forEach(string);
+		if (item.Tags !== null) for (const tag of array(item.Tags)) string(tag);
+		const nativeRowSha256 = new Bun.CryptoHasher("sha256")
+			.update("agent-smith/gitleaks-row/v1\0")
+			.update(JSON.stringify(entries.sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))))
+			.digest("hex");
 		const result = finding(
 			{
 				commit: item.Commit,
@@ -188,6 +238,7 @@ export function parseReport(value: unknown, scope: Scope): Finding[] {
 				rule: item.RuleID,
 				span: [item.StartLine, item.EndLine, item.StartColumn, item.EndColumn],
 				fingerprint: item.Fingerprint,
+				nativeRowSha256,
 				occurrence: 1,
 				occurrences: 1,
 			},
@@ -203,7 +254,7 @@ export function parseReport(value: unknown, scope: Scope): Finding[] {
 }
 
 function rawIdentity(item: Finding, blob?: string): string {
-	const parts = [item.commit, item.file, item.rule, ...item.span, item.fingerprint];
+	const parts = [item.commit, item.file, item.rule, ...item.span, item.fingerprint, item.nativeRowSha256];
 	if (blob !== undefined) parts.push(oid(blob));
 	return JSON.stringify(parts);
 }
@@ -214,19 +265,36 @@ export function identity(item: Finding, blob?: string): string {
 
 export function parseLedger(value: unknown): Ledger {
 	const input = record(value);
-	if (input.schemaVersion !== 3 || input.sourceBase !== SOURCE_BASE || input.sourceTree !== SOURCE_TREE) {
+	if (input.schemaVersion !== 4 || input.sourceBase !== SOURCE_BASE || input.sourceTree !== SOURCE_TREE) {
 		throw new Error("Unsupported ledger or changed original source pin");
 	}
 	const origins: Record<string, Origin> = Object.create(null);
+	const originalOccurrences = new Map<string, { ordinals: number[]; counts: Map<string, number> }>();
 	for (const [key, raw] of Object.entries(record(input.origins))) {
 		const item = record(raw);
 		origins[key] = {
 			reportSha256: digest(item.reportSha256),
+			reportContentSha256: digest(item.reportContentSha256),
+			rowDigests: array(item.rowDigests).map(digest),
 			reviewSha256: digest(item.reviewSha256),
 			sourceCommit: oid(item.sourceCommit),
 			sourceTree: oid(item.sourceTree),
 			reportRows: integer(item.reportRows),
 		};
+		const origin = origins[key];
+		if (
+			origin.reportRows !== origin.rowDigests.length ||
+			origin.reportContentSha256 !== reportContentSha256(origin.rowDigests)
+		) {
+			throw new Error("Inconsistent complete reviewed report commitment");
+		}
+		const counts = new Map<string, number>();
+		const ordinals = origin.rowDigests.map(hash => {
+			const ordinal = (counts.get(hash) ?? 0) + 1;
+			counts.set(hash, ordinal);
+			return ordinal;
+		});
+		originalOccurrences.set(key, { ordinals, counts });
 	}
 	const groups: Record<string, ReviewGroup> = Object.create(null);
 	for (const [key, raw] of Object.entries(record(input.groups))) {
@@ -267,6 +335,14 @@ export function parseLedger(value: unknown): Ledger {
 				containerSha256: digest(item.containerSha256),
 				contentSha256: digest(item.contentSha256),
 			};
+			const original = originalOccurrences.get(origin)!;
+			if (
+				review.rowDigests[row - 1] !== result.nativeRowSha256 ||
+				original.ordinals[row - 1] !== result.occurrence ||
+				original.counts.get(result.nativeRowSha256) !== result.occurrences
+			) {
+				throw new Error("Disposition changed its original native record or reviewed ordinal");
+			}
 			if (!result.file.includes("!") && result.contentSha256 !== result.containerSha256) {
 				throw new Error("Plain file has inconsistent content binding");
 			}
@@ -277,7 +353,7 @@ export function parseLedger(value: unknown): Ledger {
 		});
 	}
 	return {
-		schemaVersion: 3,
+		schemaVersion: 4,
 		sourceBase: SOURCE_BASE,
 		sourceTree: SOURCE_TREE,
 		origins,
@@ -291,6 +367,7 @@ export function parseLedger(value: unknown): Ledger {
 export interface ApprovalIndex {
 	rows: ReadonlyMap<string, Disposition>;
 	duplicates: ReadonlyMap<string, readonly Disposition[]>;
+	origins: ReadonlySet<string>;
 }
 export interface PreparedLedger {
 	ledger: Ledger;
@@ -298,14 +375,16 @@ export interface PreparedLedger {
 	tree: ApprovalIndex;
 	historicalBlob: ReadonlyMap<string, ApprovalIndex>;
 }
-const EMPTY_INDEX: ApprovalIndex = { rows: new Map(), duplicates: new Map() };
+const EMPTY_INDEX: ApprovalIndex = { rows: new Map(), duplicates: new Map(), origins: new Set() };
 
 /** Prepare once, including exact path/blob subsets; hundreds of scans do not rebuild the ledger. */
 export function prepareLedger(ledger: Ledger): PreparedLedger {
 	function index(rows: Disposition[], historical = false): ApprovalIndex {
 		const indexed = new Map<string, Disposition>();
 		const duplicates = new Map<string, Disposition[]>();
+		const origins = new Set<string>();
 		for (const item of rows) {
+			origins.add(item.origin);
 			const blob = historical ? item.blob : undefined;
 			const key = identity(item, blob);
 			if (indexed.has(key)) throw new Error("Duplicate disposition identity");
@@ -317,7 +396,7 @@ export function prepareLedger(ledger: Ledger): PreparedLedger {
 				duplicates.set(raw, group);
 			}
 		}
-		return { rows: indexed, duplicates };
+		return { rows: indexed, duplicates, origins };
 	}
 	const versions = new Map<string, Disposition[]>();
 	for (const item of ledger.historicalBlob) {
@@ -367,18 +446,29 @@ export function decide(
 		return result;
 	}
 	result.findings = findings.length;
+	result.reportContentSha256 = reportContentSha256(findings.map(item => item.nativeRowSha256));
 	if ((exitCode === 0 && findings.length !== 0) || (exitCode === 1 && findings.length === 0)) {
 		result.errors.push("Scanner exit/report inconsistency");
 	}
 	const index = approvalsFor(prepared, scope, version);
+	for (const id of index.origins) {
+		const origin = ledger.origins[id];
+		if (
+			!origin ||
+			origin.reportRows !== findings.length ||
+			origin.reportContentSha256 !== result.reportContentSha256
+		) {
+			result.errors.push("Complete native report membership or metadata changed since independent review");
+		}
+	}
 	const approvals = index.rows;
 	const blob = scope === "historicalBlob" ? version?.blob : undefined;
-	const groups = new Map<string, { item: Finding; row: number }[]>();
-	for (const [offset, item] of findings.entries()) {
+	const groups = new Map<string, Finding[]>();
+	for (const item of findings) {
 		const raw = rawIdentity(item, blob);
 		if (item.occurrences > 1 || index.duplicates.has(raw)) {
 			const rows = groups.get(raw) ?? [];
-			rows.push({ item, row: offset + 1 });
+			rows.push(item);
 			groups.set(raw, rows);
 		}
 	}
@@ -390,7 +480,7 @@ export function decide(
 		const valid =
 			rows.length > 1 &&
 			reviewed.length === rows.length &&
-			rows.every(({ item, row }, offset) => {
+			rows.every((item, offset) => {
 				const approval = approvals.get(identity(item, blob));
 				const bound = bindings.get(identity(item, blob));
 				const origin = approval && ledger.origins[approval.origin];
@@ -401,9 +491,9 @@ export function decide(
 					approval.occurrence === offset + 1 &&
 					approval.occurrences === rows.length &&
 					item.occurrences === rows.length &&
-					approval.row === row &&
+					origin.rowDigests[approval.row - 1] === item.nativeRowSha256 &&
 					origin.reportRows === findings.length &&
-					origin.reportSha256 === reportSha256 &&
+					origin.reportContentSha256 === result.reportContentSha256 &&
 					approval.blob === bound.blob &&
 					approval.containerSha256 === bound.containerSha256 &&
 					approval.contentSha256 === bound.contentSha256 &&
@@ -432,9 +522,9 @@ export function decide(
 			const origin = ledger.origins[approval.origin];
 			if (
 				!origin ||
-				origin.reportSha256 !== reportSha256 ||
+				origin.reportContentSha256 !== result.reportContentSha256 ||
 				origin.reportRows !== findings.length ||
-				approval.row !== index + 1
+				origin.rowDigests[approval.row - 1] !== item.nativeRowSha256
 			) {
 				reason = "Changed reviewed report binding";
 			} else if (

@@ -80,9 +80,10 @@ interface HistoricalReceipt extends ScanReceipt {
 	versions?: number;
 	scanned?: number;
 	binaryChanges?: number;
+	gitlinkReferences?: number;
 }
 interface Summary {
-	schemaVersion: 3;
+	schemaVersion: 4;
 	pass: boolean;
 	sourceBase: string;
 	sourceTree: string;
@@ -492,7 +493,7 @@ async function scanHistoricalBlobs(
 			inventoryFile,
 			`${JSON.stringify(
 				{
-					schemaVersion: 1,
+					schemaVersion: 2,
 					candidate: context.candidate,
 					candidateTree,
 					ancestrySha256,
@@ -509,6 +510,7 @@ async function scanHistoricalBlobs(
 		receipt.inventorySha256 = await fileHash(inventoryFile);
 		receipt.versions = inventory.versions.length;
 		receipt.binaryChanges = inventory.binaryChanges;
+		receipt.gitlinkReferences = inventory.gitlinks.length;
 		let decoderCoverage: DecoderCoverage | undefined;
 		try {
 			const coverage: DecoderCoverage = {
@@ -702,7 +704,7 @@ async function main(): Promise<void> {
 	// An existing output directory is never reused: stale reports cannot satisfy this run.
 	await fs.mkdir(output, { mode: 0o700 });
 	const summary: Summary = {
-		schemaVersion: 3,
+		schemaVersion: 4,
 		pass: false,
 		sourceBase: SOURCE_BASE,
 		sourceTree: SOURCE_TREE,

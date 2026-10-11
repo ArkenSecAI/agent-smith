@@ -5,10 +5,9 @@
  * Lazily opens one `TextPredictor` per requested engine, keeps each learning
  * engine current with `history.db` (rows past a persisted row-id cursor, on
  * open and on every `sync`), persists on a debounce and on exit, and exits
- * after an idle window. A learning engine that starts from empty state first
- * learns the Claude Code and Codex prompt histories (`foreign-history.ts`).
+ * after an idle window. Learning engines ingest only Agent Smith history.
  * `smollm` requests are answered by SmolLM and ngram together (`blend.ts`).
- * Engine state that fails to load is wiped and rebuilt the same way.
+ * Unreadable state in the current generation is rebuilt from Agent Smith history.
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
@@ -18,9 +17,9 @@ import { getHistoryDbPath, isEnoent, logger, VERSION } from "@oh-my-pi/pi-utils"
 import { JsonLineServer } from "../tiny/worker-server";
 import { openSqliteReadConnection } from "../tools/sqlite-reader";
 import { blendPredictions } from "./blend";
-import { readForeignPrompts } from "./foreign-history";
 import {
 	TEXT_PREDICT_AGENT_DIR_ENV,
+	TEXT_PREDICT_GENERATION,
 	TEXT_PREDICT_SOCKET_ENV,
 	type TextPredictMethod,
 	type TextPredictRequest,
@@ -39,8 +38,8 @@ const INGEST_BATCH = 1_000;
 const OPEN_RETRY_MS = 60_000;
 const CURSOR_FILE = "cursor.json";
 
-/** Persisted history cursor, or `undefined` when the engine has no persisted state yet. */
-async function readCursor(stateDir: string): Promise<number | undefined> {
+/** Persisted Agent Smith history cursor; missing or unreadable cursors replay own history. */
+async function readCursor(stateDir: string): Promise<number> {
 	try {
 		const raw: unknown = await Bun.file(path.join(stateDir, CURSOR_FILE)).json();
 		if (typeof raw === "object" && raw !== null && "historyId" in raw && typeof raw.historyId === "number") {
@@ -48,7 +47,7 @@ async function readCursor(stateDir: string): Promise<number | undefined> {
 		}
 		return 0;
 	} catch (error) {
-		if (isEnoent(error)) return undefined;
+		if (isEnoent(error)) return 0;
 		logger.warn("text-predict: unreadable history cursor; re-ingesting", { stateDir, error: String(error) });
 		return 0;
 	}
@@ -58,7 +57,7 @@ async function readCursor(stateDir: string): Promise<number | undefined> {
 class SmolLmWeightsMissingError extends Error {
 	constructor() {
 		super(
-			"SmolLM weights are not downloaded yet (the editor fetches them on first use, or run `omp tiny-models download smollm`)",
+			"SmolLM weights are not downloaded yet (the editor fetches them on first use, or run `agent-smith tiny-models download smollm`)",
 		);
 	}
 }
@@ -67,8 +66,6 @@ class SmolLmWeightsMissingError extends Error {
 class Engine {
 	/** Highest `history.id` fed to `observe`. */
 	cursor: number;
-	/** Foreign prompt histories still owed to empty state (see {@link readForeignPrompts}). */
-	#seed: boolean;
 	/** Cursor value covered by the last successful persist. */
 	#persistedCursor: number;
 	#dirty = false;
@@ -78,11 +75,10 @@ class Engine {
 		readonly method: TextPredictMethod,
 		readonly stateDir: string,
 		readonly predictor: TextPredictor,
-		cursor: number | undefined,
+		cursor: number,
 	) {
-		this.cursor = cursor ?? 0;
+		this.cursor = cursor;
 		this.#persistedCursor = this.cursor;
-		this.#seed = cursor === undefined;
 	}
 
 	get dirty(): boolean {
@@ -94,8 +90,7 @@ class Engine {
 	}
 
 	/**
-	 * Feed history rows past the cursor through `observe`, one ingestion at a
-	 * time; empty state first learns the foreign prompt histories.
+	 * Feed Agent Smith history rows past the cursor through `observe`, one ingestion at a time.
 	 */
 	ingest(historyDbPath: string): Promise<number> {
 		// `apple` only wraps the system dictionary; it learns nothing.
@@ -121,15 +116,6 @@ class Engine {
 
 	async #ingestNow(historyDbPath: string): Promise<number> {
 		let ingested = 0;
-		if (this.#seed) {
-			const prompts = await readForeignPrompts();
-			for (let at = 0; at < prompts.length; at += INGEST_BATCH) {
-				await this.predictor.observe(prompts.slice(at, at + INGEST_BATCH));
-			}
-			this.#seed = false;
-			if (prompts.length > 0) this.markDirty();
-			ingested += prompts.length;
-		}
 		let db: Database;
 		try {
 			db = await openSqliteReadConnection(historyDbPath);
@@ -205,6 +191,7 @@ class TextPredictDaemon {
 					ok: true,
 					op: "ping",
 					version: VERSION,
+					generation: TEXT_PREDICT_GENERATION,
 					pid: process.pid,
 					engines: [...this.#engines.keys()],
 				};
@@ -277,7 +264,9 @@ class TextPredictDaemon {
 	}
 
 	async #open(method: TextPredictMethod): Promise<Engine> {
-		const stateDir = path.join(this.#agentDir, "predict", method);
+		// Pre-cutover predict/<method> may contain foreign prompts. Leave it untouched
+		// and rebuild from Agent Smith history in a separate cache generation.
+		const stateDir = path.join(this.#agentDir, "predict", TEXT_PREDICT_GENERATION, method);
 		await fs.mkdir(stateDir, { recursive: true });
 		let modelDir: string | undefined;
 		if (method === "smollm") {
@@ -288,7 +277,7 @@ class TextPredictDaemon {
 		// SmolLM only serves the blend, which gates on its own score.
 		const showThreshold = method === "smollm" ? 0 : undefined;
 		let predictor = new TextPredictor({ method, stateDir, modelDir, showThreshold });
-		let cursor: number | undefined;
+		let cursor: number;
 		try {
 			await predictor.ready();
 			cursor = await readCursor(stateDir);
@@ -300,7 +289,7 @@ class TextPredictDaemon {
 			await fs.mkdir(stateDir, { recursive: true });
 			predictor = new TextPredictor({ method, stateDir, modelDir, showThreshold });
 			await predictor.ready();
-			cursor = undefined;
+			cursor = 0;
 		}
 		const engine = new Engine(method, stateDir, predictor, cursor);
 		const ingested = await engine.ingest(this.#historyDbPath);

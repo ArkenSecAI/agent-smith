@@ -22,6 +22,7 @@ import { prefetchSmolLmWeights } from "./smollm-weights";
 import {
 	TEXT_PREDICT_AGENT_DIR_ENV,
 	TEXT_PREDICT_BROKER_SCOPE,
+	TEXT_PREDICT_GENERATION,
 	TEXT_PREDICT_READY_PATTERN,
 	TEXT_PREDICT_SOCKET_ENV,
 	TEXT_PREDICT_WORKER_ARG,
@@ -119,7 +120,7 @@ class DaemonConnection {
 	}
 }
 
-/** Connect and confirm the daemon speaks this omp version; `undefined` when nothing usable listens. */
+/** Confirm the Agent Smith version and own-history generation before sending any prompts. */
 async function connectDaemon(endpoint: string): Promise<DaemonConnection | undefined> {
 	let socket: net.Socket;
 	try {
@@ -130,8 +131,10 @@ async function connectDaemon(endpoint: string): Promise<DaemonConnection | undef
 	const connection = new DaemonConnection(socket);
 	try {
 		const pong = await connection.request(id => ({ id, op: "ping" }), REQUEST_TIMEOUT_MS);
-		if (pong.ok && pong.op === "ping" && pong.version === VERSION) return connection;
-		// A daemon from another omp version: retire it so this version's starts.
+		if (pong.ok && pong.op === "ping" && pong.version === VERSION && pong.generation === TEXT_PREDICT_GENERATION) {
+			return connection;
+		}
+		// Retire incompatible daemons, including same-version ones that seeded foreign history.
 		await connection.request(id => ({ id, op: "shutdown" }), REQUEST_TIMEOUT_MS).catch(() => undefined);
 	} catch (error) {
 		logger.debug("text-predict: daemon ping failed", { endpoint, error: String(error) });
@@ -291,7 +294,7 @@ export function textPredictionBackend(method: WordCompletionEngine): WordPredict
 
 /**
  * One completion from the daemon with its confidence, for diagnostics such as
- * `omp predict`. Unlike the editor backend, failures reject instead of
+ * `agent-smith predict`. Unlike the editor backend, failures reject instead of
  * degrading to no ghost text.
  */
 export function requestTextPrediction(
@@ -305,7 +308,7 @@ export function requestTextPrediction(
 
 /**
  * Close this process's daemon connection (the daemon keeps running). For
- * short-lived commands such as `omp predict`; the composer keeps its
+ * short-lived commands such as `agent-smith predict`; the composer keeps its
  * connection for the process lifetime.
  */
 export function closeTextPrediction(): void {
@@ -324,10 +327,10 @@ export function syncTextPrediction(): void {
  * and shut it down.
  */
 export async function smokeTestTextPredictDaemon(): Promise<void> {
-	const root = await fs.mkdtemp(path.join(os.tmpdir(), "omp-text-predict-smoke-"));
+	const root = await fs.mkdtemp(path.join(os.tmpdir(), "smith-predict-smoke-"));
 	const endpoint =
 		process.platform === "win32"
-			? `\\\\.\\pipe\\omp-text-predict-smoke-${process.pid.toString(36)}`
+			? `\\\\.\\pipe\\agent-smith-text-predict-smoke-${process.pid.toString(36)}`
 			: path.join(root, "text-predict.sock");
 	const spawn = resolveWorkerSpawnCmd(TEXT_PREDICT_WORKER_ARG);
 	const proc = ptree.spawn(spawn.cmd, {

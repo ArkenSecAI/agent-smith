@@ -7,8 +7,8 @@ interface Change {
 	file: string;
 	oldMode: string;
 	mode: string;
-	oldBlob: string;
-	blob: string;
+	oldObject: string;
+	object: string;
 	status: string;
 	binary: boolean;
 }
@@ -16,6 +16,8 @@ export interface HistoryMetadata {
 	commits: { commit: string; changes: Change[] }[];
 	binaryChanges: number;
 	versions: HistoricalVersion[];
+	/** Gitlink targets are external commit references, not stored file blobs. */
+	gitlinks: { file: string; targetCommit: string; commits: string[] }[];
 }
 
 /** Parse Git's NUL protocol by position, never by lines or a path-shaped delimiter. */
@@ -29,9 +31,10 @@ export function parseHistoryMetadata(bytes: Uint8Array, ancestry: ReadonlySet<st
 		offset = end + 1;
 		return result;
 	}
-	const result: HistoryMetadata = { commits: [], binaryChanges: 0, versions: [] };
+	const result: HistoryMetadata = { commits: [], binaryChanges: 0, versions: [], gitlinks: [] };
 	const seen = new Set<string>();
 	const versions = new Map<string, HistoricalVersion>();
+	const gitlinks = new Map<string, HistoryMetadata["gitlinks"][number]>();
 	const zero = "0".repeat(40);
 	while (offset < text.length) {
 		if (token() !== "") throw new Error("Invalid history record boundary");
@@ -47,25 +50,30 @@ export function parseHistoryMetadata(bytes: Uint8Array, ancestry: ReadonlySet<st
 			if (text[offset] !== ":") throw new Error("Missing raw diff after commit separator");
 		}
 		while (text[offset] === ":") {
-			const raw = /^:(000000|100644|100755) (000000|100644|100755) ([0-9a-f]{40}) ([0-9a-f]{40}) ([AMD])$/.exec(
-				token(),
-			);
+			const raw =
+				/^:(000000|100644|100755|120000|160000) (000000|100644|100755|120000|160000) ([0-9a-f]{40}) ([0-9a-f]{40}) ([AMDT])$/.exec(
+					token(),
+				);
 			if (!raw) throw new Error("Unsupported raw diff mode/status or ambiguous metadata");
-			const [, oldMode, mode, oldBlob, blob, status] = raw;
+			const [, oldMode, mode, oldObject, object, status] = raw;
 			const file = safePath(token());
 			if (paths.has(file)) throw new Error("Repeated raw diff path");
 			paths.add(file);
+			const typeChanged =
+				(oldMode === "120000") !== (mode === "120000") || (oldMode === "160000") !== (mode === "160000");
 			if (
-				(oldMode === "000000") !== (oldBlob === zero) ||
-				(mode === "000000") !== (blob === zero) ||
-				(status === "A" && (oldBlob !== zero || blob === zero)) ||
-				(status === "D" && (oldBlob === zero || blob !== zero)) ||
-				(status === "M" && (oldBlob === zero || blob === zero)) ||
-				(oldBlob === blob && oldMode === mode)
+				(oldMode === "000000") !== (oldObject === zero) ||
+				(mode === "000000") !== (object === zero) ||
+				(status === "A" && (oldObject !== zero || object === zero)) ||
+				(status === "D" && (oldObject === zero || object !== zero)) ||
+				((status === "M" || status === "T") && (oldObject === zero || object === zero)) ||
+				(status === "M" && typeChanged) ||
+				(status === "T" && !typeChanged) ||
+				(oldObject === object && oldMode === mode)
 			) {
 				throw new Error("Inconsistent raw diff identity");
 			}
-			changes.push({ file, oldMode, mode, oldBlob, blob, status, binary: false });
+			changes.push({ file, oldMode, mode, oldObject, object, status, binary: false });
 		}
 		for (const change of changes) {
 			const stat = /^(-|[0-9]+)\t(-|[0-9]+)\t(.+)$/.exec(token());
@@ -76,13 +84,25 @@ export function parseHistoryMetadata(bytes: Uint8Array, ancestry: ReadonlySet<st
 			if (!change.binary && (!Number.isSafeInteger(Number(stat[1])) || !Number.isSafeInteger(Number(stat[2])))) {
 				throw new Error("Unsupported numstat count");
 			}
-			if (!change.binary) continue;
-			result.binaryChanges++;
+			if (change.binary) result.binaryChanges++;
 			if (change.status === "D") continue;
-			const key = JSON.stringify([change.file, change.blob]);
+			if (change.mode === "160000") {
+				const key = JSON.stringify([change.file, change.object]);
+				let reference = gitlinks.get(key);
+				if (!reference) {
+					reference = { file: change.file, targetCommit: change.object, commits: [] };
+					gitlinks.set(key, reference);
+				}
+				reference.commits.push(commit);
+				continue;
+			}
+			// Link targets are stored Git blob bytes, never filesystem links. Scan them
+			// and type-change results whole even when Git reports a textual diff.
+			if (!change.binary && change.mode !== "120000" && change.status !== "T") continue;
+			const key = JSON.stringify([change.file, change.object]);
 			let version = versions.get(key);
 			if (!version) {
-				version = { file: change.file, blob: change.blob, commits: [] };
+				version = { file: change.file, blob: change.object, commits: [] };
 				versions.set(key, version);
 			}
 			version.commits.push(commit);
@@ -91,6 +111,7 @@ export function parseHistoryMetadata(bytes: Uint8Array, ancestry: ReadonlySet<st
 	}
 	if (seen.size !== ancestry.size) throw new Error("History metadata does not cover complete ancestry");
 	result.versions = [...versions.values()];
+	result.gitlinks = [...gitlinks.values()];
 	return result;
 }
 

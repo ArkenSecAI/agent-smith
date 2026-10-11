@@ -1,25 +1,8 @@
+import type { EmbeddedAddon, EmbeddedAddonFile } from "./embedded-addon-identity.js";
+export * from "./embedded-addon-identity.js";
+
 /** App-owned, profile-independent native extraction/staging directory. */
 export function getNativesDir(): string;
-
-export interface EmbeddedAddonFile {
-	variant: "modern" | "baseline" | "default";
-	filename: string;
-	size?: number;
-	filePath?: string;
-}
-
-export interface EmbeddedAddonArchive {
-	format: "tar.gz";
-	filename: string;
-	filePath: string;
-}
-
-export interface EmbeddedAddon {
-	platformTag: string;
-	version: string;
-	files: EmbeddedAddonFile[];
-	archive?: EmbeddedAddonArchive;
-}
 
 export interface DetectCompiledBinaryInput {
 	embeddedAddon: EmbeddedAddon | null | undefined;
@@ -64,6 +47,7 @@ export interface InitLoaderContextOverrides {
 	platform?: NodeJS.Platform | string;
 	isCompiledBinary?: boolean;
 	leafPackageDir?: string | null;
+	embeddedAddon?: EmbeddedAddon | null;
 }
 
 export interface NativeLoaderContext {
@@ -73,6 +57,7 @@ export interface NativeLoaderContext {
 	leafPackageDir: string | null;
 	versionedDir: string;
 	isCompiledBinary: boolean;
+	embeddedAddon: EmbeddedAddon | null;
 	stageFromNodeModules: boolean;
 	selectedVariant: "modern" | "baseline" | null;
 	addonFilenames: string[];
@@ -100,6 +85,15 @@ export interface ExtractEmbeddedAddonArchiveInput {
 }
 
 export function extractEmbeddedAddonArchive(input: ExtractEmbeddedAddonArchiveInput): string[];
+
+export interface PrepareEmbeddedAddonCandidateInput {
+	addon: EmbeddedAddon;
+	candidate: string;
+	nativesDir: string;
+}
+
+/** Verify bytes and return an artifact-specific path safe for compiled dlopen. */
+export function prepareEmbeddedAddonCandidate(input: PrepareEmbeddedAddonCandidateInput): string;
 
 export interface SelectCpuVariantInput {
 	arch: string;

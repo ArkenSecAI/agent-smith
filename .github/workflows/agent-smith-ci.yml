@@ -52,7 +52,7 @@ jobs:
             git merge-base --is-ancestor "$target_base" "$SOURCE_SHA"
             printf 'target-base=%s\n' "$target_base" >> "$GITHUB_OUTPUT"
           fi
-      - name: Scan immutable history, historical binary versions and source tree
+      - name: Scan immutable history, historical stored blobs and source tree
         shell: bash
         env:
           SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
