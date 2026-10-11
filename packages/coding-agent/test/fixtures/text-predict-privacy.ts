@@ -80,6 +80,7 @@ switch (process.argv[2]) {
 				listening.resolve();
 			},
 		});
+		const failures: unknown[] = [];
 		try {
 			await Promise.race([
 				listening.promise,
@@ -90,31 +91,48 @@ switch (process.argv[2]) {
 			await control.request({ op: "ping" });
 			process.send("ready");
 			await shutdown.promise;
-		} finally {
+		} catch (error) {
+			failures.push(error);
+		}
+		if (ready) {
 			try {
-				if (ready) {
+				const listed = await control.request({ op: "list" });
+				if (listed.op !== "list") throw new Error("Unexpected broker list response");
+				for (const daemon of listed.daemons) {
 					try {
-						const listed = await control.request({ op: "list" });
-						if (listed.op !== "list") throw new Error("Unexpected broker list response");
-						for (const daemon of listed.daemons) {
-							const stopped = await control.request({ op: "stop", name: daemon.name, timeoutMs: 2_000 });
-							if (stopped.op !== "stop" || !["exited", "failed"].includes(stopped.daemon.state)) {
-								throw new Error("Owned predictor did not terminate");
-							}
+						const stopped = await control.request({ op: "stop", name: daemon.name, timeoutMs: 2_000 });
+						if (stopped.op !== "stop" || !["exited", "failed"].includes(stopped.daemon.state)) {
+							throw new Error("Owned predictor did not terminate");
 						}
-					} finally {
-						await control.request({ op: "shutdown" });
+					} catch (error) {
+						failures.push(error);
 					}
 				}
-			} finally {
-				control.close();
-				try {
-					await finished;
-				} finally {
-					if (process.connected && process.disconnect) process.disconnect();
-				}
+			} catch (error) {
+				failures.push(error);
+			}
+			try {
+				await control.request({ op: "shutdown" });
+			} catch (error) {
+				failures.push(error);
 			}
 		}
+		try {
+			control.close();
+		} catch (error) {
+			failures.push(error);
+		}
+		try {
+			await finished;
+		} catch (error) {
+			if (!failures.includes(error)) failures.push(error);
+		}
+		try {
+			if (process.connected && process.disconnect) process.disconnect();
+		} catch (error) {
+			failures.push(error);
+		}
+		if (failures.length) throw new AggregateError(failures, "Owned broker lifecycle failed");
 		break;
 	}
 	case "broker-client": {

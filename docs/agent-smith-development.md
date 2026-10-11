@@ -160,6 +160,8 @@ full shutdown, including predictor termination and log/metadata persistence,
 before removing fixture state, even after a client is killed. The broker rejects
 new `start` requests during shutdown and drains earlier starts still preparing
 their records; a controlled filesystem gate exercises this race without a sleep.
+Startup, stop and shutdown failures are preserved together after the owned broker
+finishes, rather than a later teardown exception hiding an earlier failure.
 
 This separation is not VM containment, host sandboxing or target authorization.
 
