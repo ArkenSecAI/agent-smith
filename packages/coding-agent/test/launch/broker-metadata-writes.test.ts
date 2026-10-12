@@ -242,7 +242,8 @@ describe("daemon metadata writes", () => {
 			await controller.request({ op: "ping" });
 			const endpoint = daemonBrokerEndpoint(projectDir, runtimeDir);
 			const socket = await connectJsonlSocket(endpoint, 1_000);
-			const socketClosed = new Promise<void>(resolve => socket.once("close", () => resolve()));
+			const socketClosed = Promise.withResolvers<void>();
+			socket.once("close", () => socketClosed.resolve());
 			socket.pause();
 			const readable = Promise.withResolvers<void>();
 			socket.once("readable", readable.resolve);
@@ -305,7 +306,7 @@ describe("daemon metadata writes", () => {
 				// A Windows named pipe stays visible while any client handle is open; release ours first.
 				socket.destroy();
 				const clientClosed = await Promise.race([
-					socketClosed.then(() => true),
+					socketClosed.promise.then(() => true),
 					Bun.sleep(1_000).then(() => false),
 				]);
 				expect(clientClosed).toBe(true);
