@@ -30,11 +30,14 @@ Concrete inherited exceptions include **inferno 0.12.8 / CDDL-1.0**, **uluru 3.1
 ## Inherited material retained by maintainer decision
 
 The restored notices and successful source matches do **not** clear the whole
-inherited source tree. The items below are byte-identical to the public OMP
-v18.4.8 base and remain in upstream's public history. On 2026-10-12 the
-maintainer decided to keep publishing them unchanged after the research
-summarized here. That is an informed acceptance of residual uncertainty, **not**
-a license grant, legal clearance or a statement that any rights holder approves.
+inherited source tree. The 33 `exa` schemas, the packed web-prior data and the
+historical Xiaomi occurrences below are byte-identical to the public OMP v18.4.8
+base and remain in upstream's public history; the derived `devin-proto.ts`
+keeps upstream's declarations, with only a generated-header comment correction.
+On 2026-10-12 the maintainer decided to keep publishing this material without
+substantive change after the research summarized here. That is an informed
+acceptance of residual uncertainty, **not** a license grant, legal clearance or
+a statement that any rights holder approves.
 A rights holder with a concern can open an issue in this repository or, for
 sensitive details, use the private route in [SECURITY.md](../.github/SECURITY.md).
 The maintainer will review it promptly and remove or replace affected material
