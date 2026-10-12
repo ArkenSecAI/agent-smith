@@ -817,16 +817,19 @@ export async function scanAttributeCanary(
 			git: fixtureGit,
 			candidate,
 			commits,
-			prepared: prepareLedger({
-				schemaVersion: 4,
-				sourceBase: SOURCE_BASE,
-				sourceTree: SOURCE_TREE,
-				origins: {},
-				groups: {},
-				history: [],
-				tree: [],
-				historicalBlob: [],
-			}),
+			prepared: prepareLedger(
+				{
+					schemaVersion: 4,
+					sourceBase: SOURCE_BASE,
+					sourceTree: SOURCE_TREE,
+					origins: {},
+					groups: {},
+					history: [],
+					tree: [],
+					historicalBlob: [],
+				},
+				new Set(),
+			),
 		};
 		const probes: Record<string, unknown> = {};
 		proof.probes = probes;
@@ -1026,10 +1029,8 @@ async function main(): Promise<void> {
 				throw new Error("Review source tree identity mismatch");
 			}
 		}
-		verifyInheritedAcceptance(
-			ledger,
-			new Set((await git(source.context, ["rev-list", SOURCE_BASE])).trim().split("\n")),
-		);
+		const inherited = new Set((await git(source.context, ["rev-list", SOURCE_BASE])).trim().split("\n"));
+		verifyInheritedAcceptance(ledger, inherited);
 		const config = path.join(output, "default-rules.toml");
 		const ignore = path.join(output, "empty-ignore");
 		await Bun.write(config, DEFAULT_CONFIG);
@@ -1057,7 +1058,7 @@ async function main(): Promise<void> {
 			config,
 			ignore,
 			output,
-			prepared: prepareLedger(ledger),
+			prepared: prepareLedger(ledger, inherited),
 		};
 		const canary = await scanAttributeCanary(scanContext, owned.dir);
 		summary.attributeCanary = canary.outcome;

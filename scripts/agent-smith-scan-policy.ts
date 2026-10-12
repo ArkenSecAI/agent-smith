@@ -400,11 +400,17 @@ export interface PreparedLedger {
 	history: ApprovalIndex;
 	tree: ApprovalIndex;
 	historicalBlob: ReadonlyMap<string, ApprovalIndex>;
+	/** Commits reachable from SOURCE_BASE; the only commits an inherited-exposure acceptance can cover. */
+	inherited: ReadonlySet<string>;
 }
 const EMPTY_INDEX: ApprovalIndex = { rows: new Map(), duplicates: new Map(), origins: new Set() };
 
-/** Prepare once, including exact path/blob subsets; hundreds of scans do not rebuild the ledger. */
-export function prepareLedger(ledger: Ledger): PreparedLedger {
+/**
+ * Prepare once, including exact path/blob subsets; hundreds of scans do not rebuild the ledger.
+ * `inherited` must be the complete upstream-base ancestry: decide() passes an inherited-exposure
+ * acceptance only for a member, so an empty set fails closed.
+ */
+export function prepareLedger(ledger: Ledger, inherited: ReadonlySet<string>): PreparedLedger {
 	function index(rows: Disposition[], historical = false): ApprovalIndex {
 		const indexed = new Map<string, Disposition>();
 		const duplicates = new Map<string, Disposition[]>();
@@ -436,6 +442,7 @@ export function prepareLedger(ledger: Ledger): PreparedLedger {
 		history: index(ledger.history),
 		tree: index(ledger.tree),
 		historicalBlob: new Map([...versions].map(([key, rows]) => [key, index(rows, true)])),
+		inherited,
 	};
 }
 
@@ -535,7 +542,7 @@ export function decide(
 					approval.blob === bound.blob &&
 					approval.containerSha256 === bound.containerSha256 &&
 					approval.contentSha256 === bound.contentSha256 &&
-					passes(ledger.groups[approval.group].disposition, scope)
+					passes(approval, scope, prepared)
 				);
 			});
 		if (!valid) {
@@ -575,9 +582,11 @@ export function decide(
 			} else if (ledger.groups[approval.group].disposition === "reviewed_non_secret") {
 				result.approved++;
 				continue;
-			} else if (passes(ledger.groups[approval.group].disposition, scope)) {
+			} else if (passes(approval, scope, prepared)) {
 				result.accepted++;
 				continue;
+			} else if (ledger.groups[approval.group].disposition === "accepted_inherited_exposure") {
+				reason = "Inherited exposure acceptance outside the upstream base history";
 			} else reason = ledger.groups[approval.group].reason;
 		}
 		result.blocked.push({ row: index + 1, fingerprint: item.fingerprint, span: item.span, reason });
@@ -586,8 +595,10 @@ export function decide(
 	return result;
 }
 
-function passes(disposition: ReviewDisposition, scope: Scope): boolean {
+function passes(approval: Disposition, scope: Scope, prepared: PreparedLedger): boolean {
+	const { disposition } = prepared.ledger.groups[approval.group];
 	return (
-		disposition === "reviewed_non_secret" || (scope === "history" && disposition === "accepted_inherited_exposure")
+		disposition === "reviewed_non_secret" ||
+		(scope === "history" && disposition === "accepted_inherited_exposure" && prepared.inherited.has(approval.commit))
 	);
 }

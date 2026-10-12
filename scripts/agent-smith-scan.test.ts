@@ -29,8 +29,18 @@ function decide(
 	stderr: string,
 	version?: HistoricalVersion,
 	reportSha256 = sha256(new TextEncoder().encode(JSON.stringify(report))),
+	inherited: ReadonlySet<string> = new Set(),
 ): Decision {
-	return decidePrepared(report, scope, prepareLedger(ledger), bindings, exitCode, stderr, reportSha256, version);
+	return decidePrepared(
+		report,
+		scope,
+		prepareLedger(ledger, inherited),
+		bindings,
+		exitCode,
+		stderr,
+		reportSha256,
+		version,
+	);
 }
 
 function reviewedReport(report: Record<string, unknown>[], scope: Scope) {
@@ -218,13 +228,44 @@ describe("maintained scan disposition boundary", () => {
 		expect(result.approved).toBe(0);
 	});
 
-	test("an inherited-exposure acceptance passes history without counting as reviewed non-secret", () => {
-		const { report, ledger, bindings } = reviewedCase();
+	test("an inherited-exposure acceptance passes upstream history without counting as reviewed non-secret", () => {
+		const { report, ledger, bindings, approval } = reviewedCase();
 		ledger.groups.example.disposition = "accepted_inherited_exposure";
-		const result = decide(report, "history", ledger, bindings, 1, "");
+		const result = decide(
+			report,
+			"history",
+			ledger,
+			bindings,
+			1,
+			"",
+			undefined,
+			undefined,
+			new Set([approval.commit]),
+		);
 		expect(result.pass).toBe(true);
 		expect(result.approved).toBe(0);
 		expect(result.accepted).toBe(1);
+	});
+
+	test("an inherited-exposure acceptance blocks a commit outside the upstream base history", () => {
+		const { report, ledger, bindings } = reviewedCase();
+		ledger.groups.example.disposition = "accepted_inherited_exposure";
+		const result = decide(
+			report,
+			"history",
+			ledger,
+			bindings,
+			1,
+			"",
+			undefined,
+			undefined,
+			new Set(["f".repeat(40)]),
+		);
+		expect(result.pass).toBe(false);
+		expect(result.accepted).toBe(0);
+		expect(result.blocked.map(item => item.reason)).toEqual([
+			"Inherited exposure acceptance outside the upstream base history",
+		]);
 	});
 
 	test("an inherited-exposure acceptance cannot cover current-tree or stored-version rows", () => {
@@ -237,13 +278,13 @@ describe("maintained scan disposition boundary", () => {
 		}
 	});
 
-	test("an inherited-exposure acceptance is limited to commits reachable from the upstream base", () => {
-		const { ledger } = reviewedCase();
+	test("the scan refuses a ledger whose inherited-exposure acceptance names a fork commit", () => {
+		const { ledger, approval } = reviewedCase();
 		ledger.groups.example.disposition = "accepted_inherited_exposure";
 		expect(() => verifyInheritedAcceptance(ledger, new Set(["f".repeat(40)]))).toThrow(
 			"Inherited exposure acceptance outside the upstream base history",
 		);
-		expect(() => verifyInheritedAcceptance(ledger, new Set(["a".repeat(40)]))).not.toThrow();
+		expect(() => verifyInheritedAcceptance(ledger, new Set([approval.commit]))).not.toThrow();
 	});
 
 	test("the same file content in a new history commit remains unreviewed", () => {

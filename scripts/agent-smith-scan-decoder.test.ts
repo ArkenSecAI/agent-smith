@@ -163,6 +163,7 @@ function decoderCase(scope: Scope = "historicalBlob") {
 			tree: [],
 			historicalBlob: [],
 		}),
+		new Set(),
 	);
 	const decision = decide([], scope, prepared, new Map(), 0, stderr, sha256(native.report), version);
 	const proof: DecoderProof = {
