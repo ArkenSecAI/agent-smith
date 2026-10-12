@@ -33,6 +33,26 @@ function startBroker(projectDir: string, runtimeDir: string): { listening: Promi
 	return { listening: listening.promise, finished };
 }
 
+/**
+ * Prove a shut-down broker no longer serves its endpoint. A Unix socket file is unlinked;
+ * a Windows named pipe lives in the kernel pipe namespace, so it must refuse a new connection.
+ * The Windows connect bound uses a timer, so callers must have restored real timers.
+ */
+async function expectEndpointUnavailable(endpoint: string): Promise<void> {
+	if (process.platform !== "win32") {
+		await expect(fs.stat(endpoint)).rejects.toMatchObject({ code: "ENOENT" });
+		return;
+	}
+	const connected = await connectJsonlSocket(endpoint, 1_000).then(
+		socket => {
+			socket.destroy();
+			return true;
+		},
+		() => false,
+	);
+	expect(connected).toBe(false);
+}
+
 describe("daemon metadata writes", () => {
 	it("does not rewrite settled history on subscriber changes or broker restart", async () => {
 		using tempDir = TempDir.createSync("@omp-broker-metadata-");
@@ -249,7 +269,11 @@ describe("daemon metadata writes", () => {
 			socket.once("readable", readable.resolve);
 			socket.once("error", readable.reject);
 			let passed = false;
-			if (resumesReading) vi.useFakeTimers();
+			let fakeTimersActive = false;
+			if (resumesReading) {
+				vi.useFakeTimers();
+				fakeTimersActive = true;
+			}
 			try {
 				const token = (await fs.readFile(path.join(runtimeDir, "broker.token"), "utf8")).trim();
 				const id = "p".repeat(900 * 1024);
@@ -303,14 +327,18 @@ describe("daemon metadata writes", () => {
 					Bun.sleep(2_000).then(() => false),
 				]);
 				expect(completed).toBe(true);
-				// A Windows named pipe stays visible while any client handle is open; release ours first.
+				// Release our client before probing the endpoint.
 				socket.destroy();
 				const clientClosed = await Promise.race([
 					socketClosed.promise.then(() => true),
 					Bun.sleep(1_000).then(() => false),
 				]);
 				expect(clientClosed).toBe(true);
-				await expect(fs.stat(endpoint)).rejects.toMatchObject({ code: "ENOENT" });
+				if (fakeTimersActive) {
+					vi.useRealTimers();
+					fakeTimersActive = false;
+				}
+				await expectEndpointUnavailable(endpoint);
 				expect(await fs.exists(path.join(runtimeDir, "daemons"))).toBe(false);
 				passed = true;
 			} finally {
@@ -318,9 +346,9 @@ describe("daemon metadata writes", () => {
 				// Join the broker and retain failed state without leaking workers.
 				socket.destroy();
 				controller.close();
-				if (resumesReading) vi.advanceTimersByTime(5_000);
+				if (fakeTimersActive) vi.advanceTimersByTime(5_000);
 				await broker.finished;
-				if (resumesReading) vi.useRealTimers();
+				if (fakeTimersActive) vi.useRealTimers();
 				process.title = previousTitle;
 				if (passed) await fs.rm(root, { recursive: true, force: true });
 			}
