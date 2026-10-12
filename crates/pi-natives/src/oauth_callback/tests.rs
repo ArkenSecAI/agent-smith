@@ -176,11 +176,14 @@ fn registration_cannot_consume_another_applications_recovery_state() {
 	let core = core(home.clone(), environment(&[]));
 
 	let mut registration = active(start_blocking(&core, CancelToken::default()).unwrap());
+	// Registrations descend from the canonicalized home (a verbatim `\\?\` path on
+	// Windows).
+	let resolved_home = fs::canonicalize(&home).unwrap();
 	assert!(
 		registration
 			.context
 			.directory
-			.starts_with(home.join(".agent-smith"))
+			.starts_with(resolved_home.join(".agent-smith"))
 	);
 	assert_eq!(fs::read(&marker).unwrap(), b"foreign recovery must not be parsed or changed");
 	cleanup_registration(&mut registration, CancelToken::default()).unwrap();
