@@ -200,8 +200,12 @@ The external main ruleset requires signed commits, no force-push/deletion, and
 `Development (darwin-arm64)`, bound to GitHub Actions App 15368. Initial branch
 creation has no status-check exception. An independently reviewed exact candidate
 must complete those checks on a `p1/**` or `task/**` ref before `main` is created
-or advanced. CI and workflow authors cannot approve their own integration;
-external exact-commit/tree review remains required.
+or advanced. GitHub did not credit such checks to the creation of a new `main`, so
+the initial `main` was created at reviewed commit `d3fd958d90` under a one-time,
+maintainer-approved creation exception that was reverted immediately; later
+updates are fast-forwards of reviewed commits whose required checks have passed.
+CI and workflow authors cannot approve their own integration; external
+exact-commit/tree review remains required.
 
 Both scan and build jobs check out `pull_request.head.sha` for a PR, or
 `github.sha` for a push, with complete history. Each PR job explicitly fetches the
