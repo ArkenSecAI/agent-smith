@@ -184,7 +184,9 @@ This separation is not VM containment, host sandboxing or target authorization.
 ## CI, review and scan boundaries
 
 The workflow accepts normal PRs targeting `main` and pushes to `main`, `p1/**` or
-`task/**`. It uses `ubuntu-24.04` x64, `windows-2025` x64 and `macos-15` Apple
+`task/**`. A maintainer-only manual dispatch re-runs the same checks on the exact
+head of a chosen ref without a new commit; it never runs the main provenance job.
+It uses `ubuntu-24.04` x64, `windows-2025` x64 and `macos-15` Apple
 Silicon, not self-hosted runners. Image labels pin an OS family, not immutable VM
 contents. Candidate jobs are read-only, do not persist checkout credentials, and
 have no service/signing secrets, privileged PR trigger, Docker or binary upload.

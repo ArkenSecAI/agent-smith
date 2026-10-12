@@ -6,6 +6,9 @@ on:
   push:
     # Candidate refs allow exact-commit checks before protected main is created.
     branches: [main, 'p1/**', 'task/**']
+  # Maintainer re-run of the same exact-ref checks without a new commit (write access required).
+  # Main source provenance stays push-to-main only.
+  workflow_dispatch:
 
 permissions:
   contents: read
