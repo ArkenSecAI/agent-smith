@@ -106,10 +106,12 @@ async function main(): Promise<void> {
 	payload.push("build-manifest.json");
 	const packageName = `agent-smith-dev-${tag}.tar.gz`;
 	const pending = path.join(context.dir, packageName);
-	await run(["tar", "-czf", pending, "-C", stage, "--", ...payload], { env: context.env });
 	const unpacked = path.join(context.dir, "unpacked");
 	await fs.mkdir(unpacked);
-	await run(["tar", "-xzf", pending, "-C", unpacked], { env: context.env });
+	// Relative operands: GNU tar (Git for Windows) reads a `D:` archive prefix as a remote host.
+	const tarOptions = { env: context.env, cwd: context.dir };
+	await run(["tar", "-czf", packageName, "-C", path.relative(context.dir, stage), "--", ...payload], tarOptions);
+	await run(["tar", "-xzf", packageName, "-C", path.relative(context.dir, unpacked)], tarOptions);
 	const actual = (await filesUnder(unpacked))
 		.map(file => path.relative(unpacked, file).split(path.sep).join("/"))
 		.sort();
