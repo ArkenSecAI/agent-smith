@@ -18,34 +18,39 @@ The initial recursive Git-tree inventory contains **8,470 entries**, all regular
 | Document conversion and shell minimizer adaptations | `packages/coding-agent/src/markit/NOTICE`, `crates/pi-shell/NOTICE` | Retain MIT origin/modification notices, including the RTK source pin. |
 | Inherited report-viewer browser assets | `packages/coding-agent/src/export/html/vendor/NOTICE` | Retain marked MIT and highlight.js BSD redistribution/non-endorsement terms. These inherited viewer internals are not a promise of a first-release client-report renderer. |
 | Browser relay extension assets | `packages/coding-agent/src/tools/browser/relay/extension-assets/LICENSE.txt` | Retain upstream MIT text; not a license to redistribute arbitrary browsers, codecs, accounts or captured content. |
-| Reconstructed protocol schemas | [`proto/PROVENANCE.md`](../packages/ai/src/providers/devin/proto/PROVENANCE.md), Apache-2.0, component notices and restored headers | Reconcile 19 identifiable open-component schemas and document bounded official MIT comparison sources for `exa`; neither establishes a grant for the entire 33-file provider-specific corpus or its extraction history. |
+| Reconstructed protocol schemas | [`proto/PROVENANCE.md`](../packages/ai/src/providers/devin/proto/PROVENANCE.md), Apache-2.0, component notices and restored headers | Reconcile 19 identifiable open-component schemas and document bounded official MIT comparison sources for `exa`; neither establishes a grant for the entire 33-file provider-specific corpus or its extraction history. The full corpus is retained unchanged under the [maintainer decision below](#inherited-material-retained-by-maintainer-decision). |
 | Embedded syntax grammars | [`syntaxes/PROVENANCE.md`](../crates/pi-natives/src/syntaxes/PROVENANCE.md), grammar licenses and notices | Restore Julia/TypeScript notices, preserve Mermaid/Nix terms and distinguish upstream comparison pins from import history. |
-| Web-prior counts and dictionary data | `crates/pi-predict/data/web-prior.bin.zst` and its retained generator | Preserve all bytes. The retained counts have a scoped U.S. factual-data determination below; dictionary selection and any actually applicable acquisition obligations remain separate. Norvig's code license is not automatically a data grant. |
+| Web-prior counts and dictionary data | `crates/pi-predict/data/web-prior.bin.zst` and its retained generator | Preserve all bytes. The retained counts have a scoped U.S. factual-data determination below; the dictionary roster is retained unchanged under the [maintainer decision below](#inherited-material-retained-by-maintainer-decision). Norvig's code license is not automatically a data grant. |
 | Resolved JS/Rust/Bazel dependencies and generated native code | `bun.lock`, `Cargo.lock`, `MODULE.bazel.lock`, package/vendor licenses and `THIRD-PARTY-NOTICES.txt` | Preserve lock/integrity records and per-component notices. The aggregate is inherited release material, not an independently regenerated Agent Smith binary SBOM. |
 
 The upstream `THIRD-PARTY-NOTICES.txt` aggregate is retained unmodified. It expressly does not replace package-level licenses and includes licenses with conditions beyond MIT. A root MIT declaration does not override per-file/package terms. Source references are not proof that a particular binary contains exactly those components.
 
 Concrete inherited exceptions include **inferno 0.12.8 / CDDL-1.0**, **uluru 3.1.0 / MPL-2.0**, and **terminfo 0.9.0 / WTFPL** in `deny.toml`; lightningcss's MPL-2.0 build-only distinction is recorded in the aggregate. The aggregate identifies inferno/source availability but does not list uluru, although `Cargo.lock` contains it. Do not treat the inherited aggregate as a complete derivative binary notice bundle. Reconcile actual linked components and satisfy covered-source/notice obligations before any Agent Smith binary distribution; P1's source-only publication does not redistribute those resolved crate binaries.
 
-## Unresolved source-publication material
+## Inherited material retained by maintainer decision
 
 The restored notices and successful source matches do **not** clear the whole
-inherited source tree. Publication remains blocked pending independent review and
-an established basis for the following retained material:
+inherited source tree. The items below are byte-identical to the public OMP
+v18.4.8 base and remain in upstream's public history. On 2026-10-12 the
+maintainer decided to keep publishing them unchanged after the research
+summarized here. That is an informed acceptance of residual uncertainty, **not**
+a license grant, legal clearance or a statement that any rights holder approves.
+A rights holder with a concern can open an issue in this repository or, for
+sensitive details, use the private route in [SECURITY.md](../.github/SECURITY.md).
+The maintainer will review it promptly and remove or replace affected material
+where warranted.
 
 - The 33 reconstructed Codeium/Windsurf `exa` schemas and derived
   `packages/catalog/src/discovery/devin-proto.ts` have bounded official MIT
   comparison sources and strong functional-interface characteristics.
   Full-corpus inspection found declarations and compatibility metadata, with
-  no provider commentary or validation expressions. An independent basis
-  covering any protected selection or arrangement, including unused reference
-  schemas, remains unestablished. The
+  no provider commentary or validation expressions. No license, permission or
+  independent basis covering any protected selection or arrangement of the full
+  corpus, including unused reference schemas, has been established. The
   [component record](../packages/ai/src/providers/devin/proto/PROVENANCE.md)
   separates individual protocol facts from possible residual structure.
-  Original artifact/version and reconstruction details remain unknown; seek
-  them where material to the applicable basis or an evidenced acquisition
-  obligation, not as an automatic demand. Reverse engineering alone proves
-  neither permission nor illegality.
+  Original artifact/version and reconstruction details remain unknown.
+  Reverse engineering alone proves neither permission nor illegality.
 - `crates/pi-predict/data/web-prior.bin.zst` incorporates Norvig-derived counts
   and **192,511 dictionary-only words**, not merely membership flags. Its Git blob
   is `cbc0b8da7be850ad04d790ca4443ae82a779d3da`; SHA-256 is
@@ -72,13 +77,13 @@ an established basis for the following retained material:
   [preface, pp. v–vi](https://archive.org/details/webstersnewinter00unse),
   signed 2 July 1934. It describes discretionary additions and omissions,
   including a general pre-1500 cutoff with a Chaucer exception; it is not an
-  exhaustive mechanical inclusion specification. The recoverable maintained
-  roster's selection therefore needs a compilation-specific basis addressing
-  what, if any, original selection survives the digital extraction and later
-  maintenance. The preface itself does not prove such protected selection
-  survives in this exact roster. Individual words, identified spelling
-  corrections and ordinary lexical sorting are not the unresolved issue.
-  Blanket package-level APSL coverage of this third-party list is not established.
+  exhaustive mechanical inclusion specification. No compilation-specific basis
+  addressing what, if any, original selection survives the digital extraction
+  and later maintenance has been established. The preface itself does not prove
+  such protected selection survives in this exact roster. Individual words,
+  identified spelling corrections and ordinary lexical sorting are not the
+  open question. Blanket package-level APSL coverage of this third-party list is
+  not established.
   [Norvig's primary page](https://www.norvig.com/ngrams/) expressly licenses
   **code** under MIT and separately describes Google/LDC data origins.
   The [LDC agreement](https://catalog.ldc.upenn.edu/license/web-1t-5-gram-version-1.pdf)
@@ -87,6 +92,13 @@ an established basis for the following retained material:
   held by Norvig. An actually applicable acquisition obligation is distinct from
   the completed U.S. factual-count determination below; neither every hypothetical
   contract nor an unidentified historical transaction is presumed applicable.
+- Fourteen inherited Git-history occurrences of one credential-shaped Xiaomi
+  Token Plan test value remain in upstream commits. Its construction is
+  unestablished, and a public third-party claim that it was valid is unverified;
+  no validity or revocation probe was made. The current tree uses a synthetic
+  placeholder instead. The scan ledger records these occurrences as
+  `accepted_inherited_exposure`, never as reviewed non-secret; see
+  [development notes](agent-smith-development.md#disposition-ledger).
 
 ## Completed source-rights determinations
 

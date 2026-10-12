@@ -43,6 +43,7 @@ import {
 	scopesPass,
 	SOURCE_BASE,
 	SOURCE_TREE,
+	verifyInheritedAcceptance,
 } from "./agent-smith-scan-policy";
 import type { GitContext } from "./agent-smith-scan-source";
 import { bindFindings, blobs, git, neutralEnvironment, snapshot, sourceView } from "./agent-smith-scan-source";
@@ -860,6 +861,7 @@ export async function scanAttributeCanary(
 				receipt.exitCode !== (expectedFinding ? 1 : 0) ||
 				receipt.decision?.errors.length !== 0 ||
 				receipt.decision.approved !== 0 ||
+				receipt.decision.accepted !== 0 ||
 				receipt.decision.blocked.length !== (expectedFinding ? 1 : 0) ||
 				receipt.decision.pass !== !expectedFinding ||
 				findings.length !== (expectedFinding ? 1 : 0) ||
@@ -1024,6 +1026,10 @@ async function main(): Promise<void> {
 				throw new Error("Review source tree identity mismatch");
 			}
 		}
+		verifyInheritedAcceptance(
+			ledger,
+			new Set((await git(source.context, ["rev-list", SOURCE_BASE])).trim().split("\n")),
+		);
 		const config = path.join(output, "default-rules.toml");
 		const ignore = path.join(output, "empty-ignore");
 		await Bun.write(config, DEFAULT_CONFIG);

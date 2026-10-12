@@ -6,15 +6,15 @@ application version is `0.0.0-unreleased`, and its source entrypoint is
 `packages/coding-agent/src/cli.ts`. Internal workspace packages and the native ABI
 retain version 18.4.8; this is not an upstream release or a supported installer.
 
-**Publication prerequisites:** private vulnerability reporting must be enabled on
+**Publication controls:** private vulnerability reporting is enabled on
 `ArkenSecAI/agent-smith`, with clear [private reporting instructions](../.github/SECURITY.md).
 The synthetic outsider report → maintainer notification → private acknowledgement/
-confidentiality round trip is explicitly deferred until after publication when users
-or an authorized reporter are available; it remains unverified, not passed.
-Source rights, inherited scanner findings, exact-pin independent review and required
-hosted checks/protection remain separate gates; see [the rights inventory](agent-smith-source-rights.md)
-and [contribution policy](../CONTRIBUTING.md). Deferring the reporting test or passing
-a local build does not clear those gates or authorize a supported release.
+confidentiality round trip is deferred until users or an authorized reporter are
+available; it remains unverified, not passed. Retained inherited material and its
+maintainer decision are recorded in [the rights inventory](agent-smith-source-rights.md);
+scanner dispositions are described below, and the [contribution policy](../CONTRIBUTING.md)
+governs integration. Exact-pin independent review and the required hosted checks
+gate every `main` advance. A local build does not authorize a supported release.
 
 ## Toolchain and maintained commands
 
@@ -189,16 +189,17 @@ Silicon, not self-hosted runners. Image labels pin an OS family, not immutable V
 contents. Candidate jobs are read-only, do not persist checkout credentials, and
 have no service/signing secrets, privileged PR trigger, Docker or binary upload.
 Each provisions the pinned Rust toolchain into RUNNER_TEMP and executes the same
-four commands. The hosted matrix has not run while publication is held; local
-Linux evidence does not qualify the Windows or macOS rows.
+four commands. Hosted runner results are evidence only for the exact commit they
+checked and are not desktop hypervisor qualification; local Linux evidence does
+not qualify the Windows or macOS rows.
 
 The external main ruleset requires signed commits, no force-push/deletion, and
 `Gitleaks 8.30.1` plus `Development (linux-x64)`, `Development (win32-x64)` and
 `Development (darwin-arm64)`, bound to GitHub Actions App 15368. Initial branch
-creation has no status-check exception. Once all publication gates open, an
-independently reviewed exact candidate must complete those checks on a `p1/**` or
-`task/**` ref before `main` is created/advanced. CI and workflow authors cannot
-approve their own integration; external exact-commit/tree review remains required.
+creation has no status-check exception. An independently reviewed exact candidate
+must complete those checks on a `p1/**` or `task/**` ref before `main` is created
+or advanced. CI and workflow authors cannot approve their own integration;
+external exact-commit/tree review remains required.
 
 Both scan and build jobs check out `pull_request.head.sha` for a PR, or
 `github.sha` for a push, with complete history. Each PR job explicitly fetches the
@@ -342,16 +343,16 @@ not public ledger content. CI retains the evidence for seven days and uploads no
 snapshot, synthetic home, scanner executable or candidate binary. Bounded default
 scanning is not exhaustive arbitrary-binary analysis or rights clearance.
 
-### Disposition ledger and open scan holds
+### Disposition ledger
 
 `scripts/agent-smith-scan-dispositions.json` is schema version 4, with no legacy
 schema fallback. `sourceBase` and `sourceTree` preserve upstream identity.
 `origins` retains each original raw report SHA-256, independent review digest,
 report row count and reviewed source commit/tree. It also stores the original
 ordered `rowDigests` and complete `reportContentSha256` commitment. `groups`
-preserves each review's reason, citations and `reviewed_non_secret` or `blocked`
-decision. `history`, `tree` and `historicalBlob` have separate exact approval
-collections:
+preserves each review's reason, citations and `reviewed_non_secret`,
+`accepted_inherited_exposure` or `blocked` decision. `history`, `tree` and
+`historicalBlob` have separate exact approval collections:
 
 - `origin`, one-based `row`, and `group` bind the original reviewed report/evidence.
 - `commit` is the full Git-report commit, or the native empty string for either
@@ -403,23 +404,32 @@ approvals. Only safe metadata, hashes and review explanations belong in this
 public ledger, never detected token/PEM values, author emails, raw reports or
 private workspace paths. Approvals require independent review followed by Main's
 exact-pin integration and checks; similarity never extends their authority.
+`accepted_inherited_exposure` is not a non-secret classification. It records the
+maintainer's explicit decision to keep republishing an unresolved occurrence that
+upstream already published. The ledger rejects it outside `history`, the scan
+rejects it for any commit not reachable from the upstream base, and each decision
+counts these occurrences as `accepted`, separately from `approved`.
 
 The retained complete history review covers 281 rows: 267 reviewed non-secret
-and 14 blocked. Its original review classified 265 non-secret and 16 blocked;
-exact Antigravity distribution evidence and the later Startpage class-level
-determination each resolve one finding, without changing any finding identity.
-All 273 earlier identities remain, but their native `Link` fields changed and
-eight additional identities appeared. That required a new complete review,
-not filtering `Link` or inheriting the earlier report's authority. Current-tree
-review covers 126 rows: 124 reviewed non-secret and two blocked. Historical-blob
-review covers 13,527 findings from 197 exact native reports, all reviewed
-non-secret; four duplicate groups preserve every separately reviewed occurrence.
-The mechanical commitment reconciliation preserves those original tree/object
-reports, row assignments, source bindings and review digests.
+and 14 accepted inherited exposure. Its original review classified 265
+non-secret and 16 blocked; exact Antigravity distribution evidence and the later
+Startpage class-level determination each resolve one finding, without changing
+any finding identity. All 273 earlier identities remain, but their native `Link`
+fields changed and eight additional identities appeared. That required a new
+complete review, not filtering `Link` or inheriting the earlier report's
+authority. Current-tree review covers 124 rows, all reviewed non-secret: the
+C6-reviewed 126-row report lost exactly the two Xiaomi rows when that value was
+replaced with a synthetic placeholder, and the changed complete report was
+independently reviewed before replacing that origin. Historical-blob review
+covers 13,527 findings from 197 exact native reports, all reviewed non-secret;
+four duplicate groups preserve every separately reviewed occurrence. The
+mechanical commitment reconciliation preserves those original object reports,
+row assignments, source bindings and review digests.
 
-The remaining history holds are fourteen Xiaomi credential-shaped occurrences;
-the two current-tree Xiaomi findings remain blocked too. Exact construction is
-unresolved, not a finding that the value was issued, is live or has been revoked.
+The fourteen inherited Xiaomi history occurrences are accepted inherited exposure.
+Exact construction is unresolved; a public third-party claim that the value was
+valid is unverified, and no validity or revocation probe was made. This is not a
+finding that the value was issued, is live or has been revoked.
 
 The exact historical Startpage `sc` finding is classified as homepage-derived
 search-form state. [Pre-capture SearXNG code](https://github.com/searxng/searxng/blob/cf1410af8d794793c8af02b97d3e1cf3bc7a7dda/searx/engines/startpage.py)

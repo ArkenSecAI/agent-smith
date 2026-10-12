@@ -53,9 +53,20 @@ export interface Origin {
 	sourceTree: string;
 	reportRows: number;
 }
+export type ReviewDisposition = "reviewed_non_secret" | "accepted_inherited_exposure" | "blocked";
+const REVIEW_DISPOSITIONS: ReadonlySet<string> = new Set<ReviewDisposition>([
+	"reviewed_non_secret",
+	"accepted_inherited_exposure",
+	"blocked",
+]);
 export interface ReviewGroup {
 	origin: string;
-	disposition: "reviewed_non_secret" | "blocked";
+	/**
+	 * `accepted_inherited_exposure` records the maintainer's explicit decision to keep republishing an
+	 * unresolved occurrence that upstream already published. It passes the gate without claiming the
+	 * value is non-secret, applies only to Git history and only to commits reachable from SOURCE_BASE.
+	 */
+	disposition: ReviewDisposition;
 	reason: string;
 	evidence: string[];
 }
@@ -72,7 +83,10 @@ export interface Ledger {
 export interface Decision {
 	pass: boolean;
 	findings: number;
+	/** Occurrences independently reviewed as non-secret. */
 	approved: number;
+	/** Inherited upstream occurrences passed only by an explicit maintainer acceptance. */
+	accepted: number;
 	blocked: { row: number; fingerprint: string; span: Span; reason: string }[];
 	errors: string[];
 	reportContentSha256?: string;
@@ -309,7 +323,7 @@ export function parseLedger(value: unknown): Ledger {
 	for (const [key, raw] of Object.entries(record(input.groups))) {
 		const item = record(raw);
 		const origin = string(item.origin);
-		if (!origins[origin] || !["reviewed_non_secret", "blocked"].includes(string(item.disposition))) {
+		if (!origins[origin] || !REVIEW_DISPOSITIONS.has(string(item.disposition))) {
 			throw new Error("Unbound review group");
 		}
 		const reason = string(item.reason);
@@ -330,6 +344,9 @@ export function parseLedger(value: unknown): Ledger {
 			const review = origins[origin];
 			if (!review || row > review.reportRows || groups[group]?.origin !== origin) {
 				throw new Error("Disposition lacks an exact reviewed report row");
+			}
+			if (scope !== "history" && groups[group].disposition === "accepted_inherited_exposure") {
+				throw new Error("Inherited exposure acceptance applies only to Git history");
 			}
 			// Identical native directory reports can belong to distinct immutable blobs.
 			const rowKey = `${review.reportSha256}:${row}${scope === "historicalBlob" ? `:${oid(item.blob)}` : ""}`;
@@ -422,6 +439,18 @@ export function prepareLedger(ledger: Ledger): PreparedLedger {
 	};
 }
 
+/**
+ * Fail closed unless every inherited-exposure acceptance names a commit reachable from the immutable
+ * upstream base. Fork commits, the current tree and stored versions can never use this disposition.
+ */
+export function verifyInheritedAcceptance(ledger: Ledger, inherited: ReadonlySet<string>): void {
+	for (const item of ledger.history) {
+		if (ledger.groups[item.group].disposition === "accepted_inherited_exposure" && !inherited.has(item.commit)) {
+			throw new Error("Inherited exposure acceptance outside the upstream base history");
+		}
+	}
+}
+
 export function approvalsFor(prepared: PreparedLedger, scope: Scope, version?: HistoricalVersion): ApprovalIndex {
 	return scope === "historicalBlob"
 		? (prepared.historicalBlob.get(JSON.stringify([version?.file, version?.blob])) ?? EMPTY_INDEX)
@@ -439,7 +468,7 @@ export function decide(
 	version?: HistoricalVersion,
 ): Decision {
 	const { ledger } = prepared;
-	const result: Decision = { pass: false, findings: 0, approved: 0, blocked: [], errors: [] };
+	const result: Decision = { pass: false, findings: 0, approved: 0, accepted: 0, blocked: [], errors: [] };
 	if (scope === "historicalBlob" && (!version || version.commits.length === 0)) {
 		result.errors.push("Missing historical version coverage context");
 		return result;
@@ -506,7 +535,7 @@ export function decide(
 					approval.blob === bound.blob &&
 					approval.containerSha256 === bound.containerSha256 &&
 					approval.contentSha256 === bound.contentSha256 &&
-					ledger.groups[approval.group].disposition === "reviewed_non_secret"
+					passes(ledger.groups[approval.group].disposition, scope)
 				);
 			});
 		if (!valid) {
@@ -546,10 +575,19 @@ export function decide(
 			} else if (ledger.groups[approval.group].disposition === "reviewed_non_secret") {
 				result.approved++;
 				continue;
+			} else if (passes(ledger.groups[approval.group].disposition, scope)) {
+				result.accepted++;
+				continue;
 			} else reason = ledger.groups[approval.group].reason;
 		}
 		result.blocked.push({ row: index + 1, fingerprint: item.fingerprint, span: item.span, reason });
 	}
 	result.pass = result.errors.length === 0 && result.blocked.length === 0;
 	return result;
+}
+
+function passes(disposition: ReviewDisposition, scope: Scope): boolean {
+	return (
+		disposition === "reviewed_non_secret" || (scope === "history" && disposition === "accepted_inherited_exposure")
+	);
 }

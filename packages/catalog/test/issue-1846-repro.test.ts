@@ -10,7 +10,8 @@ import { xiaomiModelManagerOptions } from "@oh-my-pi/pi-catalog/provider-models/
 import { getBundledModels } from "@oh-my-pi/pi-catalog/models";
 import type { FetchImpl, Model } from "@oh-my-pi/pi-catalog/types";
 
-const TP_KEY = "tp-ci1p8t1w4e1sbxgyc8v65tnrjbzro287igmvyf25van9mt76";
+// Synthetic tp- placeholder: token-plan key format only, never a real key.
+const TP_KEY = "tp-000000000000000000000000000000000000000000000000";
 const SGP_BASE_URL = "https://token-plan-sgp.xiaomimimo.com/v1";
 
 const MIMO_V26_IDS: readonly string[] = ["mimo-v2.6-flash", "mimo-v2.6-pro", "mimo-v2.6-pro-ultraspeed"];

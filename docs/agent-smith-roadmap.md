@@ -27,7 +27,7 @@ Owned code is MIT; dependencies/assets keep their own licenses. Reports are edit
 | Stage | Depends on | Required result | Current disposition |
 |---|---|---|---|
 | P0 — execution readiness | — | Shared contracts, threat/fixture plan, actual ownership/capacity and exercised development workflow | Readiness completed; not product qualification |
-| P1 — development fork and CI | P0 | Exact licensed OMP base, app-scoped identity/state, maintained build/package path, protected review/CI, source inventory, verified private reporting and authorized public development source | In progress; source publication awaits the private-reporting control |
+| P1 — development fork and CI | P0 | Exact licensed OMP base, app-scoped identity/state, maintained build/package path, protected review/CI, source inventory, verified private reporting and authorized public development source | In progress; completes when the independently reviewed candidate passes the hosted checks and `main` is created under the ruleset |
 | P2 — real integrated feasibility | P1 | Create/boot/work/interrupt/capture/reopen through both MCPs and a real PTY, with useful CPU-local reasoning on a real candidate host for each required OS | Planned |
 | P3 — authority and durability | P2 | Project/grant/input ownership, scoped host/guest/network authority, original-byte durability, crash/reconnect and partial/unknown states pass fault/negative controls | Planned |
 | P4 — all four workflows | P3 | Useful end-to-end work with required specialist interfaces on each claimed host row | Planned |

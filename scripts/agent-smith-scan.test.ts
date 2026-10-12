@@ -16,6 +16,7 @@ import {
 	scopesPass,
 	SOURCE_BASE,
 	SOURCE_TREE,
+	verifyInheritedAcceptance,
 } from "./agent-smith-scan-policy";
 import { blobs, git, neutralEnvironment, parseTree, snapshot } from "./agent-smith-scan-source";
 
@@ -215,6 +216,34 @@ describe("maintained scan disposition boundary", () => {
 		const result = decide(report, "history", ledger, bindings, 1, "");
 		expect(result.pass).toBe(false);
 		expect(result.approved).toBe(0);
+	});
+
+	test("an inherited-exposure acceptance passes history without counting as reviewed non-secret", () => {
+		const { report, ledger, bindings } = reviewedCase();
+		ledger.groups.example.disposition = "accepted_inherited_exposure";
+		const result = decide(report, "history", ledger, bindings, 1, "");
+		expect(result.pass).toBe(true);
+		expect(result.approved).toBe(0);
+		expect(result.accepted).toBe(1);
+	});
+
+	test("an inherited-exposure acceptance cannot cover current-tree or stored-version rows", () => {
+		const { ledger, approval } = reviewedCase();
+		const groups = { example: { ...ledger.groups.example, disposition: "accepted_inherited_exposure" } };
+		for (const scope of ["tree", "historicalBlob"] as const) {
+			expect(() => parseLedger({ ...ledger, groups, history: [], [scope]: [approval] })).toThrow(
+				"Inherited exposure acceptance applies only to Git history",
+			);
+		}
+	});
+
+	test("an inherited-exposure acceptance is limited to commits reachable from the upstream base", () => {
+		const { ledger } = reviewedCase();
+		ledger.groups.example.disposition = "accepted_inherited_exposure";
+		expect(() => verifyInheritedAcceptance(ledger, new Set(["f".repeat(40)]))).toThrow(
+			"Inherited exposure acceptance outside the upstream base history",
+		);
+		expect(() => verifyInheritedAcceptance(ledger, new Set(["a".repeat(40)]))).not.toThrow();
 	});
 
 	test("the same file content in a new history commit remains unreviewed", () => {

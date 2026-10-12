@@ -18,8 +18,8 @@ import { loginXiaomi } from "@oh-my-pi/pi-ai/registry/oauth/xiaomi";
 import type { FetchImpl } from "@oh-my-pi/pi-ai/types";
 import { xiaomiModelManagerOptions } from "@oh-my-pi/pi-catalog/provider-models/openai-compat";
 
-// Realistic tp- key (same format as user's key, but a dummy value for testing)
-const TP_KEY = "tp-ci1p8t1w4e1sbxgyc8v65tnrjbzro287igmvyf25van9mt76";
+// Synthetic tp- placeholder: token-plan key format only, never a real key.
+const TP_KEY = "tp-000000000000000000000000000000000000000000000000";
 
 const TOKEN_PLAN_HOSTS = {
 	sgp: "token-plan-sgp.xiaomimimo.com",

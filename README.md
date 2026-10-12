@@ -27,7 +27,7 @@ Upstream base: OMP **v18.4.8**, immutable commit [`717f97f4d22b3d65c4a4eef6a7442
 
 Internal upstream workspace/package identifiers and historical documentation may retain OMP names. They identify origin and implementation, not an Agent Smith support promise or instructions to use another project's release infrastructure. Native dependencies, Kali/tool images, models, firmware and rules have separate rights and qualification requirements. Nothing here claims they are all MIT or already bundled.
 
-The [source-origin and rights inventory](docs/agent-smith-source-rights.md) records retained notices, concrete dependency exceptions and unresolved inherited source rights. Publication is not cleared by the root MIT license, a successful local build or a scanner baseline.
+The [source-origin and rights inventory](docs/agent-smith-source-rights.md) records retained notices, concrete dependency exceptions and inherited upstream material retained by an explicit maintainer decision, with a contact route for rights holders. The root MIT license, a successful local build or a scanner result does not clear inherited third-party rights.
 
 This is an independent ArkenSec project, maintained by [@davidsly4954](https://github.com/davidsly4954) under [ArkenSecAI](https://github.com/ArkenSecAI). The name is not an affiliation or endorsement claim. No third-party character art, logos or proprietary branding assets are supplied as Agent Smith branding.
 

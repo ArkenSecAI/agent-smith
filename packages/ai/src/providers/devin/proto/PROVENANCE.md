@@ -221,20 +221,24 @@ purpose/amount and market analysis, not merely an API label. In particular,
 [Google v. Oracle](https://www.supremecourt.gov/opinions/20pdf/18-956_d18f.pdf)
 assumed copyrightability and decided a fact-specific fair-use question.
 
-## Unresolved source-publication prerequisites
+## Retention decision and remaining unknowns
 
-1. **Provider-specific retained source:** establish an applicable license,
-   permission or documented independent basis for reproducing and publishing
-   the full 33-file corpus and derived additions. Original source artifact,
-   version and reconstruction details remain unknown and must be established
-   where consequential to that basis, not invented as import receipts.
-   A public endpoint name, an OMP MIT notice, a generated client or the bounded
-   comparison-source licenses do not alone clear the full corpus.
-   Unused schemas are also part of the proposed source distribution.
+1. **Provider-specific retained source:** no applicable license, permission or
+   documented independent basis for reproducing and publishing the full 33-file
+   corpus and derived additions has been established. A public endpoint name,
+   an OMP MIT notice, a generated client or the bounded comparison-source
+   licenses do not alone clear the full corpus; unused schemas are part of the
+   distribution. On 2026-10-12 the maintainer decided to keep publishing the
+   corpus unchanged as inherited upstream material. That is an informed
+   acceptance of residual uncertainty, not clearance; see the
+   [source-rights record](../../../../../../docs/agent-smith-source-rights.md#inherited-material-retained-by-maintainer-decision)
+   for the rights-holder contact route.
 2. **Import-version evidence:** all 19 recognizable open-component schemas now
    have reconciled comparison-source notices. Their exact extraction inputs,
    versions and complete transformations remain unrecorded. Reference tags and
    the three recovered comparison commits must not become invented import pins.
+   Original source artifact, version and reconstruction details for `exa` also
+   remain unknown and are not invented as import receipts.
 
 The first native author's public fetches encountered DNS/cache failures.
 Main subsequently retrieved all eleven previously unavailable CockroachDB errors,
@@ -256,10 +260,9 @@ authenticated download, or model download was used here.
 
 Future binary packaging must carry applicable component licenses/notices for
 what it actually embeds, including derived definitions. Future provider
-enablement has separate service/account/access obligations. Those future
-questions do not resolve the source-publication prerequisites above. Enabled
-private vulnerability reporting and clear instructions remain required; the
-unverified synthetic reporting round trip is deferred until after publication.
+enablement has separate service/account/access obligations, separate from the
+retention decision above. Private vulnerability reporting remains enabled; the
+synthetic reporting round trip remains deferred and unverified.
 
 Attribution edits change comments and adjacent notices only, not declarations.
 Source matching did not execute a schema generator or contact a provider.

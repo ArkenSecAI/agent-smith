@@ -21618,12 +21618,14 @@
     },
     "current-history-xiaomi-unresolved-token": {
       "origin": "candidate-history",
-      "disposition": "blocked",
-      "reason": "Fourteen occurrences of the same credential-shaped value, including added rows 187, 207 and 210. It supplies login credentials and apiKey, not an application identifier. Mocking and dummy-intent comments do not establish independent invention.",
+      "disposition": "accepted_inherited_exposure",
+      "reason": "Fourteen inherited upstream history occurrences of one credential-shaped Token Plan fixture value, SHA-256 e94353a975b236423827f259de835f332a09c46edf59971bf2906598e3f8bac1, all in commits reachable from the OMP v18.4.8 base. Its construction remains unestablished. A third-party bot publicly claimed on upstream PR 1848 in June 2026 that the value was valid; that claim is unverified and no validity or revocation probe was made. The maintainer accepts republishing this already-public upstream history unchanged instead of rewriting it. Agent Smith's current tree replaces both consumers' value with a synthetic placeholder. This is not a non-secret classification.",
       "evidence": [
         "9da623e2a46b0d658693f5799938e198b92881af:packages/catalog/test/issue-1846-repro.test.ts:12,78,96",
         "1b9d9d085123e6baa9cd02691acca6a7c78a9579:packages/catalog/test/issue-1846-repro.test.ts:11,77,95",
-        "2c27d2df15b40fe6a6c9de3e46fa4e9959e40772:packages/ai/test/xiaomi-tp-login-integration.test.ts:22,61"
+        "2c27d2df15b40fe6a6c9de3e46fa4e9959e40772:packages/ai/test/xiaomi-tp-login-integration.test.ts:22,61",
+        "https://github.com/can1357/oh-my-pi/pull/1848#issuecomment-4625673408",
+        "docs/agent-smith-source-rights.md#inherited-material-retained-by-maintainer-decision"
       ]
     },
     "current-history-anthropic-beta-header": {
