@@ -3,8 +3,9 @@
 Scope: the 52 `.proto` files inherited from OMP v18.4.8, commit
 `717f97f4d22b3d65c4a4eef6a744255d46f4d1a6`, tree
 `3f8ecdad21e55c5f47785ccfbd4f8c0528186976`. Attribution research and additions:
-2026-10-10. This is a component record, not a blanket MIT grant or publication
-clearance. Paths below are relative to this directory.
+2026-10-10, with official-source research incorporated 2026-10-11. This is a
+component record, not a blanket MIT grant or publication clearance. Paths below
+are relative to this directory.
 
 ## Evidence and transformation
 
@@ -61,7 +62,7 @@ none is silently promoted to an extraction receipt.
 | `errorspb/errors.proto`, `hintdetail.proto`, `markers.proto`, `tags.proto`, `testing.proto` | [cockroachdb/errors at `b63dfdf0b860a689995c5e2a9eb0c089d61c9d95`](https://github.com/cockroachdb/errors/tree/b63dfdf0b860a689995c5e2a9eb0c089d61c9d95/errorspb), [pinned license](https://github.com/cockroachdb/errors/blob/b63dfdf0b860a689995c5e2a9eb0c089d61c9d95/LICENSE) | All five schemas retrieved; Apache-2.0, no per-file license headers or separate NOTICE in that complete tree. Exact extraction revision unknown. This is the errors library, not the differently licensed database. |
 | `google.golang.org/appengine/internal/base/api_base.proto`, `datastore/datastore_v3.proto`, `log/log_service.proto`, `remote_api/remote_api.proto`, `urlfetch/urlfetch_service.proto` | [golang/appengine v1.6.8 at `aa58fcd18e4ab7ac816760ee266fa30a0907ab9e`](https://github.com/golang/appengine/tree/aa58fcd18e4ab7ac816760ee266fa30a0907ab9e/internal), [pinned license](https://github.com/golang/appengine/blob/aa58fcd18e4ab7ac816760ee266fa30a0907ab9e/LICENSE) | All five schemas retrieved; Apache-2.0, no per-file license headers or separate NOTICE in that complete tree. No copyright year is invented; extraction revision remains unknown. |
 | `connectext/grpc/status/v1/status.proto` | [Connect Go v1.10.0 at `495b8810f4ab7fe3720eb3310cfcab570df06151`](https://github.com/connectrpc/connect-go/blob/495b8810f4ab7fe3720eb3310cfcab570df06151/internal/proto/connectext/grpc/status/v1/status.proto), [pinned license](https://github.com/connectrpc/connect-go/blob/495b8810f4ab7fe3720eb3310cfcab570df06151/LICENSE) | Apache-2.0; authentic `Copyright 2021-2023 Buf Technologies, Inc.` header restored. No separate NOTICE in that complete tree. The same `Status` fields are present; this is not a claimed extraction pin. |
-| `exa/**/*.proto` (33 files) | Original OMP generation config above; retained `exa` package/service names | Provider-specific Codeium/Windsurf corpus. No upstream source release, license or other reproduction/publication basis established. These files are outside the open-component grants above. |
+| `exa/**/*.proto` (33 files) | Original OMP generation config above; retained `exa` package/service names; bounded official Exafunction sources below | Provider-specific Codeium/Windsurf corpus. Official MIT comparison sources cover limited corresponding declarations, not an established basis for the complete retained corpus/derived additions. These files are outside the open-component grants above. |
 
 The five individually inspected CEL sources are
 [checked](https://raw.githubusercontent.com/google/cel-spec/master/proto/cel/expr/checked.proto),
@@ -113,15 +114,123 @@ Baseline review anchors (Git blob IDs, **before** attribution additions):
 The OMP commit above identifies all other baseline blobs. These are not final
 candidate fingerprints.
 
+## Official exa comparison sources and limits
+
+Two pinned vendor repositories publish related schemas under MIT:
+[CodeiumJetBrains `277b388cacff14f29ea10681c214b4002fe63fa3`](https://github.com/Exafunction/CodeiumJetBrains/tree/277b388cacff14f29ea10681c214b4002fe63fa3/proto/exa)
+([license](https://github.com/Exafunction/CodeiumJetBrains/blob/277b388cacff14f29ea10681c214b4002fe63fa3/LICENSE.txt))
+and [codeium-react-code-editor `768e1b231c00e078c86bc19c8ede697a1e37ec75`](https://github.com/Exafunction/codeium-react-code-editor/tree/768e1b231c00e078c86bc19c8ede697a1e37ec75/exa)
+([license](https://github.com/Exafunction/codeium-react-code-editor/blob/768e1b231c00e078c86bc19c8ede697a1e37ec75/LICENSE)).
+Seven retrieved schema files correspond to five inherited paths; none matches
+a complete inherited file. The other 28 paths have no counterpart in this
+examined official set. Declaration comparison found 230 of 8,498 field tuples
+and 19 of 515 Exa fields in the derived runtime surface.
+
+That declaration-only comparison stripped 305 option lists across local and
+official files: 288 local deprecation lists and 17 official-source option lists.
+The latter include validation and JSON-name options. It is not a comparison of
+all expression or semantics, a copyright-coverage percentage or a full dependency
+clearance. These public sources correct the earlier blanket source-absence
+statement. They do not establish the original import input or extend MIT to
+every retained provider declaration. Later third-party reconstruction notes
+do not identify the original June input; a third-party descriptor package
+called “official” by another project is not thereby a vendor release.
+The vendor's [binary-repository terms](https://github.com/Exafunction/codeium/blob/5909346446152aa1fa853d4c487f83debfdb2886/LICENSE.md)
+must not be substituted with sibling client repositories' MIT grants.
+
+### Bounded MIT comparison notices
+
+The following notices apply to the corresponding material in the pinned
+official comparison sources above, not automatically to entire retained files,
+later additions or the other paths. They are not extraction provenance.
+
+**CodeiumJetBrains:**
+
+```text
+MIT License
+
+Copyright (c) 2023 Exafunction Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+**codeium-react-code-editor:**
+
+```text
+MIT License
+
+Copyright (c) 2023 Exafunction
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## Exact retained exa structure
+
+Independent inspection of all 33 retained files found 2,478 messages, 255 enums,
+8,498 fields and 649 RPC declarations. There are no comments, provider prose,
+validation expressions or custom options; all 288 option lists are deprecation
+markers. Reserved names and numbers are compatibility metadata.
+
+Training-configuration hierarchies specify operational parameters and alternatives;
+model/experiment enums associate identifiers with numeric values. The reactive
+test schemas exercise scalar, repeated, map, nested and oneof relationships.
+These facts strongly support filtering functional elements out of the copyright
+question. Uniform rendering does not, by itself, settle whether original
+selection, decomposition or declaration ordering survives that filtration.
+
+The generated client selects 63 Exa messages and retains every field of each
+selected message: 515 fields and 975 enum values. This is not a claim that every
+field is consumed at runtime. Twenty-seven whole Exa files contribute no selected
+messages or enums, and all 649 service declarations remain outside that generated
+selection. Their retention for reference/maintenance is distinct from demonstrated
+current-client use; unused does not automatically mean protected or unlawful.
+If protected structure remains, a whole-corpus exception needs a supported
+purpose/amount and market analysis, not merely an API label. In particular,
+[Google v. Oracle](https://www.supremecourt.gov/opinions/20pdf/18-956_d18f.pdf)
+assumed copyrightability and decided a fact-specific fair-use question.
+
 ## Unresolved source-publication prerequisites
 
-1. **Provider-specific retained source:** establish the actual source artifact
-   and version for the 33 `exa` files, the reconstruction chain, and an applicable
-   license, permission, or documented independent legal basis for reproducing
-   and publishing these particular files. A public endpoint name, an OMP MIT
-   notice, a generated client, or permissive licenses for imported dependencies
-   do not supply that evidence. These files are already in the proposed source
-   distribution, even when not selected by the TypeScript generator.
+1. **Provider-specific retained source:** establish an applicable license,
+   permission or documented independent basis for reproducing and publishing
+   the full 33-file corpus and derived additions. Original source artifact,
+   version and reconstruction details remain unknown and must be established
+   where consequential to that basis, not invented as import receipts.
+   A public endpoint name, an OMP MIT notice, a generated client or the bounded
+   comparison-source licenses do not alone clear the full corpus.
+   Unused schemas are also part of the proposed source distribution.
 2. **Import-version evidence:** all 19 recognizable open-component schemas now
    have reconciled comparison-source notices. Their exact extraction inputs,
    versions and complete transformations remain unrecorded. Reference tags and
@@ -148,8 +257,9 @@ authenticated download, or model download was used here.
 Future binary packaging must carry applicable component licenses/notices for
 what it actually embeds, including derived definitions. Future provider
 enablement has separate service/account/access obligations. Those future
-questions do not resolve the source-publication prerequisites above. The
-separate private-vulnerability-reporting publication/remote-CI hold is unchanged.
+questions do not resolve the source-publication prerequisites above. Enabled
+private vulnerability reporting and clear instructions remain required; the
+unverified synthetic reporting round trip is deferred until after publication.
 
 Attribution edits change comments and adjacent notices only, not declarations.
 Source matching did not execute a schema generator or contact a provider.

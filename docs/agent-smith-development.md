@@ -404,9 +404,10 @@ public ledger, never detected token/PEM values, author emails, raw reports or
 private workspace paths. Approvals require independent review followed by Main's
 exact-pin integration and checks; similarity never extends their authority.
 
-The complete history ledger covers 281 rows: 266 reviewed non-secret and
-15 blocked. Its original complete review classified 265 non-secret and 16 blocked;
-the subsequent exact Antigravity public-distribution evidence clears one finding.
+The retained complete history review covers 281 rows: 267 reviewed non-secret
+and 14 blocked. Its original review classified 265 non-secret and 16 blocked;
+exact Antigravity distribution evidence and the later Startpage class-level
+determination each resolve one finding, without changing any finding identity.
 All 273 earlier identities remain, but their native `Link` fields changed and
 eight additional identities appeared. That required a new complete review,
 not filtering `Link` or inheriting the earlier report's authority. Current-tree
@@ -416,9 +417,20 @@ non-secret; four duplicate groups preserve every separately reviewed occurrence.
 The mechanical commitment reconciliation preserves those original tree/object
 reports, row assignments, source bindings and review digests.
 
-The remaining history holds are one captured Startpage token and fourteen Xiaomi
-credential occurrences. Current-tree Xiaomi findings remain blocked too. The
-Antigravity pair is bound to the official 2.22.0 macOS ARM64 distribution: native
+The remaining history holds are fourteen Xiaomi credential-shaped occurrences;
+the two current-tree Xiaomi findings remain blocked too. Exact construction is
+unresolved, not a finding that the value was issued, is live or has been revoked.
+
+The exact historical Startpage `sc` finding is classified as homepage-derived
+search-form state. [Pre-capture SearXNG code](https://github.com/searxng/searxng/blob/cf1410af8d794793c8af02b97d3e1cf3bc7a7dda/searx/engines/startpage.py)
+documents anonymous homepage extraction, no required API key and shared caching,
+and associates the field with bot detection. This supports a bounded anti-bot
+inference, not a confirmed account/API credential. The original capture context,
+provider binding and lifetime remain unknown; client cache duration and unrelated
+cookie lifetimes are not expiry guarantees. The disposition rests on the field
+class and exact historical use, not replay mocking or a live validity probe.
+
+The Antigravity pair is bound to the official 2.22.0 macOS ARM64 distribution: native
 type metadata and static instructions place both exact parameters in one OAuth
 configuration used by its token-acquisition paths. The ledger records publisher
 URLs, archive/member digests and byte spans; the independently reviewed proof is

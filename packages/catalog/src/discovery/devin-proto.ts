@@ -3,7 +3,7 @@
 /**
  * Devin protocol declarations used by omp.
  *
- * Each declaration retains only fields consumed by the client or its protocol tests.
+ * Selected declarations and their dependencies are retained with all fields.
  */
 import { pb, type MessageCodec, type ProtoMessage } from "./protobuf";
 

@@ -21589,14 +21589,16 @@
       ]
     },
     "current-history-startpage-captured-token": {
-      "origin": "candidate-history",
-      "disposition": "blocked",
-      "reason": "Captured form/session token with unresolved origin, authorization scope and lifetime. Replay mocking does not establish non-secret provenance.",
-      "evidence": [
-        "ea632a518b076a6610196332512ceded6863d43f:packages/coding-agent/test/tools/web-search-startpage.test.ts:28-38",
-        "ea632a518b076a6610196332512ceded6863d43f:packages/coding-agent/src/web/search/providers/startpage.ts:16,62"
-      ]
-    },
+          "origin": "candidate-history",
+          "disposition": "reviewed_non_secret",
+          "reason": "Homepage-derived Startpage search-form state, classified from the exact captured field/use and pre-capture SearXNG implementation: no required API key, anonymous homepage extraction and shared search-form cache. The anti-bot role is a bounded inference, not an account/API credential finding. Exact capture context, provider binding and lifetime remain unknown; no expiry, harmlessness or live-validity claim and no inference from replay mocking. This exact-item class-level disposition was adopted in the operator-directed P1 continuation, not a general ignore for token-shaped strings.",
+          "evidence": [
+            "ea632a518b076a6610196332512ceded6863d43f:packages/coding-agent/test/tools/web-search-startpage.test.ts:28-38",
+            "ea632a518b076a6610196332512ceded6863d43f:packages/coding-agent/src/web/search/providers/startpage.ts:16,62",
+            "https://github.com/searxng/searxng/blob/cf1410af8d794793c8af02b97d3e1cf3bc7a7dda/searx/engines/startpage.py",
+            "https://support.startpage.com/hc/en-us/articles/4455380450836-How-does-Startpage-prevent-scraping-and-abuse-without-recording-IP-addresses"
+          ]
+        },
     "current-history-collab-public-crypto-vector": {
       "origin": "candidate-history",
       "disposition": "reviewed_non_secret",

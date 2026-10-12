@@ -18,9 +18,9 @@ The initial recursive Git-tree inventory contains **8,470 entries**, all regular
 | Document conversion and shell minimizer adaptations | `packages/coding-agent/src/markit/NOTICE`, `crates/pi-shell/NOTICE` | Retain MIT origin/modification notices, including the RTK source pin. |
 | Inherited report-viewer browser assets | `packages/coding-agent/src/export/html/vendor/NOTICE` | Retain marked MIT and highlight.js BSD redistribution/non-endorsement terms. These inherited viewer internals are not a promise of a first-release client-report renderer. |
 | Browser relay extension assets | `packages/coding-agent/src/tools/browser/relay/extension-assets/LICENSE.txt` | Retain upstream MIT text; not a license to redistribute arbitrary browsers, codecs, accounts or captured content. |
-| Reconstructed protocol schemas | [`proto/PROVENANCE.md`](../packages/ai/src/providers/devin/proto/PROVENANCE.md), Apache-2.0, component notices and restored headers | Reconcile 19 identifiable open-component schemas; do not extend those grants to the 33 provider-specific `exa` schemas or invent their extraction history. |
+| Reconstructed protocol schemas | [`proto/PROVENANCE.md`](../packages/ai/src/providers/devin/proto/PROVENANCE.md), Apache-2.0, component notices and restored headers | Reconcile 19 identifiable open-component schemas and document bounded official MIT comparison sources for `exa`; neither establishes a grant for the entire 33-file provider-specific corpus or its extraction history. |
 | Embedded syntax grammars | [`syntaxes/PROVENANCE.md`](../crates/pi-natives/src/syntaxes/PROVENANCE.md), grammar licenses and notices | Restore Julia/TypeScript notices, preserve Mermaid/Nix terms and distinguish upstream comparison pins from import history. |
-| Web-prior counts and dictionary data | `crates/pi-predict/data/web-prior.bin.zst` and its retained generator | Preserve the data unchanged; resolve the actual count-data and dictionary redistribution basis below. Norvig's code license is not automatically a data grant. |
+| Web-prior counts and dictionary data | `crates/pi-predict/data/web-prior.bin.zst` and its retained generator | Preserve all bytes. The retained counts have a scoped U.S. factual-data determination below; dictionary selection and any actually applicable acquisition obligations remain separate. Norvig's code license is not automatically a data grant. |
 | Resolved JS/Rust/Bazel dependencies and generated native code | `bun.lock`, `Cargo.lock`, `MODULE.bazel.lock`, package/vendor licenses and `THIRD-PARTY-NOTICES.txt` | Preserve lock/integrity records and per-component notices. The aggregate is inherited release material, not an independently regenerated Agent Smith binary SBOM. |
 
 The upstream `THIRD-PARTY-NOTICES.txt` aggregate is retained unmodified. It expressly does not replace package-level licenses and includes licenses with conditions beyond MIT. A root MIT declaration does not override per-file/package terms. Source references are not proof that a particular binary contains exactly those components.
@@ -34,10 +34,18 @@ inherited source tree. Publication remains blocked pending independent review an
 an established basis for the following retained material:
 
 - The 33 reconstructed Codeium/Windsurf `exa` schemas and derived
-  `packages/catalog/src/discovery/devin-proto.ts`: original source artifact/version,
-  reconstruction chain and permission or a documented independent distribution
-  basis. Imported open-component licenses do not grant rights in them; reverse
-  engineering alone proves neither permission nor illegality.
+  `packages/catalog/src/discovery/devin-proto.ts` have bounded official MIT
+  comparison sources and strong functional-interface characteristics.
+  Full-corpus inspection found declarations and compatibility metadata, with
+  no provider commentary or validation expressions. An independent basis
+  covering any protected selection or arrangement, including unused reference
+  schemas, remains unestablished. The
+  [component record](../packages/ai/src/providers/devin/proto/PROVENANCE.md)
+  separates individual protocol facts from possible residual structure.
+  Original artifact/version and reconstruction details remain unknown; seek
+  them where material to the applicable basis or an evidenced acquisition
+  obligation, not as an automatic demand. Reverse engineering alone proves
+  neither permission nor illegality.
 - `crates/pi-predict/data/web-prior.bin.zst` incorporates Norvig-derived counts
   and **192,511 dictionary-only words**, not merely membership flags. Its Git blob
   is `cbc0b8da7be850ad04d790ca4443ae82a779d3da`; SHA-256 is
@@ -54,19 +62,46 @@ an established basis for the following retained material:
   [`51df159fd3de12b20e403c108f526e96dbd723d9cabdd5f17955cdc16059e690`](https://www.norvig.com/ngrams/count_1w.txt)
   and [`781c0596c3eea532d30bef9f3dba1d5137d652f00376260822c761a7584dfb8c`](https://www.norvig.com/ngrams/count_2w.txt).
   Apple's [dictionary README](https://github.com/apple-oss-distributions/files/blob/5fc07dd6ecbaa178fff2431dc99e4dffd611ea2d/usr/share/dict/README)
-  reports a supplier's copyright-lapse assertion and later maintenance; blanket
-  package-level APSL coverage of this third-party list is not established.
+  reports a supplier's copyright-lapse assertion and later maintenance.
+  Government [CCE 1961, page 1907](https://archive.org/details/catalogofcopyrig3151libr/page/1907/mode/1up)
+  records renewals **R286978 and R286979**, dated 18 December 1961, for the
+  identified 1934 second-edition book. Do not rely on blanket non-renewal of
+  that book. These records do not establish protection of individual words
+  or this normalized roster, and do not establish infringement.
+  A surviving publisher prospectus reproduces the second-edition
+  [preface, pp. v–vi](https://archive.org/details/webstersnewinter00unse),
+  signed 2 July 1934. It describes discretionary additions and omissions,
+  including a general pre-1500 cutoff with a Chaucer exception; it is not an
+  exhaustive mechanical inclusion specification. The recoverable maintained
+  roster's selection therefore needs a compilation-specific basis addressing
+  what, if any, original selection survives the digital extraction and later
+  maintenance. The preface itself does not prove such protected selection
+  survives in this exact roster. Individual words, identified spelling
+  corrections and ordinary lexical sorting are not the unresolved issue.
+  Blanket package-level APSL coverage of this third-party list is not established.
   [Norvig's primary page](https://www.norvig.com/ngrams/) expressly licenses
-  **code** under MIT and separately describes Google/LDC data origins. The
-  [LDC agreement](https://catalog.ldc.upenn.edu/license/web-1t-5-gram-version-1.pdf)
-  allows research use and limited excerpts in research-result documents; it does
-  not supply a redistribution grant for this operational packed prior. That
-  unsigned agreement does not establish that ArkenSec is a party or exclude
-  separate permission held by Norvig. A grant or documented independent basis for
-  the actual word-list/count compilation and applicable acquisition obligations
-  remains required. Individual words/counts are not thereby declared copyrightable.
+  **code** under MIT and separately describes Google/LDC data origins.
+  The [LDC agreement](https://catalog.ldc.upenn.edu/license/web-1t-5-gram-version-1.pdf)
+  does not grant redistribution of this operational packed prior. Its unsigned
+  form does not establish that ArkenSec is a party or exclude separate permission
+  held by Norvig. An actually applicable acquisition obligation is distinct from
+  the completed U.S. factual-count determination below; neither every hypothetical
+  contract nor an unidentified historical transaction is presumed applicable.
 
 ## Completed source-rights determinations
+
+The retained **150,000 unigram counts, 258,168 merged bigram records and
+sentence-start total** have a scoped U.S. copyright-only factual-data
+determination. They are occurrence measurements, selected by numerical
+frequency and ordinary filters, with case merging, aggregation and lexical/ID
+ordering. No source-document identities/order, long passages or expressive
+taxonomy are retained. The basis is the actual objective selection and
+arrangement, not that only a small quantity was copied. See
+[17 U.S.C. §§102–103](https://www.copyright.gov/title17/92chap1.html) and
+[Feist](https://www.law.cornell.edu/supremecourt/text/499/340).
+This determination is not a data-license grant, dictionary-selection
+clearance, contract waiver or worldwide database-rights determination.
+All packed data and generator bytes remain unchanged.
 
 K3's cached Python exactly matches its custom-licensed publisher source and
 preserves its Xenova citation. Separate permission for the exact byte-mapping

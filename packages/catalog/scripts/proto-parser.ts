@@ -1445,7 +1445,7 @@ export function generateProtoTs(
 		lines.push("/**");
 		lines.push(` * ${pkgPrefix} protocol declarations used by omp.`);
 		lines.push(" *");
-		lines.push(" * Each declaration retains only fields consumed by the client or its protocol tests.");
+		lines.push(" * Selected declarations and their dependencies are retained with all fields.");
 		lines.push(" */");
 	}
 
