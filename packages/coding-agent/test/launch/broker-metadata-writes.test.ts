@@ -242,6 +242,7 @@ describe("daemon metadata writes", () => {
 			await controller.request({ op: "ping" });
 			const endpoint = daemonBrokerEndpoint(projectDir, runtimeDir);
 			const socket = await connectJsonlSocket(endpoint, 1_000);
+			const socketClosed = new Promise<void>(resolve => socket.once("close", () => resolve()));
 			socket.pause();
 			const readable = Promise.withResolvers<void>();
 			socket.once("readable", readable.resolve);
@@ -301,6 +302,9 @@ describe("daemon metadata writes", () => {
 					Bun.sleep(2_000).then(() => false),
 				]);
 				expect(completed).toBe(true);
+				// A Windows named pipe stays visible while any client handle is open; release ours first.
+				socket.destroy();
+				await Promise.race([socketClosed, Bun.sleep(1_000)]);
 				await expect(fs.stat(endpoint)).rejects.toMatchObject({ code: "ENOENT" });
 				expect(await fs.exists(path.join(runtimeDir, "daemons"))).toBe(false);
 				passed = true;

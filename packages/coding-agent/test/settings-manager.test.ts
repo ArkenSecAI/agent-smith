@@ -2897,11 +2897,13 @@ describe("Settings", () => {
 
 		it("drops user-level warnings that #readProjectSettings does not merge", async () => {
 			const projectSettingsJson = path.join(projectDir, ".agent-smith", "settings.json");
+			// Match the exact user path: hosted checkouts such as /home/runner/... contain "home" too.
+			const userSettingsJson = path.join(tempDir.path(), "home", ".agent-smith", "settings.json");
 			vi.spyOn(discovery, "loadCapability").mockResolvedValue({
 				items: [],
 				all: [],
 				warnings: [
-					`[ArkenSec Agent Smith] Failed to parse ${path.join(tempDir.path(), "home", ".agent-smith", "settings.json")}`,
+					`[ArkenSec Agent Smith] Failed to parse ${userSettingsJson}`,
 					"[ArkenSec Agent Smith] Failed to load: boom",
 					`[ArkenSec Agent Smith] Failed to parse ${projectSettingsJson}`,
 				],
@@ -2911,7 +2913,7 @@ describe("Settings", () => {
 
 			await Settings.init({ cwd: projectDir, agentDir, inMemory: true });
 			expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(projectSettingsJson));
-			expect(warnSpy.mock.calls.filter(args => String(args[0]).includes("home"))).toEqual([]);
+			expect(warnSpy.mock.calls.filter(args => String(args[0]).includes(userSettingsJson))).toEqual([]);
 			expect(warnSpy.mock.calls.filter(args => String(args[0]).includes("Failed to load"))).toEqual([]);
 		});
 

@@ -74,7 +74,8 @@ async function main(): Promise<void> {
 				"--lib",
 				filter,
 			],
-			{ env: rustEnv, timeoutMs: 900_000 },
+			// Hosted runners compile the test profile cold; macos-15 exceeded 15 minutes.
+			{ env: rustEnv, timeoutMs: 2_700_000 },
 		);
 	}
 }
