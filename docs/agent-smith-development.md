@@ -417,14 +417,14 @@ Startpage class-level determination each resolve one finding, without changing
 any finding identity. All 273 earlier identities remain, but their native `Link`
 fields changed and eight additional identities appeared. That required a new
 complete review, not filtering `Link` or inheriting the earlier report's
-authority. Current-tree review covers 124 rows, all reviewed non-secret: the
-C6-reviewed 126-row report lost exactly the two Xiaomi rows when that value was
-replaced with a synthetic placeholder, and the changed complete report was
-independently reviewed before replacing that origin. Historical-blob review
-covers 13,527 findings from 197 exact native reports, all reviewed non-secret;
-four duplicate groups preserve every separately reviewed occurrence. The
-mechanical commitment reconciliation preserves those original object reports,
-row assignments, source bindings and review digests.
+authority. Current-tree dispositions bind one complete reviewed tree report.
+Replacing the Xiaomi value with a synthetic placeholder removed exactly two rows
+from the C6-reviewed 126-row report; the changed 124-row report needs its own
+independent review, whose digest the tree origin binds, before those row reviews
+apply again. Historical-blob review covers 13,527 findings from 197 exact native
+reports, all reviewed non-secret; four duplicate groups preserve every separately
+reviewed occurrence. The mechanical commitment reconciliation preserves those
+original object reports, row assignments, source bindings and review digests.
 
 The fourteen inherited Xiaomi history occurrences are accepted inherited exposure.
 Exact construction is unresolved; a public third-party claim that the value was
