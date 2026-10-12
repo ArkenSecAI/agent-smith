@@ -304,7 +304,11 @@ describe("daemon metadata writes", () => {
 				expect(completed).toBe(true);
 				// A Windows named pipe stays visible while any client handle is open; release ours first.
 				socket.destroy();
-				await Promise.race([socketClosed, Bun.sleep(1_000)]);
+				const clientClosed = await Promise.race([
+					socketClosed.then(() => true),
+					Bun.sleep(1_000).then(() => false),
+				]);
+				expect(clientClosed).toBe(true);
 				await expect(fs.stat(endpoint)).rejects.toMatchObject({ code: "ENOENT" });
 				expect(await fs.exists(path.join(runtimeDir, "daemons"))).toBe(false);
 				passed = true;
