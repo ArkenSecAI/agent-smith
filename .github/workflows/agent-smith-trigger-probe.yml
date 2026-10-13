@@ -1,0 +1,17 @@
+name: Agent Smith trigger probe
+
+# Diagnostic only. This file exists solely on the never-integrated branch
+# task/p1-trigger-probe. It shows whether a plain push event starts any
+# workflow run in this repository. It is not part of the P1 candidate.
+on: push
+
+permissions: {}
+
+jobs:
+  probe:
+    name: Trigger probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Report the triggering event
+        run: echo "event=${GITHUB_EVENT_NAME} ref=${GITHUB_REF} sha=${GITHUB_SHA}"
