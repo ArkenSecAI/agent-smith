@@ -8,7 +8,7 @@ import { abortableSource } from "@oh-my-pi/pi-utils/abortable";
 import type { WorkspaceRuntime } from "./contracts";
 import { Process } from "@oh-my-pi/pi-natives";
 import { startExternalInference } from "./external-inference";
-import { validateInferenceUrl } from "./project";
+import { regularFile, validateInferenceUrl } from "./project";
 
 type InferenceConfig = NonNullable<WorkspaceRuntime["inference"]>;
 
@@ -16,6 +16,8 @@ const HELP_TIMEOUT_MS = 15_000;
 const READY_TIMEOUT_MS = 180_000;
 const STOP_TIMEOUT_MS = 5_000;
 const LOG_BYTES = 256 * 1024;
+const ENGINE_PATH = "/inference/llama-server";
+const MODEL_PATH = "/inference/model.gguf";
 
 export interface WorkspaceInference {
 	model: Model;
@@ -160,14 +162,39 @@ function validateInferenceSocket(socketPath: string): void {
 	}
 }
 
-async function verifyPin(filename: string, expected: string, signal?: AbortSignal): Promise<void> {
+async function verifyPin(filename: string, expected: string, signal?: AbortSignal): Promise<fs.FileHandle> {
 	signal?.throwIfAborted();
-	const stat = await fs.lstat(filename);
-	if (!stat.isFile() || stat.isSymbolicLink())
-		throw new Error(`Pinned inference input must be a regular file: ${filename}`);
-	const hash = new Bun.CryptoHasher("sha256");
-	for await (const bytes of abortableSource(Bun.file(filename).stream(), signal)) hash.update(bytes);
-	if (hash.digest("hex") !== expected.toLowerCase()) throw new Error(`Inference SHA-256 mismatch: ${filename}`);
+	await regularFile(filename);
+	const handle = await fs.open(filename, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+	try {
+		const before = await handle.stat();
+		if (
+			!before.isFile() ||
+			before.nlink !== 1 ||
+			(before.mode & 0o222) !== 0 ||
+			(before.uid !== 0 && before.uid !== process.getuid?.())
+		) {
+			throw new Error(`Pinned inference input must be an owned or root-owned read-only regular file: ${filename}`);
+		}
+		const hash = new Bun.CryptoHasher("sha256");
+		for await (const bytes of abortableSource(Bun.file(handle.fd).stream(), signal)) hash.update(bytes);
+		const after = await handle.stat();
+		if (
+			after.size !== before.size ||
+			after.mtimeMs !== before.mtimeMs ||
+			after.ctimeMs !== before.ctimeMs ||
+			after.mode !== before.mode ||
+			after.uid !== before.uid ||
+			after.nlink !== before.nlink
+		) {
+			throw new Error(`Pinned inference input changed during verification: ${filename}`);
+		}
+		if (hash.digest("hex") !== expected.toLowerCase()) throw new Error(`Inference SHA-256 mismatch: ${filename}`);
+		return handle;
+	} catch (error) {
+		await handle.close();
+		throw error;
+	}
 }
 
 async function capture(stream: ReadableStream<Uint8Array>): Promise<string> {
@@ -300,44 +327,35 @@ export async function startInference(
 	if (process.platform !== "linux" || process.arch !== "x64")
 		throw new Error("Workspace inference is qualified only for Linux x86-64");
 	validateInferenceConfig(config);
-	await verifyPin(config.binary, config.sha256, signal);
-	await verifyPin(config.model, config.modelSha256, signal);
-	await fs.mkdir(stateDir, { recursive: true, mode: 0o700 });
-	const apiKey = crypto.randomUUID() + crypto.randomUUID();
-	// Deliberately do not inherit HOME, LLAMA_*, HF_*, proxies, accelerator or loader settings.
-	const env = { HOME: stateDir, XDG_CACHE_HOME: stateDir, PATH: "/usr/bin:/bin", LANG: "C.UTF-8" };
-	const helpChild = Bun.spawn([config.binary, "--help"], {
-		cwd: stateDir,
-		env,
-		stdin: "ignore",
-		stdout: "pipe",
-		stderr: "pipe",
-	});
-	const helpOutput = Promise.all([capture(helpChild.stdout), capture(helpChild.stderr)]);
-	void helpOutput.catch(() => {}); // The bounded await below reports capture failure.
-	let help: string;
+	const binary = await verifyPin(config.binary, config.sha256, signal);
 	try {
-		const bounded = AbortSignal.any([AbortSignal.timeout(HELP_TIMEOUT_MS), ...(signal ? [signal] : [])]);
-		const code = await untilAborted(bounded, helpChild.exited);
-		help = (await untilAborted(bounded, helpOutput)).join("\n");
-		await Bun.write(path.join(stateDir, "llama-help.txt"), help);
-		if (code !== 0) throw new Error(`Pinned llama.cpp --help failed with exit ${code}: ${help.slice(-4000)}`);
+		const model = await verifyPin(config.model, config.modelSha256, signal);
+		try {
+			return await startManagedInference(config, stateDir, binary.fd, model.fd, signal);
+		} finally {
+			await model.close();
+		}
 	} finally {
-		await stopChild(helpChild);
+		await binary.close();
 	}
-	// The engine has no host network namespace, host home, or accelerator devices.
-	// Only the SDK-facing chat gateway listens on loopback; management stays private.
+}
+
+async function startManagedInference(
+	config: InferenceConfig,
+	stateDir: string,
+	binaryFd: number,
+	modelFd: number,
+	signal?: AbortSignal,
+): Promise<WorkspaceInference> {
+	await fs.mkdir(stateDir, { recursive: true, mode: 0o700 });
 	const socketDir = await fs.mkdtemp(path.join(os.tmpdir(), "asm-inference-"));
 	await fs.chmod(socketDir, 0o700);
 	const socketPath = path.join(socketDir, "engine.sock");
-	let args: string[];
-	try {
-		args = cpuInferenceArgs(config, socketPath, help);
-		signal?.throwIfAborted();
-	} catch (error) {
-		await fs.rm(socketDir, { recursive: true });
-		throw error;
-	}
+	const apiKey = crypto.randomUUID() + crypto.randomUUID();
+	// Deliberately do not inherit HOME, LLAMA_*, HF_*, proxies, accelerator or loader settings.
+	const env = { HOME: socketDir, XDG_CACHE_HOME: socketDir, PATH: "/usr/bin:/bin", LANG: "C.UTF-8" };
+	// Both capability probing and serving use only the verified open files, never their parents.
+	// Descriptor binds retain the verified inodes without copying a multi-gigabyte model.
 	const sandbox = [
 		"/usr/bin/bwrap",
 		"--unshare-all",
@@ -361,28 +379,59 @@ export async function startInference(
 		"/dev",
 		"--tmpfs",
 		"/tmp",
-		"--ro-bind",
-		path.dirname(config.binary),
-		path.dirname(config.binary),
-		"--ro-bind",
-		config.model,
-		config.model,
+		"--dir",
+		"/inference",
+		"--ro-bind-fd",
+		"3",
+		ENGINE_PATH,
+		"--ro-bind-fd",
+		"4",
+		MODEL_PATH,
 		"--bind",
 		socketDir,
 		socketDir,
 		"--chdir",
 		socketDir,
 		"--",
-		config.binary,
-		...args,
+		ENGINE_PATH,
+		"--help",
 	];
-	const child = Bun.spawn(sandbox, {
-		cwd: socketDir,
-		env: { ...env, HOME: socketDir, XDG_CACHE_HOME: socketDir, LLAMA_API_KEY: apiKey },
-		stdin: "ignore",
-		stdout: "pipe",
-		stderr: "pipe",
-	});
+	let helpChild: Bun.Subprocess<"ignore", "pipe", "pipe"> | undefined;
+	let child: Bun.Subprocess<"ignore", "pipe", "pipe">;
+	try {
+		signal?.throwIfAborted();
+		helpChild = Bun.spawn(sandbox, {
+			cwd: socketDir,
+			env,
+			stdio: ["ignore", "pipe", "pipe", binaryFd, modelFd],
+		});
+		const helpOutput = Promise.all([capture(helpChild.stdout), capture(helpChild.stderr)]);
+		void helpOutput.catch(() => {}); // The bounded await below reports capture failure.
+		let help: string;
+		try {
+			const bounded = AbortSignal.any([AbortSignal.timeout(HELP_TIMEOUT_MS), ...(signal ? [signal] : [])]);
+			const code = await untilAborted(bounded, helpChild.exited);
+			help = (await untilAborted(bounded, helpOutput)).join("\n");
+			await Bun.write(path.join(stateDir, "llama-help.txt"), help);
+			if (code !== 0) throw new Error(`Pinned llama.cpp --help failed with exit ${code}: ${help.slice(-4000)}`);
+		} finally {
+			await stopChild(helpChild);
+		}
+		const args = cpuInferenceArgs({ ...config, model: MODEL_PATH }, socketPath, help);
+		sandbox.pop();
+		sandbox.push(...args);
+		signal?.throwIfAborted();
+		child = Bun.spawn(sandbox, {
+			cwd: socketDir,
+			env: { ...env, LLAMA_API_KEY: apiKey },
+			stdio: ["ignore", "pipe", "pipe", binaryFd, modelFd],
+		});
+	} catch (error) {
+		if (!helpChild || helpChild.exitCode !== null || helpChild.signalCode !== null) {
+			await fs.rm(socketDir, { recursive: true });
+		}
+		throw error;
+	}
 	let processTree: Process | null = null;
 	const output = Promise.all([capture(child.stdout), capture(child.stderr)]);
 	void output.catch(() => {}); // stop() observes this result even when a pipe fails early.
@@ -397,7 +446,7 @@ export async function startInference(
 			signal?.removeEventListener("abort", onAbort);
 			const outcomes = await Promise.allSettled([
 				gateway ? untilAborted(AbortSignal.timeout(STOP_TIMEOUT_MS), gateway.stop(true)) : Promise.resolve(),
-				stopEngine(child, processTree, config.binary),
+				stopEngine(child, processTree, ENGINE_PATH),
 			]);
 			const errors = outcomes
 				.filter((outcome): outcome is PromiseRejectedResult => outcome.status === "rejected")

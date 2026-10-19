@@ -22,6 +22,7 @@
 
 - Kept native crash logs, addon extraction and OAuth callback state in the Agent Smith namespace without legacy OMP recovery or state migration.
 - Prevented workspace inference from using ambient or caller-supplied HTTP proxies by using direct loopback HTTP transport; redirects remain non-following failures.
+- Confined managed inference capability probing as well as serving, binding only the verified read-only executable/model descriptors instead of the executable's parent directory. Rejected writable or aliased assets, kept verified inodes across pathname replacement, and made the acquisition recipe produce read-only assets with static llama/ggml dependencies.
 - Distinguished signal-terminated Bun processes from live children during workspace startup/shutdown and image-sealer cleanup.
 - Shared confined runtime inventory between image sealing and project creation, accepting real firmware member names without weakening QEMU option-path, ownership or symlink boundaries.
 - Used a fresh confined helper for each declared target connection and preserved complete responses across TCP half-close/backpressure. The explicit target route permits the QEMU syscall groups required by libslirp while retaining namespace, capability and `no_new_privs` confinement.

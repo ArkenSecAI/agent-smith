@@ -97,6 +97,14 @@ Create a runtime JSON using the
 Pin QEMU and `qemu-img` paths/hashes, dedicated firmware/library directories, the
 sealed image manifest, guest memory and CPU counts. Managed `inference` pins the
 CPU-only llama.cpp server and model bytes, model ID, context size and thread count.
+Managed assets must be root/operator-owned, read-only regular files with safe,
+non-aliased paths. Both `--help` and serving run inside the network-isolated
+sandbox using the same verified open-file descriptors; no executable parent or
+model parent is mounted and no model-sized copy is made. This requires bubblewrap
+with `--ro-bind-fd`. The server must carry its non-system llama/ggml dependencies:
+the acquisition recipe builds those statically and seals server/model permissions.
+Previously acquired writable/shared-library assets must be reprovisioned and
+repinned; they are not silently adopted by the hardened runtime.
 The mutually exclusive `externalInference` route below consumes an owner-managed
 service instead. Neither route falls back to the other.
 Runtime trees reject group/world-writable files/directories, escaping/absolute symlinks,
@@ -655,7 +663,7 @@ upstream already published. The ledger rejects it outside `history`, the scan
 rejects it for any commit not reachable from the upstream base, and each decision
 counts these occurrences as `accepted`, separately from `approved`.
 
-The retained complete history review covers 281 rows: 267 reviewed non-secret
+The retained P1 complete history review covers 281 rows: 267 reviewed non-secret
 and 14 accepted inherited exposure. Its original review classified 265
 non-secret and 16 blocked; exact Antigravity distribution evidence and the later
 Startpage class-level determination each resolve one finding, without changing
@@ -670,6 +678,16 @@ apply again. Historical-blob review covers 13,527 findings from 197 exact native
 reports, all reviewed non-secret; four duplicate groups preserve every separately
 reviewed occurrence. The mechanical commitment reconciliation preserves those
 original object reports, row assignments, source bindings and review digests.
+
+The P2 complete-report review of candidate
+`95b2a3543298569cc36a1b371ba20706cf7184c7` adds two public verification-pin
+occurrences to each scope: the Kali signing fingerprint and the SHA-256 of the
+Ubuntu public archive keyring. It binds 283 history rows (269 reviewed non-secret
+and the same 14 accepted inherited exposures) and 126 tree rows. Its review digest
+is `0249c83ba2b3f50b425f91a359746c9c55f4606f177f742c5d98f6a1f7342f3b`.
+New origins preserve the earlier report commitments, reasons and classifications;
+the actual maintained scan must still pass for the final candidate. Changed
+source bindings require fresh independent review even if native findings match.
 
 The fourteen inherited Xiaomi history occurrences are accepted inherited exposure.
 Exact construction is unresolved; a public third-party claim that the value was

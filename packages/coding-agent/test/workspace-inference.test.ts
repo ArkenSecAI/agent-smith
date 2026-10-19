@@ -109,15 +109,18 @@ test("non-loopback and credential-bearing SDK endpoint URLs are rejected", () =>
 });
 
 async function fixtureRuntime(): Promise<{ directory: string; runtime: WorkspaceRuntime }> {
-	const directory = await fs.mkdtemp(path.join(os.tmpdir(), "workspace-inference-"));
+	const directory = await fs.mkdtemp(
+		path.join(await fs.realpath(process.platform === "win32" ? os.tmpdir() : "/tmp"), "workspace-inference-"),
+	);
 	directories.push(directory);
 	const binary = path.join(directory, "llama-fixture");
 	const model = path.join(directory, "fixture.gguf");
 	// An isolated failing executable is sufficient to exercise pin and native-exit boundaries.
-	const script = "#!/bin/sh\nexit 23\n";
+	const script = "#!/usr/bin/sh\nexit 23\n";
 	await Bun.write(binary, script);
-	await fs.chmod(binary, 0o700);
+	await fs.chmod(binary, 0o500);
 	await Bun.write(model, "GGUFfixture");
+	await fs.chmod(model, 0o400);
 	return {
 		directory,
 		runtime: {
@@ -174,6 +177,148 @@ test.skipIf(process.platform !== "linux" || process.arch !== "x64")(
 			"--help failed with exit 23",
 		);
 	},
+);
+
+for (const unsafe of ["writable-binary", "writable-model", "symlink-parent", "writable-parent"] as const) {
+	test.skipIf(process.platform !== "linux" || process.arch !== "x64")(
+		`managed inference rejects ${unsafe} before capability execution`,
+		async () => {
+			const { directory, runtime } = await fixtureRuntime();
+			const config = runtime.inference!;
+			if (unsafe === "writable-binary") await fs.chmod(config.binary, 0o700);
+			if (unsafe === "writable-model") await fs.chmod(config.model, 0o600);
+			if (unsafe === "symlink-parent") {
+				const alias = path.join(directory, "alias");
+				await fs.symlink(directory, alias);
+				config.binary = path.join(alias, path.basename(config.binary));
+			}
+			if (unsafe === "writable-parent") await fs.chmod(directory, 0o777);
+			const state = path.join(directory, "state");
+			await expect(startInference(runtime, state)).rejects.toThrow();
+			expect(await Bun.file(path.join(state, "llama-help.txt")).exists()).toBe(false);
+		},
+	);
+}
+
+test.skipIf(process.platform !== "linux" || process.arch !== "x64")(
+	"capability probing and serving cannot read an unrelated executable sibling",
+	async () => {
+		const { directory, runtime } = await fixtureRuntime();
+		const config = runtime.inference!;
+		const canary = path.join(directory, "unrelated.txt");
+		await Bun.write(canary, "private synthetic canary");
+		const flags =
+			"--model --host --ctx-size --threads --parallel --alias --jinja --no-webui --no-kv-offload --no-op-offload --flash-attn --cache-type-k --cache-type-v --api-key --offline --no-agent --device -ngl --reasoning --reasoning-format --reasoning-budget --top-k --top-p --min-p --presence-penalty --repeat-penalty --seed";
+		const script = `#!/usr/bin/python3
+import os, sys
+stage = "help" if "--help" in sys.argv else "serve"
+print(stage + (":visible" if os.path.exists(${JSON.stringify(canary)}) else ":hidden"), flush=True)
+if stage == "help": print(${JSON.stringify(flags)}, flush=True)
+sys.exit(0 if stage == "help" else 37)
+`;
+		await fs.chmod(config.binary, 0o700);
+		await Bun.write(config.binary, script);
+		await fs.chmod(config.binary, 0o500);
+		config.sha256 = Bun.SHA256.hash(script, "hex");
+		const state = path.join(directory, "state");
+		// Give this invocation a short private TMPDIR without changing the other tests' environment.
+		const child = Bun.spawn(
+			[
+				process.execPath,
+				"--no-env-file",
+				"--eval",
+				`import { startInference } from ${JSON.stringify(new URL("../src/workspace/inference.ts", import.meta.url).href)};
+await startInference(${JSON.stringify(runtime)}, ${JSON.stringify(state)}, AbortSignal.timeout(5000));`,
+			],
+			{
+				env: { ...process.env, TMPDIR: directory, TMP: directory, TEMP: directory },
+				stdout: "ignore",
+				stderr: "pipe",
+			},
+		);
+		const diagnostic = new Response(child.stderr).text();
+		try {
+			expect(await untilAborted(AbortSignal.timeout(8000), child.exited)).toBe(1);
+		} finally {
+			if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+			await child.exited;
+		}
+		const detail = await diagnostic;
+		const help = await Bun.file(path.join(state, "llama-help.txt")).text();
+		const outputFile = Bun.file(path.join(state, "llama-output.txt"));
+		if (!(await outputFile.exists())) throw new Error(`Serving fixture did not run: ${detail}`);
+		const output = await outputFile.text();
+		expect(help).toContain("help:hidden");
+		expect(output).toContain("serve:hidden");
+		expect(help).not.toContain("help:visible");
+		expect(output).not.toContain("serve:visible");
+	},
+	10_000,
+);
+
+test.skipIf(process.platform !== "linux" || process.arch !== "x64")(
+	"replacing the executable after its pin is verified cannot change the executed bytes",
+	async () => {
+		const { directory, runtime } = await fixtureRuntime();
+		const config = runtime.inference!;
+		await fs.chmod(config.model, 0o600);
+		// A write lease blocks the model open after binary verification, without a timing race.
+		const lease = Bun.spawn(
+			[
+				"/usr/bin/python3",
+				"-u",
+				"-c",
+				`import fcntl, os, signal, sys
+fd = os.open(sys.argv[1], os.O_RDWR)
+os.fchmod(fd, 0o400)
+signal.signal(signal.SIGIO, lambda *_: print("blocked", flush=True))
+fcntl.fcntl(fd, fcntl.F_SETLEASE, fcntl.F_WRLCK)
+print("ready", flush=True)
+sys.stdin.readline()
+fcntl.fcntl(fd, fcntl.F_SETLEASE, fcntl.F_UNLCK)
+os.close(fd)
+`,
+				config.model,
+			],
+			{ stdin: "pipe", stdout: "pipe", stderr: "pipe" },
+		);
+		const controller = new AbortController();
+		const reader = lease.stdout.getReader();
+		const deadline = AbortSignal.timeout(5000);
+		const decoder = new TextDecoder();
+		let buffered = "";
+		let startup: Promise<unknown> | undefined;
+		const line = async (): Promise<string> => {
+			while (!buffered.includes("\n")) {
+				const result = await untilAborted(deadline, reader.read());
+				if (result.done) throw new Error("Model lease helper exited before its synchronization point");
+				buffered += decoder.decode(result.value, { stream: true });
+			}
+			const end = buffered.indexOf("\n");
+			const value = buffered.slice(0, end);
+			buffered = buffered.slice(end + 1);
+			return value;
+		};
+		try {
+			expect(await line()).toBe("ready");
+			startup = startInference(runtime, path.join(directory, "state"), controller.signal);
+			void startup.catch(() => {});
+			expect(await line()).toBe("blocked");
+			await fs.rename(config.binary, `${config.binary}.verified`);
+			await Bun.write(config.binary, "#!/usr/bin/sh\nexit 42\n");
+			await fs.chmod(config.binary, 0o500);
+			lease.stdin.end();
+			expect(await untilAborted(deadline, lease.exited)).toBe(0);
+			await expect(startup).rejects.toThrow("--help failed with exit 23");
+		} finally {
+			controller.abort();
+			if (lease.exitCode === null && lease.signalCode === null) lease.kill("SIGKILL");
+			await lease.exited;
+			await reader.cancel();
+			await startup?.catch(() => {});
+		}
+	},
+	10_000,
 );
 
 function externalConfig(baseUrl: string): WorkspaceExternalInference {

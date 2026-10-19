@@ -234,6 +234,7 @@ def model(root):
     records.append(base_meta)
     records.append(download(f'https://huggingface.co/{MODEL_BASE_REPO}/raw/{MODEL_BASE_REV}/README.md', root / 'MODEL.md'))
     records.append(download(MODEL_LICENSE_URL, root / 'LICENSE', MODEL_LICENSE_SHA))
+    (root / MODEL_FILE).chmod(0o400)
     save(root / 'receipt.json', {'schema': 1, 'repo': MODEL_REPO, 'revision': MODEL_REV,
                                 'baseModel': MODEL_BASE_REPO, 'baseRevisionObserved': MODEL_BASE_REV,
                                 'provenanceLimit': 'Quantization publisher names the base model, not its exact source revision.',
@@ -249,7 +250,7 @@ def llama(root, cmake, ninja):
     build = root / 'build'
     environment = {'PATH': f'{ninja.parent}:/usr/bin:/bin'}
     command([cmake, '-S', source_dir, '-B', build, '-G', 'Ninja',
-             '-DCMAKE_BUILD_TYPE=Release', '-DGGML_NATIVE=ON', '-DGGML_CUDA=OFF',
+             '-DCMAKE_BUILD_TYPE=Release', '-DBUILD_SHARED_LIBS=OFF', '-DGGML_NATIVE=ON', '-DGGML_CUDA=OFF',
              '-DGGML_VULKAN=OFF', '-DGGML_METAL=OFF', '-DGGML_RPC=OFF',
              '-DLLAMA_CURL=OFF', '-DLLAMA_BUILD_TESTS=OFF', '-DLLAMA_BUILD_EXAMPLES=OFF',
              '-DLLAMA_BUILD_SERVER=ON', '-DLLAMA_BUILD_TOOLS=ON'], root, environment)
@@ -258,10 +259,12 @@ def llama(root, cmake, ninja):
     version = command([binary, '--version'], root)
     help_text = command([binary, '--help'], root)
     (root / 'server-help.txt').write_text(help_text)
+    binary.chmod(0o500)
     save(root / 'receipt.json', {'schema': 1, 'release': 'v0.6.0', 'commit': LLAMA_REV,
                                 'source': record, 'binary': str(binary), 'sha256': digest(binary),
                                 'version': version, 'license': 'MIT',
-                                'build': 'CPU-only; no CUDA/Vulkan/Metal/RPC backend; bounded -j4'})
+                                'build': 'CPU-only; static llama/ggml libraries; no CUDA/Vulkan/Metal/RPC backend; bounded -j4',
+                                'permissions': 'read-only executable; runtime mounts only pinned executable/model descriptors'})
 
 
 def main():
