@@ -1,4 +1,4 @@
-# Agent Smith P1 development
+# Agent Smith development
 
 Agent Smith derives from OMP **18.4.8**, commit
 `717f97f4d22b3d65c4a4eef6a744255d46f4d1a6`. Its command is `agent-smith`, its
@@ -60,6 +60,245 @@ prepare, publication and release aliases are removed, not compatibility shims.
 Advanced inherited release/Bazel/Docker/Nix/Python scripts are not the maintained
 P1 route or permission to run, deploy or publish them. No provider/model request
 is necessary for the maintained development or scan gates.
+
+## Linux managed workspace route
+
+The `workspace` command is the Linux x86-64/KVM development path. It requires an
+unprivileged operator with existing `/dev/kvm` access, bubblewrap/user namespaces,
+an authenticated QEMU/firmware/library tree, and a sealed Kali image. It does not
+install host packages, change groups, adopt account homes, or fall back to
+unaccelerated emulation. Windows/macOS guest-runtime qualification and a supported
+installer remain separate gates.
+
+With the authenticated asset receipts already provisioned, run from the source root:
+
+```sh
+python3 scripts/agent-smith-image-linux.py \
+  --assets "$ASSETS" --directory "$BUILD" --guest-code "$PWD/guest/agent-smith"
+bun --no-env-file scripts/agent-smith-seal-image.ts \
+  --assets "$ASSETS" --build "$BUILD" --out "$SEALED"
+```
+
+These variables must identify explicit absolute paths; build/seal outputs must be
+new directories. Installer exit alone is not success. Sealing boots a temporary
+overlay without a NIC, authenticates the installed supervisor, inventories actual
+packages and notices, verifies the implementation/MCP patches and active KVM,
+requests authenticated guest OS poweroff, observes normal VM exit, and proves the
+base unchanged before publishing `image.json`.
+Failure retains original diagnostics and never publishes a qualified manifest.
+
+Runtime wall time comes from QEMU's host-backed UTC RTC. The image permanently
+masks `systemd-timesyncd`: target-only networking provides no NTP route, and the
+unused service can block shutdown. Sealing requires it to be masked and inactive;
+the host's clock, time-sync service and security settings are not changed.
+
+Create a runtime JSON using the
+[`WorkspaceRuntime` contract](../packages/coding-agent/src/workspace/contracts.ts).
+Pin QEMU and `qemu-img` paths/hashes, dedicated firmware/library directories, the
+sealed image manifest, guest memory and CPU counts. Managed `inference` pins the
+CPU-only llama.cpp server and model bytes, model ID, context size and thread count.
+The mutually exclusive `externalInference` route below consumes an owner-managed
+service instead. Neither route falls back to the other.
+Runtime trees reject group/world-writable files/directories, escaping/absolute symlinks,
+hardlinks and special files; member basenames are data, not QEMU option syntax.
+
+The asset recipe currently pins `unsloth/Qwen3.5-9B-GGUF` at
+`3885219b6810b007914f3a7950a8d1b469d598a5`, selecting Q4_K_M. This is a
+third-party single-file conversion of the official Qwen model, not an official
+Qwen quantization. Acquisition retains weight hashes, publisher metadata/cards,
+and the hash-pinned Apache-2.0 license including its 2026 Alibaba Cloud copyright
+notice. Retain the quantizer's attribution. The separately recorded base
+documentation revision does not establish the undisclosed conversion-source revision.
+The published license is not independent rights clearance.
+Use a new private asset directory when changing pins; retain earlier receipts.
+Acquisition uses a process-local private umask.
+
+The CPU candidate uses the [pinned model card's general-task thinking sampling profile](https://huggingface.co/Qwen/Qwen3.5-9B/blob/c202236235762e1c871ad0ccb60c8ee5ba337b9a/README.md):
+temperature 1, top-p 0.95, top-k 20, presence penalty 1.5 and repetition penalty 1.
+Min-p and seed are 0. The SDK enables thinking and the
+native backend caps it at 512 tokens, separately exposing reasoning from final
+text and native tool calls. No model-specific prefill, continuation injection or
+copied system prompt is added. The 2048-derived combined output ceiling,
+twelve-turn, eight-tool-call and 600-second investigation bounds are unchanged.
+This bounded output profile is not the publisher's long-output benchmark setting.
+The current experiment uses an explicit 8192-token context, eight CPU threads,
+Q8_0 key/value caches and CPU Flash Attention. GPU, cache and operation offload
+remain disabled. The earlier 14B profiles missed the deadline, while 9B
+instruction mode completed but failed requested coverage and grounded interpretation.
+Bounded thinking and quantized caches require fresh quality and co-use evidence.
+Useful reasoning is assessed from the complete answer and actual evidence.
+This remains an unqualified candidate.
+The pinned server must advertise the required flags; unsupported flags fail
+startup rather than silently changing the profile. Acquisition and loading do not
+establish quality. Size the explicit context for accumulated evidence and tool
+turns, not just the initial prompt; an exhausted context fails the investigation.
+Thread, context and sampling changes require fresh quality, latency and co-use
+qualification. Full weight/runtime memory, not only active parameters, matters.
+
+**Externally managed inference — Linux workflow candidate.** The current external
+adapter expects the Qwen chat-template dialect, not every OpenAI-compatible server.
+Add this object to the runtime JSON **instead of** `inference`:
+
+```json
+"externalInference": {
+  "baseUrl": "http://127.0.0.1:18080/v1",
+  "modelId": "local-27b",
+  "contextTokens": 65536,
+  "thinking": "medium",
+  "sampling": {
+    "temperature": 1,
+    "topK": 20,
+    "topP": 0.95,
+    "minP": 0.05,
+    "presencePenalty": 0,
+    "frequencyPenalty": 0,
+    "repeatPenalty": 1,
+    "seed": 0
+  },
+  "provenance": {
+    "profile": "load",
+    "modelSha256": "3445102e9cde5d562508642c100a2f5ac3368a5a3f748442811d7a95daee3bec",
+    "serverSha256": "d433649ca12238929b173fb995b2cff0a59f4bdcc735c908f045a9975d449e8d",
+    "templateSha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041"
+  }
+}
+```
+
+These hashes are **operator-declared provenance**, not remote attestation. The
+example identifies a separately hosted, unqualified 27B GGUF candidate; no model
+bytes are bundled or acquired. Reported license labels do not establish its full
+base/abliteration/conversion notice chain, training-data provenance or rights clearance.
+The owner must supply and preserve the exact build, template and profile evidence.
+
+The operator creates the loopback tunnel; the model owner starts and stops the
+server. Agent Smith neither handles SSH credentials nor manages either lifecycle.
+Only HTTP on explicit `127.0.0.1:PORT/v1` is accepted. Requests are JSON POSTs to
+that endpoint's `/chat/completions`, with no ambient API key, proxy or redirected
+destination. Direct HTTP transport is intentional: the pinned Bun fetch does not
+reliably disable environment proxies with an empty `proxy` option.
+
+Capabilities are explicit even when the model alias is opaque. The wire profile
+uses one initial system message, no developer role, native single-call tool turns,
+and separate incremental `reasoning_content`. Thinking is `off`, `low`, `medium`
+or `xhigh`, expressed only through `chat_template_kwargs`; all sampling parameters
+above are explicit. The 8192-token output cap includes reasoning and the answer:
+there is **no separate 512-token reasoning budget** on this route. Prompt caching
+is disabled per request. The supplied `load` server contract disables context
+shifting and prompt caching and has one slot. SDK parameter negotiation that would
+change the selected profile fails before sending a downgraded request.
+
+The existing SDK coordinator permits one in-flight request per endpoint among
+cooperating Agent Smith instances sharing the application state root. This cannot
+exclude unrelated clients or instances using different state roots: the operator
+must close other clients, and the server owner must avoid overlapping requests.
+There are no endpoint subagents or slot-management requests. Existing investigation
+time, turn, tool and answer-length bounds remain. Multiple tool calls in one turn
+or tool calls recovered from an interrupted stream are retained as a rejected turn,
+never executed.
+
+Stopping an investigation closes only its own HTTP activity, not the server or
+tunnel. A disconnected stream without a completed result is an infrastructure
+failure; there is no automatic server restart. Client abort, health checks and a
+responsive synthetic follow-up do not uniquely prove remote task termination:
+obtain content-free cancellation/release evidence from the server owner. Offline
+HTTP/SSE fixtures verify the consumer, not real-model quality, GPU resource
+release, Linux workflow acceptance, CPU-only/offline support or other OS qualification.
+
+The investigation prompt requests every operator-requested deliverable and follows
+the requested structure. Comparisons are organized by requested dimensions, covering
+every source, including zero, false and empty results. A fact is grouped only when
+every named source independently records it; other facts keep their source
+attribution. Shared unknowns are grouped, but missing or unverified fields cannot
+borrow another source's value or become negative findings. The default
+final-response ceiling is 200 words unless the operator specifies a different
+length. It avoids repeated facts/references and unrequested checks rather than
+forcing a universal template. Operator permission is not target policy, and a
+failed operation is not by itself a successful security control. Completed execution,
+operation success and satisfaction of an expected policy are distinct; native errors,
+timeouts and partial-output limitations remain visible. Observations stay within
+the tested actors, inputs, resources, methods and time; a failed operation does not
+establish general unavailability or unreachability of a resource. The actual answer
+requires review, not an assumption that prompt instructions guarantee completeness.
+A provider-reported output-token-limit stop fails the investigation, including
+thinking-only turns removed from the SDK's active context. The last finalized
+assistant event determines completion; only a normal final stop with text succeeds.
+Incomplete messages remain in the local session. Partial output and earlier
+tool-turn commentary are never returned as a completed answer.
+
+Managed CPU inference shutdown signals the identified engine before its bubblewrap namespace
+init, allowing normal reaping rather than destroying the namespace first.
+Stable owned-process identities and the sandbox's normal exit must be observed
+within one shared graceful-shutdown deadline. The root's exit notification alone
+is not sufficient: descendant exit observations may arrive later. Forced cleanup
+is bounded and reported as failure, never a successful stop.
+
+Workspace stop observes both the authenticated VM shutdown and the retained broker
+process's exit. The broker's IPC reply precedes its socket cleanup and lease release;
+the client waits for the same stable process identity within the existing 40-second
+request deadline before returning success. An unconfirmed broker exit is an error,
+not a reason to signal an unrelated PID or report a completed stop.
+
+For an owned local fixture, an operator-selected `hostTargetPort` exposes only
+`10.0.2.100:8080` through the restricted relay. Each guest TCP connection gets a
+fresh fixed helper; normal half-close drains the response instead of truncating
+it. This route also requires a root-owned system Python 3 that is not group/world-writable.
+
+QEMU 8.2/libslirp's helper setup calls `setsid`, so **only the explicit target
+relay configuration** permits QEMU's spawn and privilege-syscall groups. It still
+runs inside bubblewrap's private user/network/mount/PID namespaces with all
+capabilities dropped and `no_new_privs` set; this is not permission to execute
+guest-selected host commands or mount the host home. Without a target relay,
+both syscall groups remain denied. Keep this tradeoff visible in runtime review.
+
+Do not configure a real target without its separate authorization. With `RUNTIME`
+naming that JSON and `PROJECTS` naming a private project root:
+
+```sh
+agent-smith workspace create --root "$PROJECTS" --name lab \
+  --runtime "$(cat "$RUNTIME")" --targets '["10.0.2.100"]'
+agent-smith workspace boot "$PROJECTS/lab"
+agent-smith workspace run "$PROJECTS/lab" -- /usr/bin/uname -a
+agent-smith workspace terminal "$PROJECTS/lab" -- /bin/bash --noprofile --norc
+agent-smith workspace tools "$PROJECTS/lab" kali
+agent-smith workspace tools "$PROJECTS/lab" hexstrike
+agent-smith workspace stop "$PROJECTS/lab"
+```
+
+`--runtime` takes inline JSON, not a filename. `workspace ask PROJECT PROMPT` uses
+the pinned local model with only project-bound MCP scan/evidence tools, not the
+operator's shell or ambient providers.
+
+Completed scan tools return a bounded tail of the **original** capture with its
+byte range, hash and citation; `read_evidence` can inspect other original ranges.
+Model-facing output supplies original text as its own content part, not as a
+JSON-escaped field inside metadata; structured result details remain available.
+An unverified upstream cache stays unknown: a fresh API process does not establish
+fresh tool execution, and reading a capture is not a new target measurement.
+
+Grounding keeps operator-declared facts and expected policy separate from
+measurements, while using those premises to assess observed behavior. A capture
+need not restate a supplied premise; contradictions must be reported explicitly.
+Model analysis is not independent verification.
+
+Manual terminal control supports input, resize, takeover and detach; stale ownership
+epochs cannot write. Cancellation
+intent, actual exit/signal and completed capture are distinct observations.
+Signal termination is an observed process exit even when Bun's `exitCode` is null.
+CLI signals join bounded global cleanup: request guest cancellation, drain the
+original output and report the authoritative terminal state before host exit.
+Typed Ctrl-C in an attached terminal goes to the guest foreground process;
+Ctrl-] detaches rather than claiming that the guest process terminated.
+`status` and `evidence` never boot the VM; stopped evidence remains readable, and
+reboot reopens the same project's overlay without sharing another project's state.
+
+`stop` cancels/drains active runs before requesting authenticated guest OS poweroff.
+An accepted request is not a completed shutdown: the VM must exit normally;
+forced termination remains a reported failure, not a successful stop.
+
+Package presence, image sealing and development-package smoke are not complete
+workflow acceptance. Qualify real command/MCP errors and timeouts, interactive
+control, interruption/reopen, model answer quality, and editor/browser co-use on
+the actual host before claiming Linux P2.
 
 ## Native identity and local package
 

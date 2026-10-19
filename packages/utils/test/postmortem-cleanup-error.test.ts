@@ -238,6 +238,45 @@ describe("postmortem expected cleanup errors", () => {
 		expect(result.stderr).not.toContain("cleanup stayed pending after the deadline");
 	});
 
+	it("keeps a participating cleanup budget without extending it for inactive owners", async () => {
+		const result = await runPostmortemProbe(`
+			import { vi } from "bun:test";
+			import { MessageChannel } from "node:worker_threads";
+			import { postmortem } from "${postmortemModuleUrl}";
+
+			const { port1, port2 } = new MessageChannel();
+			const turn = () => new Promise(resolve => {
+				port1.once("message", resolve);
+				port2.postMessage(null);
+			});
+			vi.useFakeTimers();
+			const never = () => Promise.withResolvers<void>().promise;
+			const cancel = postmortem.register("retired", never, { minimumDeadlineMs: 120000 });
+			cancel();
+			postmortem.register("exit-only", never, { exitOnly: true, minimumDeadlineMs: 120000 });
+			postmortem.register("vm-stop", never, { minimumDeadlineMs: 35000 });
+			let settled = false;
+			const cleanup = postmortem.cleanup().then(() => { settled = true; });
+			vi.advanceTimersByTime(10000);
+			await turn();
+			if (settled) postmortem.exitProcess(2);
+			vi.advanceTimersByTime(24999);
+			await turn();
+			if (settled) postmortem.exitProcess(3);
+			vi.advanceTimersByTime(1);
+			await turn();
+			if (!settled) postmortem.exitProcess(4);
+			await cleanup;
+			vi.useRealTimers();
+			port1.close();
+			port2.close();
+			console.log("bounded cleanup finished");
+			postmortem.exitProcess(0);
+		`);
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("bounded cleanup finished");
+	});
+
 	it("re-arms registrations after a manual cleanup keeps the process alive", async () => {
 		const result = await runPostmortemProbe(`
 			import { postmortem } from "${postmortemModuleUrl}";

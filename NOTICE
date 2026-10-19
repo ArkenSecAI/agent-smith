@@ -19,6 +19,41 @@ replaced by the top-level MIT license. See the pinned build/dependency inventory
 for the actual source/native artifact boundary; a version label alone is not
 binary provenance or legal clearance.
 
+Linux guest executor patches:
+
+guest/patches/mcp-kali-timeout.patch modifies MCP-Kali-Server by Yousof Nahya,
+https://github.com/Wh0am123/MCP-Kali-Server.
+Input: mcp-kali-server 0.0~git20260317.00154c0-0kali2.
+Copyright: 2025 Yousof Nahya.
+
+guest/patches/hexstrike-timeout.patch modifies HexStrike AI,
+https://github.com/0x4m4/hexstrike-ai.
+Input: hexstrike-ai 0.0~git20260803.d689933-0kali1.
+Copyright: 2026 Muhammad Osama (0x4m4) <contact@0x4m4.com>.
+
+The authenticated packages identify these upstream sources as Expat/MIT.
+Their Debian packaging separately credits 2025 Sophie Brun <sophie@kali.org>.
+The applicable upstream permission and warranty text is retained here:
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the
+following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 No Kali image, model weights, firmware bundle, external ruleset or provider-account
 entitlement is granted or redistributed by this notice. Future delivered assets
 require their own exact inventory, licenses, notices and source obligations.

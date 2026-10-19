@@ -11,7 +11,7 @@ The fixed product goal is a human-led agent/TUI with a managed **local, full VM-
 - Authorized exploitation and CTF labs.
 - Reverse engineering and binaries.
 
-These are release requirements, **not capabilities already qualified by this development repository**. The P1 work establishes the fork's application identity/state, maintained development build and review/CI boundaries. VM management, both MCP execution paths, project-bound authority, evidence durability, useful local inference and full workflow qualification follow the [roadmap](docs/agent-smith-roadmap.md).
+These are release requirements, **not a three-OS support or completed workflow-qualification claim**. P1 establishes the fork's application identity/state, maintained development build and review/CI boundaries. The experimental Linux/KVM `workspace` route adds persistent VM projects, both MCP execution paths, project-bound authority, original evidence, interactive terminals and pinned CPU-local inference. Mechanism checks alone do not establish useful investigation quality or end-to-end P2 acceptance; see the [development limits](docs/agent-smith-development.md#linux-managed-workspace-route) and [roadmap](docs/agent-smith-roadmap.md).
 
 ## Development
 

@@ -50,6 +50,15 @@ export const compressHelp = {
 
 export const configHelp = { description: "Manage configuration settings" } satisfies CommandMetadata;
 
+export const workspaceHelp = {
+	description: "Create, control and investigate a project-bound local Kali workspace",
+	examples: [
+		"agent-smith workspace help",
+		"agent-smith workspace terminal PROJECT -- /bin/bash",
+		'agent-smith workspace ask PROJECT "Investigate the authorized project target"',
+	],
+} satisfies CommandMetadata;
+
 export const dryBalanceHelp = {
 	description: "Dry-run OAuth account balancing across random session ids",
 } satisfies CommandMetadata;

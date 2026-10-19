@@ -27,6 +27,7 @@ interface CleanupRegistration {
 	id: string;
 	callback: (reason: Reason) => Promise<void> | void;
 	exitOnly: boolean;
+	minimumDeadlineMs: number;
 	cancelled: boolean;
 	lastPass: number;
 }
@@ -179,6 +180,14 @@ function runCleanup(reason: Reason, keepAlive = false): Promise<void> {
 		}
 	};
 
+	// Freeze the pass budget before invoking callbacks. Late registrations join
+	// the work but cannot keep extending shutdown indefinitely.
+	let deadlineMs = CLEANUP_DEADLINE_MS;
+	for (const registration of callbackList) {
+		if (!registration.cancelled && !(registration.exitOnly && keepAlive))
+			deadlineMs = Math.max(deadlineMs, registration.minimumDeadlineMs);
+	}
+
 	// Snapshot the pass. Registrations added while a keep-alive cleanup runs are
 	// invoked by register() when appropriate and remain active for later passes.
 	const promises = callbackList.toReversed().map(registration => {
@@ -202,7 +211,7 @@ function runCleanup(reason: Reason, keepAlive = false): Promise<void> {
 		logger.error("Cleanup deadline exceeded; proceeding with exit", { reason });
 		settle();
 		deadline.resolve();
-	}, CLEANUP_DEADLINE_MS);
+	}, deadlineMs);
 	const passPromise = Promise.race([cleanupSettled, deadline.promise]).finally(() => {
 		clearTimeout(deadlineTimer);
 		// A re-armed pass must drop only its own settled promise; an older
@@ -659,6 +668,12 @@ export interface CleanupRegistrationOptions {
 	 * The registration remains armed when a keep-alive pass skips it.
 	 */
 	exitOnly?: boolean;
+	/**
+	 * Minimum budget for a cleanup pass that starts with this registration active.
+	 * The pass uses the largest participating budget, never less than 10 seconds.
+	 * Late registrations do not extend an already-running pass.
+	 */
+	minimumDeadlineMs?: number;
 }
 
 /**
@@ -681,10 +696,14 @@ export function register(
 	callback: (reason: Reason) => void | Promise<void>,
 	options: CleanupRegistrationOptions = {},
 ): () => void {
+	const minimumDeadlineMs = options.minimumDeadlineMs ?? CLEANUP_DEADLINE_MS;
+	if (!Number.isSafeInteger(minimumDeadlineMs) || minimumDeadlineMs <= 0 || minimumDeadlineMs > 2_147_483_647)
+		throw new RangeError("Cleanup deadline must be a positive integer within the timer range");
 	const registration: CleanupRegistration = {
 		id,
 		callback,
 		exitOnly: options.exitOnly ?? false,
+		minimumDeadlineMs,
 		cancelled: false,
 		lastPass: 0,
 	};

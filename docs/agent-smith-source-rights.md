@@ -157,6 +157,17 @@ see [development instructions](agent-smith-development.md).
 
 P1 does not publish a supported binary installer, sign an OS release or redistribute a managed guest/model stack. Any future distributed binary/archive must reconcile actual build-selected dependencies, runtime/native assets, source obligations and notices, including post-install downloads; this source record cannot substitute for that work.
 
+The Linux workspace sealer records the actual installed package/source versions,
+exact Debian copyright records and common-license texts. Packages that install
+notices elsewhere retain their registered license/notice files together with the
+original `dpkg-query -L` ownership query; an absent or empty rights record fails
+qualification rather than receiving an invented license. Notices are deduplicated
+by content hash without dropping per-package path/provenance links. These records,
+the authenticated image/runtime inputs and the locally modified MCP source pins
+are engineering evidence, not a blanket redistribution grant, complete source
+offer, or clearance of every bundled tool/model. Local workspace qualification
+does not remove the separate exact-artifact distribution gate below.
+
 ## Excluded private and unqualified material
 
 No private ArkenSec SaaS code/configuration, customer evidence, account homes, tokens, raw research/history or development-machine state is part of this fork. The repository starts from the public upstream tree; project-specific docs are deliberately authored for publication, not copied wholesale from a private planning archive. Untracked local downloads, build outputs and qualification receipts are not source inventory.

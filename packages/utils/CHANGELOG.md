@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added an optional validated `minimumDeadlineMs` to cleanup registration. A cleanup pass freezes the maximum participating budget before callbacks run; cancelled registrations and later registrations cannot prolong that pass.
+
 ## [18.4.4] - 2026-09-29
 
 ### Added

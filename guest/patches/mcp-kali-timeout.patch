@@ -1,0 +1,23 @@
+--- a/usr/share/mcp-kali-server/server.py
++++ b/usr/share/mcp-kali-server/server.py
+@@ -67,4 +67,9 @@
+-        if not isinstance(self.command, str):
+-            raise ValueError(f"CommandExecutor expects a string, but got {type(self.command).__name__}")
++        if not isinstance(self.command, (str, list)):
++            raise ValueError(f"CommandExecutor expects a string or argv list, but got {type(self.command).__name__}")
++        if isinstance(self.command, list) and (not self.command or any(not isinstance(arg, str) for arg in self.command)):
++            raise ValueError("CommandExecutor expects a non-empty argv list of strings")
+ 
+-        cmd_args = shlex.split(self.command)
++        # Tool endpoints already supply argv; retain literal arguments and shell=False.
++        # Retain string parsing validation; Popen uses self.command and self.use_shell.
++        if isinstance(self.command, str):
++            shlex.split(self.command)
+@@ -113,2 +118,2 @@
+-            # Always consider it a success if we have output, even with timeout
+-            success = True if self.timed_out and (self.stdout_data or self.stderr_data) else (self.return_code == 0)
++            # Captured partial output does not turn a timed-out execution into success.
++            success = not self.timed_out and self.return_code == 0
+@@ -122,1 +127,1 @@
+-                "partial_results": self.timed_out and (self.stdout_data or self.stderr_data)
++                "partial_results": self.timed_out and bool(self.stdout_data or self.stderr_data)

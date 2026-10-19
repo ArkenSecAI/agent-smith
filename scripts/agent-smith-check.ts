@@ -36,6 +36,12 @@ async function main(): Promise<void> {
 		],
 		[
 			"packages/coding-agent/test/agent-smith-isolation.test.ts",
+			"packages/coding-agent/test/workspace-host.test.ts",
+			"packages/coding-agent/test/workspace-target-relay.test.ts",
+			"packages/utils/test/postmortem-cleanup-error.test.ts",
+			"packages/coding-agent/test/workspace-assistant.test.ts",
+			"packages/coding-agent/test/workspace-inference.test.ts",
+			"packages/coding-agent/test/workspace-image-seal.test.ts",
 			"packages/coding-agent/test/text-predict-privacy.test.ts",
 			"packages/coding-agent/test/launch/broker-metadata-writes.test.ts",
 			"packages/coding-agent/test/discovery",
@@ -46,6 +52,13 @@ async function main(): Promise<void> {
 		],
 	]) {
 		await bun(["test", "--timeout", "60000", ...tests], context, ROOT, 900_000);
+	}
+	if (process.platform === "linux") {
+		await run(["python3", "-I", "-m", "unittest", "discover", "-s", "guest/agent-smith", "-p", "test_*.py"], {
+			cwd: ROOT,
+			env: context.env,
+			timeoutMs: 180_000,
+		});
 	}
 	if (!process.env.RUSTUP_HOME) throw new Error("Set RUSTUP_HOME to the pinned toolchain used by smith:prepare");
 	const rustEnv = {

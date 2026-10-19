@@ -1,0 +1,38 @@
+[Unit]
+Description=Authenticated Agent Smith virtio-serial guest supervisor
+After=systemd-udev-settle.service local-fs.target
+Wants=systemd-udev-settle.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/bin/python3 -I /opt/agent-smith/supervisor.py
+WorkingDirectory=/
+UMask=0077
+StateDirectory=agent-smith
+StateDirectoryMode=0700
+Delegate=yes
+KillMode=control-group
+TimeoutStopSec=20
+SendSIGKILL=yes
+Restart=on-failure
+RestartSec=3
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+# cgroup.kill and the named virtio character device must remain accessible.
+# Do not add ProtectControlGroups/PrivateDevices or a process-group fallback.
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+RestrictSUIDSGID=yes
+LimitNOFILE=8192
+TasksMax=4096
+
+[Install]
+WantedBy=multi-user.target

@@ -2,15 +2,38 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added the Linux/KVM managed workspace route: persistent isolated project overlays, authenticated guest supervision, real terminal ownership/control, original evidence capture, Kali MCP and HexStrike bridges, and pinned CPU-local investigations.
+- Added explicit externally managed Qwen inference for the Linux workspace candidate, separate from managed CPU mode. Pinned request profiles, single-call turns and consumer-only cancellation preserve the model/tunnel owner's lifecycle; offline fixture verification is not model or workflow qualification.
+- Added authenticated Kali image construction and fail-closed sealing with actual package/source inventory and package-owned rights records. Image qualification remains separate from workflow and supported-release acceptance.
+
 ### Changed
 
 - Established the unreleased ArkenSec Agent Smith application identity and `agent-smith` command, with separate `.agent-smith` state and `AGENT_SMITH_*` overrides.
 - Stopped automatic adoption of foreign configuration, plugin registries, account stores and memory endpoints. Foreign discovery requires app-owned consent, including project sources and dashboard loads.
-- Disabled the inherited self-updater for this unreleased fork. Use the maintained local source-build and synthetic-smoke commands; no supported installer or VM-backed security boundary is claimed.
+- Disabled the inherited self-updater for this unreleased fork. Use the maintained local source-build and smoke commands; no supported installer is claimed.
+- Returned bounded, byte-cited original scan tails to local investigations while keeping earlier capture ranges readable. Presented literal captured text separately from metadata, without re-encoding it as a JSON field. Grounding instructions distinguish tested inputs and outcomes from declared task premises, unknown cache behavior and unexecuted next checks.
+- Clarified source attribution in investigation instructions: grouped facts need support from every named source, while source-specific and missing fields cannot inherit another source's values.
+- Raised the external Qwen candidate's combined reasoning/output cap to 8192 tokens without changing the 200-word answer ceiling, investigation deadline or managed CPU profile.
+- Used authenticated guest OS poweroff for workspace stop and image sealing; request acceptance alone does not count as normal VM exit.
 
 ### Fixed
 
 - Kept native crash logs, addon extraction and OAuth callback state in the Agent Smith namespace without legacy OMP recovery or state migration.
+- Prevented workspace inference from using ambient or caller-supplied HTTP proxies by using direct loopback HTTP transport; redirects remain non-following failures.
+- Distinguished signal-terminated Bun processes from live children during workspace startup/shutdown and image-sealer cleanup.
+- Shared confined runtime inventory between image sealing and project creation, accepting real firmware member names without weakening QEMU option-path, ownership or symlink boundaries.
+- Used a fresh confined helper for each declared target connection and preserved complete responses across TCP half-close/backpressure. The explicit target route permits the QEMU syscall groups required by libslirp while retaining namespace, capability and `no_new_privs` confinement.
+- Joined workspace signal handling to bounded global shutdown so cancellation, original output and terminal state survive CLI interruption.
+- Preserved native Kali argv execution and corrected HexStrike readiness deadlines without converting errors, timeouts or partial output into success.
+- Created image-build outputs under a process-local private umask instead of inheriting unsafe group-write permissions.
+- Masked the isolated guest's unused network-time service, which could block shutdown, and required permanent masked/inactive state during image sealing. Guest wall time uses QEMU's host-backed UTC RTC without changing host time services.
+- Stopped the CPU inference engine before its namespace init, waited for stable owned-process exits within one graceful deadline (including descendants observed after the root), and reported forced cleanup as failure instead of accepting namespace-destruction SIGKILL as normal shutdown.
+- Waited for the retained broker process to exit after its stop reply, within the existing request deadline, so stop no longer returns during socket teardown and lease release.
+- Replaced the fixed investigation template with concise requested coverage, dimension-led comparisons including zero/false/empty results, a default 200-word ceiling, and operation-scoped conclusions that distinguish permission, policy, execution and unverified mechanisms.
+- Selected the Qwen3.5-9B Q4_K_M CPU candidate with pinned model, license and publisher records, general-task thinking sampling, a native 512-token reasoning cap, Q8_0 key/value caches and CPU Flash Attention, without model-specific continuation injection or changes to investigation output, tool, turn or deadline bounds.
+- Rejected token-truncated model responses as incomplete, including thinking-only turns removed from active context, instead of returning partial text or older tool-turn commentary as a completed investigation.
 
 ## [18.4.6] - 2026-10-01
 
@@ -1439,7 +1462,8 @@
 
 ### Fixed
 
-	- Fixed GPT-6 Astra extended-context support and preserved maximum context windows reported by OpenAI Codex discovery ([#10980](https://github.com/can1357/oh-my-pi/pull/10980) by [@H4vC](https://github.com/H4vC)).
+    - Fixed GPT-6 Astra extended-context support and preserved maximum context windows reported by OpenAI Codex discovery ([#10980](https://github.com/can1357/oh-my-pi/pull/10980) by [@H4vC](https://github.com/H4vC)).
+
 - Subagent `yield` no longer rejects a valid `data` payload because a non-strict OpenAI-compatible backend filled the optional `error` field with `""`; previously the worker retried the identical call until the invalid-yield cap and the parent received nothing.
 - Fixed fullscreen `/copy` outlining only a lazily created grouped Read card, so Enter copies the assistant yield instead of tool output.
 - `memory://` now resolves against the session that issued it: a caller's own memory backend answers `memory://<id>`, so co-located sessions no longer read each other's memory rows, and a caller whose session is no longer live fails closed instead of being answered by a peer. Prompt completion binds to the same caller, so `memory://<memory-id>` stays on offer while a subagent shares the working directory. Advisors retain their owning session's memory access even without a session file.
