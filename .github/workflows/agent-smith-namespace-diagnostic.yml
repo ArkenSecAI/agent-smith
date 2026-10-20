@@ -1,0 +1,74 @@
+name: Agent Smith namespace diagnostic
+
+on:
+  push:
+    branches: ['diagnostic/p2-namespace-20261020145025598']
+
+# No checkout, repository writes, artifacts, credentials, or required-check replacement.
+permissions: {}
+
+concurrency:
+  group: agent-smith-namespace-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  namespace:
+    name: Linux namespace diagnostic (not a required check)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install and bind the already-approved sandbox dependency
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends bubblewrap
+          /usr/bin/bwrap --version
+          printf '%s  %s\n' e318903862396f96de3df57264e0158682b952fd3fb53ac23d876413e7b30f71 /usr/bin/bwrap | sha256sum --check --strict
+          dpkg-query --show --showformat='${binary:Package} ${Version}\n' bubblewrap apparmor
+
+      - name: Read active policy and package metadata without changing it
+        run: |
+          set -uo pipefail
+          set +e
+          observe() {
+            printf '\nREAD-ONLY COMMAND:'
+            printf ' %q' "$@"
+            printf '\n'
+            "$@"
+            local status=$?
+            printf 'READ-ONLY COMMAND EXIT: %s\n' "$status"
+          }
+          observe uname -r
+          observe id
+          observe sysctl kernel.apparmor_restrict_unprivileged_userns kernel.unprivileged_userns_clone
+          observe cat /proc/self/attr/current
+          observe cat /proc/self/status
+          observe sudo --non-interactive aa-status
+          observe sudo --non-interactive cat /sys/kernel/security/apparmor/profiles
+          observe sudo --non-interactive cat /etc/apparmor.d/unprivileged_userns
+          observe dpkg-query --listfiles bubblewrap
+          observe cat /usr/lib/sysctl.d/50-bubblewrap.conf
+
+      - name: Collect the unprivileged denial and its matching kernel audit
+        run: |
+          set -uo pipefail
+          started=$(date --iso-8601=seconds)
+          set +e
+          # Deliberately NOT sudo: retain the ordinary runner identity and full isolation.
+          timeout 15s /usr/bin/bwrap \
+            --unshare-all --die-with-parent --new-session \
+            --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind /lib64 /lib64 \
+            --proc /proc --dev /dev --tmpfs /tmp \
+            -- /usr/bin/true
+          probe_status=$?
+          printf 'UNPRIVILEGED BWRAP EXIT: %s\n' "$probe_status"
+          sudo --non-interactive journalctl --dmesg --since "$started" --no-pager \
+            --output short-iso --grep 'apparmor=.*bwrap|audit:.*bwrap'
+          audit_status=$?
+          printf 'READ-ONLY AUDIT QUERY EXIT: %s\n' "$audit_status"
+          # A denial remains a failed job; audit collection must never turn it green.
+          if [ "$probe_status" -ne 0 ]; then exit "$probe_status"; fi
+          exit "$audit_status"
