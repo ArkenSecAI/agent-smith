@@ -31,6 +31,8 @@ The native path is a real source build, with no prebuilt fallback. It requires:
 
 Linux x64 checks also require an owner-provisioned `/usr/bin/bwrap` with the
 namespace and file-descriptor features described in the managed workspace route.
+On AppArmor-restricted hosts, the owner must also authorize the application's
+user-namespace permission. Development commands never change that host policy.
 
 Provisioning tools is explicit. Local development commands do not install a global
 toolchain, change shell profiles, use sudo, install models or discover personal Rust homes.
@@ -448,10 +450,17 @@ not qualify the Windows or macOS rows.
 
 Only the disposable Linux hosted runner explicitly installs Ubuntu's `bubblewrap`
 package through APT before preparation/checks and records its version and executable
-SHA-256. It does not disable namespace restrictions or AppArmor. The real
-confinement regressions remain mandatory; missing or unsupported Bubblewrap fails
-the job rather than selecting a mock or unsandboxed fallback. Local development
-commands still do not install host packages or change host policy.
+SHA-256. It then adds a dedicated AppArmor profile attached only to `/usr/bin/bwrap`
+with `userns` permission. This CI-only exception permits that executable to use
+user-namespace kernel functionality; it is not an additional confinement policy.
+AppArmor and `kernel.apparmor_restrict_unprivileged_userns=1` must remain enabled
+before and after loading it. The job neither replaces an existing profile nor
+disables a global restriction. The probe/server still run as the ordinary user
+inside Bubblewrap's full isolation, and all real confinement regressions remain
+mandatory. Missing prerequisites or profile conflicts fail the job rather than
+selecting a mock, privileged probe or unsandboxed fallback. This provisioning is
+only for the disposable hosted Linux job; local development commands still do
+not install host packages or change host policy.
 
 The external main ruleset requires signed commits, no force-push/deletion, and
 `Gitleaks 8.30.1` plus `Development (linux-x64)`, `Development (win32-x64)` and

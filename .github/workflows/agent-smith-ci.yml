@@ -119,6 +119,24 @@ jobs:
           sudo apt-get install --yes --no-install-recommends bubblewrap
           /usr/bin/bwrap --version
           sha256sum /usr/bin/bwrap
+      - name: Permit bwrap user namespaces (Linux CI runner only)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          sudo aa-status --enabled
+          test "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" = 1
+          profile=/etc/apparmor.d/agent-smith-ci-bwrap
+          test ! -e "$profile" && test ! -L "$profile"
+          sudo install --mode=0644 /dev/stdin "$profile" <<'PROFILE'
+          abi <abi/4.0>,
+          include <tunables/global>
+          profile agent-smith-ci-bwrap /usr/bin/bwrap flags=(unconfined) {
+            userns,
+          }
+          PROFILE
+          sudo apparmor_parser --add --skip-cache "$profile"
+          sudo aa-status --enabled
+          test "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" = 1
       - name: Provision pinned source-native toolchain (runner only)
         env:
           RUSTUP_HOME: ${{ runner.temp }}/agent-smith-rustup
