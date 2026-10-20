@@ -126,7 +126,8 @@ jobs:
           sudo aa-status --enabled
           test "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" = 1
           profile=/etc/apparmor.d/agent-smith-ci-bwrap
-          test ! -e "$profile" && test ! -L "$profile"
+          test ! -e "$profile"
+          test ! -L "$profile"
           sudo install --mode=0644 /dev/stdin "$profile" <<'PROFILE'
           abi <abi/4.0>,
           include <tunables/global>
