@@ -111,6 +111,14 @@ jobs:
             target_base=$(git rev-parse refs/remotes/smith-target/main)
             git merge-base --is-ancestor "$target_base" "$SOURCE_SHA"
           fi
+      - name: Provision Linux sandbox test dependency (runner only)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends bubblewrap
+          /usr/bin/bwrap --version
+          sha256sum /usr/bin/bwrap
       - name: Provision pinned source-native toolchain (runner only)
         env:
           RUSTUP_HOME: ${{ runner.temp }}/agent-smith-rustup

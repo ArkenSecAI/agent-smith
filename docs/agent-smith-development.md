@@ -29,8 +29,11 @@ The native path is a real source build, with no prebuilt fallback. It requires:
 - Linux glibc x64; or Windows x64 with VS C++ tools/Windows SDK; or Apple Silicon
   macOS with Xcode command-line tools and `codesign`.
 
-Provisioning tools is explicit. The scripts do not install a global toolchain,
-change shell profiles, use sudo, install models or discover personal Rust homes.
+Linux x64 checks also require an owner-provisioned `/usr/bin/bwrap` with the
+namespace and file-descriptor features described in the managed workspace route.
+
+Provisioning tools is explicit. Local development commands do not install a global
+toolchain, change shell profiles, use sudo, install models or discover personal Rust homes.
 Cargo dependencies/outputs stay under `.agent-smith-dev/cargo` and
 `.agent-smith-dev/target`. Run from the repository root:
 
@@ -435,12 +438,20 @@ The workflow accepts normal PRs targeting `main` and pushes to `main`, `p1/**` o
 head of a chosen ref without a new commit; it never runs the main provenance job.
 It uses `ubuntu-24.04` x64, `windows-2025` x64 and `macos-15` Apple
 Silicon, not self-hosted runners. Image labels pin an OS family, not immutable VM
-contents. Candidate jobs are read-only, do not persist checkout credentials, and
-have no service/signing secrets, privileged PR trigger, Docker or binary upload.
+contents. Candidate jobs have read-only repository permissions, do not persist
+checkout credentials, and have no service/signing secrets, privileged PR trigger,
+Docker or binary upload.
 Each provisions the pinned Rust toolchain into RUNNER_TEMP and executes the same
 four commands. Hosted runner results are evidence only for the exact commit they
 checked and are not desktop hypervisor qualification; local Linux evidence does
 not qualify the Windows or macOS rows.
+
+Only the disposable Linux hosted runner explicitly installs Ubuntu's `bubblewrap`
+package through APT before preparation/checks and records its version and executable
+SHA-256. It does not disable namespace restrictions or AppArmor. The real
+confinement regressions remain mandatory; missing or unsupported Bubblewrap fails
+the job rather than selecting a mock or unsandboxed fallback. Local development
+commands still do not install host packages or change host policy.
 
 The external main ruleset requires signed commits, no force-push/deletion, and
 `Gitleaks 8.30.1` plus `Development (linux-x64)`, `Development (win32-x64)` and
